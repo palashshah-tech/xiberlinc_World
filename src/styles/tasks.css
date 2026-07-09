@@ -1,0 +1,377 @@
+/* ============================================================
+   CogScreen — Task-Specific Styles
+   ============================================================ */
+
+/* --- Task Container --- */
+.task-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  z-index: var(--z-modal);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* --- Fixation Cross --- */
+.fixation-cross {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  color: #fff;
+  font-family: var(--font-mono);
+  line-height: 1;
+  opacity: 0.8;
+}
+
+/* --- Countdown (Ready-Set-Go) --- */
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  z-index: var(--z-overlay);
+}
+
+.countdown-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  animation: countdown-pop 0.6s ease-out;
+}
+
+.countdown-text.ready {
+  font-size: var(--text-4xl);
+  color: var(--accent-cyan);
+}
+.countdown-text.set {
+  font-size: var(--text-5xl);
+  color: var(--accent-violet);
+}
+.countdown-text.go {
+  font-size: var(--text-6xl);
+  color: var(--accent-green);
+}
+
+@keyframes countdown-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* --- Stimulus Display --- */
+.stimulus-canvas {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .stimulus-canvas {
+    width: 90vw;
+    height: 90vw;
+    max-width: 600px;
+    max-height: 600px;
+  }
+}
+
+/* Color Square */
+.stim-item {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  transition: none;
+}
+
+.stim-item.circle {
+  border-radius: 50%;
+}
+
+/* Empty frame for non-tested items */
+.stim-item.empty-frame {
+  background: transparent !important;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.stim-item.distractor {
+  opacity: 0.7;
+}
+
+/* --- Response Area --- */
+.response-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  z-index: var(--z-overlay);
+}
+
+.response-btn {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-xl);
+  padding: var(--space-4) var(--space-10);
+  border: 2px solid;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  min-width: 160px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  position: relative;
+}
+
+.response-btn .key-hint {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: var(--text-xs);
+  background: rgba(255,255,255,0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.response-btn.same {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: var(--accent-green);
+}
+.response-btn.same:hover,
+.response-btn.same:focus {
+  background: rgba(52, 211, 153, 0.2);
+  border-color: var(--accent-green);
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
+  transform: translateY(-2px);
+}
+
+.response-btn.different {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: var(--accent-red);
+}
+.response-btn.different:hover,
+.response-btn.different:focus {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: var(--accent-red);
+  box-shadow: 0 0 20px rgba(248, 113, 113, 0.2);
+  transform: translateY(-2px);
+}
+
+.response-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* --- Feedback Indicator --- */
+.feedback-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--text-4xl);
+  font-family: var(--font-display);
+  font-weight: 700;
+  z-index: var(--z-toast);
+  animation: feedback-flash 0.5s ease-out forwards;
+}
+
+.feedback-indicator.correct {
+  color: var(--accent-green);
+}
+.feedback-indicator.incorrect {
+  color: var(--accent-red);
+}
+
+@keyframes feedback-flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* --- Task HUD (heads-up display) --- */
+.task-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-6);
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+
+.task-hud-item {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.06em;
+}
+
+.task-progress {
+  width: 200px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.task-progress-fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  transition: width var(--transition-base);
+}
+
+/* --- ANT-specific --- */
+.ant-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.ant-arrow {
+  font-size: 28px;
+  color: #fff;
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+
+.ant-arrow.target {
+  color: var(--accent-cyan);
+}
+
+.ant-cue {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-amber);
+  border-radius: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ant-display-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.ant-fixation-row {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Instructions overlay --- */
+.instructions-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-overlay);
+  padding: var(--space-6);
+}
+
+.instructions-card {
+  max-width: 700px;
+  width: 100%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding: var(--space-10);
+  animation: scale-in 0.3s ease-out;
+}
+
+.instructions-card h2 {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-6);
+}
+
+.instructions-card p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+  line-height: 1.7;
+}
+
+.instructions-card .step-list {
+  list-style: none;
+  counter-reset: steps;
+  margin: var(--space-6) 0;
+}
+
+.instructions-card .step-list li {
+  counter-increment: steps;
+  padding: var(--space-3) 0;
+  padding-left: var(--space-10);
+  position: relative;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.instructions-card .step-list li::before {
+  content: counter(steps);
+  position: absolute;
+  left: 0;
+  top: var(--space-3);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-cyan-dim);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.instructions-card .step-list li:last-child {
+  border-bottom: none;
+}
+
+/* --- Demo box (practice visual) --- */
+.demo-box {
+  background: #000;
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  margin: var(--space-6) 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  position: relative;
+  border: 1px solid var(--border-subtle);
+}

@@ -1,0 +1,147 @@
+/* ============================================================
+   Stealth Pro Design System — High-Performance E-Sports Branding
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  color-scheme: dark;
+  /* Stealth Color Palette */
+  --bg-dark: #080809;
+  --bg-offset: #0e0e10;
+  --bg-card: #141416;
+  
+  /* Accent: Volt Green (Pro E-sports vibe) */
+  --accent-volt: #d4ff00;
+  --accent-volt-dim: rgba(212, 255, 0, 0.1);
+  --accent-volt-shimmer: rgba(212, 255, 0, 0.03);
+  
+  --accent-red: #ff3e3e;
+  --accent-gray: #2a2a2e;
+  
+  /* Typography */
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Borders */
+  --border-dim: rgba(255, 255, 255, 0.05);
+  --border-medium: rgba(255, 255, 255, 0.1);
+  --border-volt: rgba(212, 255, 0, 0.2);
+
+  /* Typography Colors */
+  --text-primary: #e0e0e2;
+  --text-secondary: #9a9a9f;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-4: 16px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --transition-fast: 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Reset & Base */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg-dark);
+  color: #e0e0e2;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Texture Overlay (Reduces "AI Flatness") */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Typography Scale */
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; line-height: 1.1; }
+h1 { font-size: clamp(3rem, 10vw, 5rem); font-style: italic; }
+h2 { font-size: 2.5rem; }
+h3 { font-size: 1.5rem; }
+
+p { color: #9a9a9f; }
+b, strong { color: #fff; font-weight: 600; }
+
+/* Components */
+
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 4px; /* Sharp corners = less AI/Consumer look */
+  padding: var(--space-8);
+  position: relative;
+}
+
+/* Volt CTA - Brutalist style */
+.btn-volt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-volt);
+  color: #000;
+  border: none;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 18px 36px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+.btn-volt:hover {
+  background: #fff;
+  transform: scale(1.02);
+  box-shadow: 0 0 40px rgba(212, 255, 0, 0.4);
+}
+
+/* Badges */
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border: 1px solid;
+  border-radius: 2px;
+}
+.badge-volt { color: var(--accent-volt); border-color: var(--border-volt); background: var(--accent-volt-dim); }
+
+/* Animation Keyframes */
+@keyframes flicker {
+  0% { opacity: 0.8; }
+  5% { opacity: 1; }
+  10% { opacity: 0.9; }
+  100% { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade { animation: slide-up 0.6s cubic-bezier(0.2, 0, 0, 1) forwards; }
+
+/* Override browser default autofill background and text color globally */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #000000 inset !important;
+  box-shadow: 0 0 0 1000px #000000 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
