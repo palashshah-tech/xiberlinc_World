@@ -46,13 +46,14 @@ export function WorldView() {
           <h1 style="
             font-family:'Instrument Serif', serif;
             font-style:italic;
-            font-size:clamp(2rem, 5.2vw, 3rem);
+            font-size:clamp(1.8rem, 4.8vw, 2.6rem);
             font-weight:400;
             text-transform:uppercase;
             letter-spacing:0.04em;
             color:#ffffff;
-            margin:0 0 10px 0;
-          ">Connect by xiberlinc<span style="color:#7c3aed;font-style:normal;">.</span></h1>
+            margin:0 0 12px 0;
+            line-height:1.2;
+          ">welcome to the xiberlinc Experience<span style="color:#7c3aed;font-style:normal;">.</span></h1>
           <p style="font-family:'Space Grotesk',sans-serif;font-size:12.5px;color:rgba(255,255,255,0.45);line-height:1.65;margin:0;">
             Sign in with Google to authenticate your profile and enter the Xiberlinc World dashboard.
           </p>
