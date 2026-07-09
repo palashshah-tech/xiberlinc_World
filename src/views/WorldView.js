@@ -52,9 +52,9 @@ export function WorldView() {
             letter-spacing:0.04em;
             color:#ffffff;
             margin:0 0 10px 0;
-          ">Connect by xiberlin<span style="color:#ec4899;font-style:normal;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
+          ">Connect by xiberlin<span style="color:#ec4899;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
           <p style="font-family:'Space Grotesk',sans-serif;font-size:12.5px;color:rgba(255,255,255,0.45);line-height:1.65;margin:0;">
-            welcome to the xiberlin<span style="color:#ec4899;">c</span> Experience
+            welcome to the xiberlinc Experience
           </p>
         </div>
 
@@ -577,7 +577,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
           color:#ffffff;
           text-transform:uppercase;
           letter-spacing:0.02em;
-        ">Connect by xiberlin<span style="color:#ec4899;font-style:normal;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
+        ">Connect by xiberlin<span style="color:#ec4899;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
         
         <p style="font-family:'Space Grotesk',sans-serif;font-size:13.5px;color:rgba(255,255,255,0.45);max-width:540px;margin:0 auto 24px;line-height:1.75;">
           Explore the live social network of elite players, verify cognitive profiles from the candidates database, and join active neuro rooms.
