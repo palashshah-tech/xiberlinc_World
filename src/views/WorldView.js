@@ -532,7 +532,12 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
         border-bottom:1px solid rgba(255,255,255,0.05);
         transition:all 0.3s;
       ">
-        <img src="/xiberlinc_logo.png" alt="Xiberlinc" style="height:30px;mix-blend-mode:screen;filter:brightness(1.4);" />
+        <div style="display:inline-flex;align-items:center;gap:6px;">
+          <div style="width:28px;height:28px;overflow:hidden;position:relative;display:inline-flex;align-items:center;justify-content:flex-start;">
+            <img src="/xiberlinc_logo.png" style="height:100%;width:auto;max-width:none;object-fit:cover;object-position:left;mix-blend-mode:screen;filter:brightness(1.4);position:absolute;left:0;" />
+          </div>
+          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#fff;letter-spacing:0.04em;text-transform:uppercase;">Xiberlin<span style="color:#ec4899;text-shadow:0 0 8px rgba(236,72,153,0.3);">c</span></span>
+        </div>
         
         <div style="display:flex;align-items:center;gap:20px;">
           <div style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#2563eb;">
@@ -577,7 +582,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
           color:#ffffff;
           text-transform:uppercase;
           letter-spacing:0.02em;
-        ">Connect by xiberlinc<span style="color:#7c3aed;font-style:normal;">.</span></h1>
+        ">Connect by xiberlin<span style="color:#ec4899;font-style:normal;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
         
         <p style="font-family:'Space Grotesk',sans-serif;font-size:13.5px;color:rgba(255,255,255,0.45);max-width:540px;margin:0 auto 24px;line-height:1.75;">
           Explore the live social network of elite players, verify cognitive profiles from the candidates database, and join active neuro rooms.
@@ -765,7 +770,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
           <div class="wld-reveal" style="margin-bottom:40px;">
             <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.2em;color:#ec4899;margin-bottom:10px;">Compete</div>
             <h2 style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;text-transform:uppercase;margin-bottom:10px;">Tournaments & Events<span style="color:#ec4899;font-style:normal;">.</span></h2>
-            <p style="max-width:500px;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.6;">From local meetups to global championships — the Xiberlinc World never stops competing.</p>
+            <p style="max-width:500px;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.6;">From local meetups to global championships — the Xiberlin<span style="color:#ec4899;">c</span> World never stops competing.</p>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">
             ${EVENTS.map(e => _eventCard(e)).join('')}
@@ -775,11 +780,11 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
 
       <!-- FOOTER -->
       <footer style="padding:48px 24px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
-        <div style="width:24px;height:24px;border-radius:5px;background:#000;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:3.5px;opacity:0.4;">
-          <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;" />
+        <div style="width:24px;height:24px;border-radius:5px;background:#000;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;opacity:0.4;">
+          <img src="/xiberlinc_logo.png" style="height:100%;width:auto;max-width:none;object-fit:cover;object-position:left;mix-blend-mode:screen;position:absolute;left:0;" />
         </div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.18em;color:rgba(255,255,255,0.22);">
-          Xiberlinc World · Season 1 · public-collector · 7-chain principle
+          Xiberlin<span style="color:#ec4899;">c</span> World · Season 1 · public-collector · 7-chain principle
         </div>
       </footer>
 
