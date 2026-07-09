@@ -216,6 +216,45 @@ function _startLoader() {
   _runLoader();
 }
 
+async function _cycleLoaderText(loaderText) {
+  if (!loaderText) return;
+
+  const messages = [
+    "transcending your experience",
+    "setting up your interface",
+    "connecting the dots",
+    "almost there"
+  ];
+
+  const dotsHtml = `
+    <span style="display:inline-flex; gap:5px; align-items:center; height:1em; margin-bottom:-4px;">
+      <span style="width:6px; height:6px; background:#2563eb; border-radius:50%; display:inline-block; animation:wld-bounce 1.4s infinite ease-in-out both; animation-delay:-0.32s;"></span>
+      <span style="width:6px; height:6px; background:#7c3aed; border-radius:50%; display:inline-block; animation:wld-bounce 1.4s infinite ease-in-out both; animation-delay:-0.16s;"></span>
+      <span style="width:6px; height:6px; background:#ec4899; border-radius:50%; display:inline-block; animation:wld-bounce 1.4s infinite ease-in-out both;"></span>
+    </span>
+  `;
+
+  for (let i = 0; i < messages.length; i++) {
+    if (i > 0) {
+      // Fade out
+      loaderText.style.opacity = '0';
+      await _delay(500);
+
+      // Check if loader was dismissed early
+      const loader = document.getElementById('world-loader');
+      if (!loader || loader.style.display === 'none') {
+        break;
+      }
+
+      loaderText.innerHTML = `${messages[i]} ${dotsHtml}`;
+      // Fade back in
+      loaderText.style.opacity = '1';
+    }
+    // Wait for the next transition (approx 3.2s)
+    await _delay(3200);
+  }
+}
+
 async function _runLoader() {
   const spline     = document.getElementById('spline-el');
   const loaderText = document.getElementById('loader-text');
@@ -235,6 +274,9 @@ async function _runLoader() {
   if (loaderText) {
     loaderText.style.opacity = '1';
   }
+
+  // Start the dynamic status text cycling
+  _cycleLoaderText(loaderText);
 
   // Play loader
   const [worldData] = await Promise.all([dataPromise, _delay(LOADER_MS)]);
