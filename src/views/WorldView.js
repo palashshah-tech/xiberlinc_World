@@ -52,9 +52,9 @@ export function WorldView() {
             letter-spacing:0.04em;
             color:#ffffff;
             margin:0 0 10px 0;
-          ">Connect by xiberlinc<span style="color:#7c3aed;font-style:normal;">.</span></h1>
+          ">Connect by xiberlin<span style="color:#ec4899;font-style:normal;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
           <p style="font-family:'Space Grotesk',sans-serif;font-size:12.5px;color:rgba(255,255,255,0.45);line-height:1.65;margin:0;">
-            welcome to the xiberlinc Experience
+            welcome to the xiberlin<span style="color:#ec4899;">c</span> Experience
           </p>
         </div>
 
@@ -532,12 +532,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
         border-bottom:1px solid rgba(255,255,255,0.05);
         transition:all 0.3s;
       ">
-        <div style="display:inline-flex;align-items:center;gap:6px;">
-          <div style="width:28px;height:28px;overflow:hidden;position:relative;display:inline-flex;align-items:center;justify-content:flex-start;">
-            <img src="/xiberlinc_logo.png" style="height:100%;width:auto;max-width:none;object-fit:cover;object-position:left;mix-blend-mode:screen;filter:brightness(1.4);position:absolute;left:0;" />
-          </div>
-          <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#fff;letter-spacing:0.04em;text-transform:uppercase;">Xiberlin<span style="color:#ec4899;text-shadow:0 0 8px rgba(236,72,153,0.3);">c</span></span>
-        </div>
+        <img src="/xiberlinc_logo.png" alt="Xiberlinc" style="height:30px;mix-blend-mode:screen;filter:brightness(1.4);" />
         
         <div style="display:flex;align-items:center;gap:20px;">
           <div style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#2563eb;">
@@ -780,8 +775,8 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
 
       <!-- FOOTER -->
       <footer style="padding:48px 24px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
-        <div style="width:24px;height:24px;border-radius:5px;background:#000;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;opacity:0.4;">
-          <img src="/xiberlinc_logo.png" style="height:100%;width:auto;max-width:none;object-fit:cover;object-position:left;mix-blend-mode:screen;position:absolute;left:0;" />
+        <div style="width:24px;height:24px;border-radius:5px;background:#000;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:3.5px;opacity:0.4;">
+          <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;" />
         </div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.18em;color:rgba(255,255,255,0.22);">
           Xiberlin<span style="color:#ec4899;">c</span> World · Season 1 · public-collector · 7-chain principle
