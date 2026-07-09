@@ -117,7 +117,7 @@ export function CompleteView() {
             height:${3+Math.random()*4}px;
             animation-delay:${Math.random()*4}s;
             animation-duration:${4+Math.random()*5}s;
-            background:${i%3===0?'#d4ff00':i%3===1?'#8aff00':'#aaff00'};
+            background:${i%3===0?'#7c3aed':i%3===1?'#ec4899':'#2563eb'};
           "></div>
         `).join('')}
       </div>
@@ -128,12 +128,12 @@ export function CompleteView() {
 
       <div class="cv-body ${hasTrials ? 'cv-body-wide' : ''}">
         <svg class="cv-ring" width="100" height="100" viewBox="0 0 100 100" fill="none">
-          <circle cx="50" cy="50" r="46" stroke="url(#cvGrad)" stroke-width="2.5" fill="rgba(212,255,0,0.05)"/>
+          <circle cx="50" cy="50" r="46" stroke="url(#cvGrad)" stroke-width="2.5" fill="rgba(124,58,237,0.05)"/>
           <path d="M30 50L44 64L70 38" stroke="url(#cvGrad)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="cv-path"/>
           <defs>
             <linearGradient id="cvGrad" x1="0" y1="0" x2="100" y2="100">
-              <stop offset="0%" stop-color="#d4ff00"/>
-              <stop offset="100%" stop-color="#8aff00"/>
+              <stop offset="0%" stop-color="#7c3aed"/>
+              <stop offset="100%" stop-color="#ec4899"/>
             </linearGradient>
           </defs>
         </svg>
@@ -266,8 +266,8 @@ export function CompleteView() {
       position:absolute; border-radius:50%; filter:blur(80px); pointer-events:none; opacity:0.28;
       animation: cv-orb-float ease-in-out infinite alternate;
     }
-    .cv-orb-1 { width:320px; height:320px; top:-60px; left:-80px; background:#d4ff00; animation-duration:9s; }
-    .cv-orb-2 { width:240px; height:240px; bottom:-50px; right:-50px; background:#8aff00; animation-duration:11s; }
+    .cv-orb-1 { width:320px; height:320px; top:-60px; left:-80px; background:#7c3aed; animation-duration:9s; }
+    .cv-orb-2 { width:240px; height:240px; bottom:-50px; right:-50px; background:#ec4899; animation-duration:11s; }
     @keyframes cv-orb-float {
       from { transform: translate(0,0) scale(1); }
       to   { transform: translate(10px,16px) scale(1.05); }
@@ -297,7 +297,7 @@ export function CompleteView() {
 
     .cv-heading {
       font-size: 2.4rem;
-      background: linear-gradient(135deg, #d4ff00 20%, #aaff00 100%);
+      background: linear-gradient(135deg, #7c3aed 20%, #ec4899 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
@@ -330,7 +330,7 @@ export function CompleteView() {
       width: 100%;
       background: rgba(13,13,18,0.7);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(212,255,0,0.12);
+      border: 1px solid rgba(124,58,237,0.15);
       border-radius: 16px;
       padding: 8px 24px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
@@ -338,7 +338,7 @@ export function CompleteView() {
     .cv-row {
       display: flex; justify-content: space-between; align-items: center;
       padding: 14px 0;
-      border-bottom: 1px solid rgba(212,255,0,0.06);
+      border-bottom: 1px solid rgba(124,58,237,0.06);
     }
     .cv-row:last-child { border-bottom: none; }
     .cv-row-label { font-size: 13px; color: var(--text-tertiary); font-family: var(--font-mono); letter-spacing: 0.04em; }
@@ -346,11 +346,11 @@ export function CompleteView() {
       font-size: 13px; color: var(--text-primary); font-weight: 500;
       display: flex; align-items: center; gap: 8px;
     }
-    .cv-row-val.mono { font-family: var(--font-mono); font-size: 12px; color: #d4ff00; }
+    .cv-row-val.mono { font-family: var(--font-mono); font-size: 12px; color: #7c3aed; }
     .cv-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: #d4ff00;
-      box-shadow: 0 0 10px rgba(212,255,0,0.6);
+      background: #7c3aed;
+      box-shadow: 0 0 10px rgba(124,58,237,0.6);
       animation: pulse-glow 2s infinite;
     }
     .cv-footer { font-size: 0.85rem; color: var(--text-tertiary); margin-top: 12px; }
@@ -369,21 +369,21 @@ export function CompleteView() {
     .cv-history-item {
       display: flex; justify-content: space-between; align-items: center;
       padding: 10px 16px;
-      background: rgba(212,255,0,0.03);
-      border: 1px solid rgba(212,255,0,0.07);
+      background: rgba(124,58,237,0.03);
+      border: 1px solid rgba(124,58,237,0.07);
       border-radius: 8px;
       font-family: var(--font-mono); font-size: 11px;
     }
     .cv-hist-date { color: var(--text-tertiary); }
-    .cv-hist-score strong { color: #d4ff00; }
-    .cv-hist-acc strong { color: #8aff00; }
+    .cv-hist-score strong { color: #7c3aed; }
+    .cv-hist-acc strong { color: #ec4899; }
 
     /* Performance card & stats */
     .cv-raw-card {
       width: 100%; text-align: left;
       background: rgba(13,13,18,0.7);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(212,255,0,0.1);
+      border: 1px solid rgba(124,58,237,0.15);
       border-radius: 16px; padding: 24px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     }
@@ -392,14 +392,14 @@ export function CompleteView() {
       gap: 12px; margin-bottom: 16px;
     }
     .cv-raw-stat {
-      background: rgba(212,255,0,0.04);
-      border: 1px solid rgba(212,255,0,0.1);
+      background: rgba(124,58,237,0.04);
+      border: 1px solid rgba(124,58,237,0.1);
       border-radius: 10px; padding: 12px 14px;
       transition: border-color 0.15s;
     }
-    .cv-raw-stat:hover { border-color: rgba(212,255,0,0.22); }
+    .cv-raw-stat:hover { border-color: rgba(124,58,237,0.22); }
     .cv-raw-stat-label { font-size: 10px; color: var(--text-tertiary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
-    .cv-raw-stat-val   { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; color: #d4ff00; }
+    .cv-raw-stat-val   { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; color: #7c3aed; }
     .cv-sparkline { display: flex; align-items: flex-end; gap: 2px; height: 60px; }
     .cv-spark-bar { flex: 1; border-radius: 2px 2px 0 0; min-height: 3px; opacity: 0.85; }
     .cv-spark-legend { display: flex; gap: 14px; margin-top: 16px; }

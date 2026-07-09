@@ -11,10 +11,10 @@
   --bg-offset: #0e0e10;
   --bg-card: #141416;
   
-  /* Accent: Volt Green (Pro E-sports vibe) */
-  --accent-volt: #d4ff00;
-  --accent-volt-dim: rgba(212, 255, 0, 0.1);
-  --accent-volt-shimmer: rgba(212, 255, 0, 0.03);
+  /* Accent: Purple (Xiberlinc World vibe) */
+  --accent-volt: #7c3aed;
+  --accent-volt-dim: rgba(124, 58, 237, 0.15);
+  --accent-volt-shimmer: rgba(124, 58, 237, 0.03);
   
   --accent-red: #ff3e3e;
   --accent-gray: #2a2a2e;
@@ -27,7 +27,7 @@
   /* Borders */
   --border-dim: rgba(255, 255, 255, 0.05);
   --border-medium: rgba(255, 255, 255, 0.1);
-  --border-volt: rgba(212, 255, 0, 0.2);
+  --border-volt: rgba(124, 58, 237, 0.25);
 
   /* Typography Colors */
   --text-primary: #e0e0e2;

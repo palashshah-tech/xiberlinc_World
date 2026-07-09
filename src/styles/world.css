@@ -14,10 +14,10 @@
   --bg-card: #0f0f13;
   --bg-card-hover: #141419;
 
-  /* === Volt (continuity with main app) === */
-  --accent-volt: #d4ff00;
-  --accent-volt-dim: rgba(212, 255, 0, 0.08);
-  --accent-volt-glow: rgba(212, 255, 0, 0.25);
+  /* === Purple Accent (continuity with main app) === */
+  --accent-volt: #7c3aed;
+  --accent-volt-dim: rgba(124, 58, 237, 0.12);
+  --accent-volt-glow: rgba(124, 58, 237, 0.4);
 
   /* === World Aurora Palette === */
   --world-violet: #7c3aed;
@@ -83,7 +83,7 @@
   /* === Gradients === */
   --gradient-world: linear-gradient(135deg, #7c3aed 0%, #2563eb 50%, #06b6d4 100%);
   --gradient-star: linear-gradient(135deg, #fbbf24 0%, #f97316 100%);
-  --gradient-volt: linear-gradient(135deg, #d4ff00 0%, #7fff00 100%);
+  --gradient-volt: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
   --gradient-dark: linear-gradient(180deg, #050507 0%, #0a0a0d 100%);
 }
 

@@ -70,7 +70,7 @@ export function generateSvgLineChart(dataPoints, width = 600, height = 220, high
   const dots = points.map((p, i) => {
     const isHighlighted = i === highlightIndex;
     const dotColor = isHighlighted ? '#ffffff' : 'url(#chartGrad)';
-    const textFill = isHighlighted ? '#ffffff' : '#d4ff00';
+    const textFill = isHighlighted ? '#ffffff' : '#7c3aed';
     const radius = isHighlighted ? 10 : 8;
     const strokeWidth = isHighlighted ? 4 : 3;
     
@@ -90,12 +90,12 @@ export function generateSvgLineChart(dataPoints, width = 600, height = 220, high
     <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
       <defs>
         <linearGradient id="chartGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#d4ff00"/>
-          <stop offset="100%" stop-color="#8aff00"/>
+          <stop offset="0%" stop-color="#7c3aed"/>
+          <stop offset="100%" stop-color="#ec4899"/>
         </linearGradient>
         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#d4ff00" stop-opacity="0.18"/>
-          <stop offset="100%" stop-color="#8aff00" stop-opacity="0.0"/>
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0"/>
         </linearGradient>
         <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="5" result="blur" />

@@ -1,5 +1,5 @@
 /* ============================================================
-   Transition View — Rest screen between tasks
+   Transition View — Rest screen between tasks (Themed)
    ============================================================ */
 
 import { render } from '../utils/dom.js';
@@ -46,7 +46,6 @@ export function TransitionView(params = {}) {
   const info = getNextInfo()[next] || getNextInfo()['vwm-distractor'];
   const session = Storage.getCurrentSession();
   
-  // Calculate results for the task just finished
   const prevTaskType = next === 'vwm-distractor' ? 'vwm-pure' : 'vwm-distractor';
   const prevTrials = session?.trials?.filter(t => t.taskType === prevTaskType) || [];
   const results = computeVWMScores(prevTrials);
@@ -59,8 +58,8 @@ export function TransitionView(params = {}) {
 
       <div class="trv-body">
         <svg class="trv-check" width="80" height="80" viewBox="0 0 80 80" fill="none">
-          <circle cx="40" cy="40" r="38" stroke="#d4ff00" stroke-width="2" fill="rgba(212,255,0,0.07)"/>
-          <path d="M24 40L35 51L56 30" stroke="#d4ff00" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="trv-path"/>
+          <circle cx="40" cy="40" r="38" stroke="#7c3aed" stroke-width="2" fill="rgba(124,58,237,0.07)"/>
+          <path d="M24 40L35 51L56 30" stroke="#7c3aed" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="trv-path"/>
         </svg>
 
         <h2 class="trv-title">${t('tr_title')}</h2>
@@ -73,13 +72,13 @@ export function TransitionView(params = {}) {
           </div>
           <div class="trv-stat-row">
             <span>${t('tr_capacity')}</span>
-            <span style="color:#d4ff00">${results.maxK.toFixed(2)}</span>
+            <span style="color:#7c3aed">${results.maxK.toFixed(2)}</span>
           </div>
         </div>
 
         <p class="trv-sub">${t('tr_break')}</p>
 
-        <div style="font-family:var(--font-mono); font-size:11px; color:#d4ff00; letter-spacing:0.12em; text-transform:uppercase; margin-top:8px; margin-bottom:16px;">
+        <div style="font-family:var(--font-mono); font-size:11px; color:#7c3aed; letter-spacing:0.12em; text-transform:uppercase; margin-top:8px; margin-bottom:16px;">
           ${info.number - 1} / ${info.total} ${t('tr_of3')}
         </div>
 
@@ -91,15 +90,15 @@ export function TransitionView(params = {}) {
   `);
 
   injectStyle(`
-    /* ── Transition — volt-green unified theme ──────────── */
+    /* ── Transition — Purple Unified Theme ──────────── */
     .trv {
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
       padding: 40px 24px;
       position: relative; overflow: hidden;
       background:
-        radial-gradient(ellipse 65% 50% at 50% 0%, rgba(212,255,0,0.07) 0%, transparent 60%),
-        radial-gradient(ellipse 45% 40% at 10% 90%, rgba(138,255,0,0.04) 0%, transparent 55%);
+        radial-gradient(ellipse 65% 50% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 45% 40% at 10% 90%, rgba(236,72,153,0.04) 0%, transparent 55%);
     }
     .trv-grid {
       position: absolute; inset: 0;
@@ -118,8 +117,8 @@ export function TransitionView(params = {}) {
       position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; opacity: 0.15;
       animation: trv-orb-breathe ease-in-out infinite alternate;
     }
-    .trv-orb-a { width: 260px; height: 260px; top: -50px; right: -50px; background: #d4ff00; animation-duration: 9s; }
-    .trv-orb-b { width: 180px; height: 180px; bottom: -30px; left: -30px; background: #8aff00; animation-duration: 12s; }
+    .trv-orb-a { width: 260px; height: 260px; top: -50px; right: -50px; background: #7c3aed; animation-duration: 9s; }
+    .trv-orb-b { width: 180px; height: 180px; bottom: -30px; left: -30px; background: #ec4899; animation-duration: 12s; }
     @keyframes trv-orb-breathe {
       from { transform: scale(1); }
       to   { transform: scale(1.1) translate(6px, 10px); }
@@ -135,13 +134,13 @@ export function TransitionView(params = {}) {
     .trv-path  { stroke-dasharray: 55; stroke-dashoffset: 55; animation: drawPath 0.5s ease-out 0.3s forwards; }
     @keyframes drawPath { to { stroke-dashoffset: 0; } }
 
-    .trv-title { font-size: 2.2rem; color: #d4ff00; margin-bottom: 4px; }
+    .trv-title { font-size: 2.2rem; color: #7c3aed; margin-bottom: 4px; }
     .trv-sub   { color: var(--text-secondary); font-size: 1rem; }
 
     .trv-prev-stats {
       background: rgba(13,13,18,0.65);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(212,255,0,0.1);
+      border: 1px solid rgba(124,58,237,0.15);
       border-radius: 12px; padding: 16px 24px;
       width: 100%; max-width: 320px; text-align: left;
       box-shadow: 0 4px 20px rgba(0,0,0,0.25);
@@ -157,7 +156,7 @@ export function TransitionView(params = {}) {
       width: 100%;
       background: rgba(13,13,18,0.65);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(212,255,0,0.12);
+      border: 1px solid rgba(124,58,237,0.18);
       border-radius: 20px; padding: 28px 32px; text-align: left;
       box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
@@ -168,15 +167,15 @@ export function TransitionView(params = {}) {
     .trv-badge {
       font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
       padding: 3px 12px; border-radius: 99px;
-      color: #d4ff00; background: rgba(212,255,0,0.1); border: 1px solid rgba(212,255,0,0.25);
+      color: #7c3aed; background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.25);
     }
     .trv-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 12px;
-      color: #d4ff00;
-      filter: drop-shadow(0 0 6px rgba(212,255,0,0.25));
+      color: #7c3aed;
+      filter: drop-shadow(0 0 6px rgba(124,58,237,0.25));
     }
     .trv-icon svg {
       width: 48px;
@@ -186,18 +185,18 @@ export function TransitionView(params = {}) {
     .trv-card-desc   { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.65; margin-bottom: 20px; }
     .trv-bar-wrap    { display: flex; align-items: center; gap: 10px; }
     .trv-bar         { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; }
-    .trv-bar-fill    { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #d4ff00, #8aff00); }
+    .trv-bar-fill    { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #7c3aed, #ec4899); }
     .trv-bar-label   { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
 
     .trv-cta {
       font-family: var(--font-display); font-weight: 700;
-      font-size: 1.05rem; color: #080810;
+      font-size: 1.05rem; color: #ffffff;
       padding: 16px 48px; min-width: 260px;
-      background: linear-gradient(135deg, #d4ff00 0%, #aaff00 100%);
+      background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
       border: none; border-radius: 14px; cursor: pointer;
       transition: all 0.2s;
     }
-    .trv-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212,255,0,0.3); }
+    .trv-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(124,58,237,0.3); }
 
     @media (min-width: 1400px) {
       .trv-body { max-width: 680px; gap: 32px; }
