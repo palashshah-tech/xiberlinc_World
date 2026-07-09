@@ -538,7 +538,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
         ">Connect by xiberlinc<span style="color:#7c3aed;font-style:normal;">.</span></h1>
         
         <p style="font-family:'Space Grotesk',sans-serif;font-size:13.5px;color:rgba(255,255,255,0.45);max-width:540px;margin:0 auto 24px;line-height:1.75;">
-          Connect across the 7 chains. Explore the live social network of elite players, verify cognitive profiles from the candidates database, and join active neuro rooms.
+          Explore the live social network of elite players, verify cognitive profiles from the candidates database, and join active neuro rooms.
         </p>
 
         <button id="hero-play-btn" style="
