@@ -19,16 +19,6 @@ export function WorldView() {
     s.src = 'https://unpkg.com/@splinetool/viewer/build/spline-viewer.js';
     document.head.appendChild(s);
   }
-
-  // Inject world CSS styling variables
-  const worldLink = document.createElement('link');
-  worldLink.rel = 'stylesheet';
-  worldLink.href = '/src/styles/world.css';
-  worldLink.setAttribute('data-view-style', '');
-  if (!document.querySelector('link[href="/src/styles/world.css"]')) {
-    document.head.appendChild(worldLink);
-  }
-
   // Render the wrapper structures
   render(`
     <div id="world-root" style="position:fixed;inset:0;z-index:9000;background:#000000;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;overflow:hidden;">
@@ -1149,17 +1139,21 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
 
     const q = query(
       collection(db, 'chatroom_messages'),
-      where('roomId', '==', room.id),
       orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(150)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const rawMessages = [];
+      const allMessages = [];
       snapshot.forEach(doc => {
-        rawMessages.push({ id: doc.id, ...doc.data() });
+        allMessages.push({ id: doc.id, ...doc.data() });
       });
-      rawMessages.reverse(); // oldest first
+
+      // Filter by roomId, reverse to get oldest first (chronological), and get last 50
+      const rawMessages = allMessages
+        .filter(m => m.roomId === room.id)
+        .reverse()
+        .slice(-50);
 
       // Populate active logs user bar deterministically
       const activeUserMap = new Map();
