@@ -186,7 +186,7 @@ function _initAuth() {
   if (isGoogle) {
     // Already authenticated with Google, go straight to loader or dashboard if loaded
     if (authGate) authGate.style.display = 'none';
-    if (sessionStorage.getItem('xiberlinc_world_loaded') === 'true') {
+    if (window.xiberlinc_world_loaded) {
       const loader = document.getElementById('world-loader');
       if (loader) loader.style.display = 'none';
       _fetchWorldData().then(worldData => {
@@ -305,7 +305,7 @@ async function _runLoader() {
     loader.style.display = 'none';
   }
 
-  sessionStorage.setItem('xiberlinc_world_loaded', 'true');
+  window.xiberlinc_world_loaded = true;
   _renderDashboard(worldData);
 }
 
@@ -946,6 +946,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
   // Handle Logout (Logs out of Google and returns to Welcome screen)
   document.getElementById('taskbar-logout')?.addEventListener('click', async () => {
     try {
+      window.xiberlinc_world_loaded = false;
       sessionStorage.removeItem('xiberlinc_world_loaded');
       await auth.signOut();
     } catch (e) {}
