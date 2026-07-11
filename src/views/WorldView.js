@@ -113,21 +113,6 @@ export function WorldView() {
       <!-- ── WORLD DASHBOARD (hidden until loader finishes) ── -->
       <div id="world-dashboard" style="display:none;position:absolute;inset:0;overflow-y:auto;z-index:8000;background:#000000;"></div>
 
-      <!-- ── CHATROOM BACKDROP overlay ── -->
-      <div id="wld-chat-backdrop" style="
-        position:fixed;inset:0;z-index:9100;
-        background:rgba(0,0,0,0.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
-        opacity:0;pointer-events:none;transition:opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      "></div>
-
-      <!-- ── CHATROOM SLIDE-OUT PANEL ── -->
-      <div id="wld-chat-panel" style="
-        position:fixed;top:0;right:-480px;width:460px;height:100%;z-index:9200;
-        background:rgba(8,8,10,0.85);backdrop-filter:blur(35px);-webkit-backdrop-filter:blur(35px);
-        border-left:1px solid rgba(255,255,255,0.08);box-shadow:-10px 0 40px rgba(0,0,0,0.8);
-        display:flex;flex-direction:column;transition:right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        color:#fff;font-family:'Space Grotesk',sans-serif;
-      "></div>
 
       <!-- ── CONTROL CENTER TASKBAR OVERLAY ── -->
       <div id="taskbar-overlay" style="
@@ -984,10 +969,9 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
     }, 150);
   }
 
-  // Setup Chatrooms
+  // Setup Chatrooms (Dedicated Screen Router version)
   function _setupChatrooms(players, userProfile) {
     const enterBtns = document.querySelectorAll('.enter-room-btn');
-    const backdrop = document.getElementById('wld-chat-backdrop');
     
     enterBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -995,354 +979,91 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
         const roomId = btn.getAttribute('data-room-id');
         const room = NEURO_ROOMS.find(r => r.id === roomId);
         if (room) {
-          _openChatRoom(room, userProfile, players);
+          const userScore = userProfile && userProfile[0] ? Math.round(userProfile[0].score) : null;
+          const isEligible = !room.locked || (userScore && userScore >= 100);
+
+          if (!isEligible) {
+            _showAccessDeniedModal(room, userScore);
+          } else {
+            navigate('room', { roomId: room.id });
+          }
         }
       });
     });
-
-    if (backdrop) {
-      backdrop.addEventListener('click', _closeChatRoom);
-    }
   }
 
-  function getRankFromScore(composite) {
-    if (composite >= 130) return { rank: 'Legend',   tier: 'star' };
-    if (composite >= 115) return { rank: 'Master',   tier: 'star' };
-    if (composite >= 100) return { rank: 'Diamond',  tier: 'rising' };
-    if (composite >= 85)  return { rank: 'Platinum', tier: 'community' };
-    if (composite >= 70)  return { rank: 'Gold',     tier: 'community' };
-    return                       { rank: 'Silver',   tier: 'community' };
-  }
-
-  function _openChatRoom(room, userProfile, players) {
-    const panel = document.getElementById('wld-chat-panel');
-    const backdrop = document.getElementById('wld-chat-backdrop');
-    if (!panel || !backdrop) return;
-
-    // Slide in panel and backdrop
-    panel.classList.add('open');
-    panel.style.right = '0';
-    backdrop.style.opacity = '1';
-    backdrop.style.pointerEvents = 'auto';
-
-    // Determine user eligibility
-    const userScore = userProfile && userProfile[0] ? Math.round(userProfile[0].score) : null;
-    const isEligible = !room.locked || (userScore && userScore >= 100);
-
-    if (!isEligible) {
-      // Access Restricted UI
-      panel.innerHTML = `
-        <!-- Header -->
-        <div style="padding:24px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-          <div style="font-family:'Instrument Serif',serif; font-style:italic; font-size:1.5rem; text-transform:uppercase; color:#ec4899;">Restricted Area</div>
-          <button id="wld-chat-close" style="background:transparent; border:none; color:rgba(255,255,255,0.4); font-size:24px; cursor:pointer;">&times;</button>
-        </div>
-        <!-- Restricted Body -->
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; gap:20px;">
-          <div style="width:80px; height:80px; border-radius:50%; background:rgba(236,72,153,0.1); border:2px solid #ec4899; display:flex; align-items:center; justify-content:center; font-size:2.5rem; color:#ec4899; box-shadow:0 0 20px rgba(236,72,153,0.3); animation:wld-float 4s infinite ease-in-out;">🔒</div>
-          <h2 style="font-family:'Instrument Serif',serif; font-style:italic; font-size:1.8rem; text-transform:uppercase; color:#fff; letter-spacing:0.04em;">Encryption Lock</h2>
-          <p style="color:rgba(255,255,255,0.4); font-size:13px; line-height:1.6; max-width:320px;">
-            The <strong>${room.name}</strong> is restricted to candidates with a verified <strong>${room.lockRank}</strong> cognitive profile (100+ WMI).
-          </p>
-          <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:16px; border-radius:12px; width:100%; max-width:280px; display:flex; flex-direction:column; gap:6px;">
-            <div style="font-size:10px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.3); text-transform:uppercase;">Your WMI Profile</div>
-            <div style="font-size:1.5rem; font-family:'Outfit',sans-serif; font-weight:800; color:${userScore ? '#ec4899' : 'rgba(255,255,255,0.2)'};">${userScore || 'NOT EVALUATED'}</div>
-            <div style="font-size:10px; font-family:'Space Grotesk',sans-serif; color:rgba(255,255,255,0.4);">${userScore ? 'Platinum / Gold rank' : 'No assessment data found'}</div>
+  function _showAccessDeniedModal(room, userScore) {
+    const modal = document.createElement('div');
+    modal.id = 'wld-lock-modal';
+    modal.style.cssText = `
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(5,5,8,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+      animation: wld-fade-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    `;
+    modal.innerHTML = `
+      <div style="
+        background: #0c0c0e; border: 1px solid rgba(236,72,153,0.18); border-radius: 20px;
+        padding: 40px 32px; max-width: 400px; width: 100%; text-align: center;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.03);
+        position: relative;
+      ">
+        <button id="close-lock-modal" style="
+          position: absolute; top: 16px; right: 20px; background: transparent; border: none;
+          color: rgba(255,255,255,0.3); font-size: 24px; cursor: pointer; transition: color 0.2s;
+        " onmouseenter="this.style.color='#fff'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'">&times;</button>
+        
+        <div style="
+          width: 74px; height: 74px; border-radius: 50%; background: rgba(236,72,153,0.08);
+          border: 2px solid #ec4899; display: flex; align-items: center; justify-content: center;
+          font-size: 2.2rem; color: #ec4899; margin: 0 auto 24px;
+          box-shadow: 0 0 20px rgba(236,72,153,0.25); animation: wld-float 4s infinite ease-in-out;
+        ">🔒</div>
+        
+        <h3 style="
+          font-family: 'Instrument Serif', serif; font-style: italic; font-size: 1.8rem;
+          text-transform: uppercase; color: #fff; margin-bottom: 12px; letter-spacing: 0.04em;
+        ">Encryption Block</h3>
+        
+        <p style="
+          font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: rgba(255,255,255,0.45);
+          line-height: 1.6; margin-bottom: 28px;
+        ">
+          The channel <strong>${room.name}</strong> is restricted to candidates with a verified <strong>${room.lockRank}</strong> profile (100+ WMI score).
+        </p>
+        
+        <div style="
+          background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+          padding: 16px 20px; border-radius: 12px; margin-bottom: 28px;
+          display: flex; justify-content: space-between; align-items: center; text-align: left;
+        ">
+          <div>
+            <div style="font-size: 9px; font-family: 'JetBrains Mono', monospace; color: rgba(255,255,255,0.3); text-transform: uppercase;">Your WMI Profile</div>
+            <div style="font-size: 1.35rem; font-family: 'Outfit', sans-serif; font-weight: 800; color: ${userScore ? '#ec4899' : 'rgba(255,255,255,0.25)'};">${userScore || 'NOT EVALUATED'}</div>
           </div>
-          <button id="chat-restricted-play-btn" style="
-            margin-top:12px; width:100%; max-width:280px; padding:12px; border-radius:8px; border:none;
-            background:#7c3aed; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600;
-            font-size:12px; text-transform:uppercase; letter-spacing:0.08em; cursor:pointer;
-            box-shadow:0 8px 20px rgba(124, 58, 237, 0.3); transition:all 0.2s;
-          " onmouseenter="this.style.transform='scale(1.02)';" onmouseleave="this.style.transform='';">
-            Take Assessment
-          </button>
-        </div>
-      `;
-
-      // Hook close button
-      document.getElementById('wld-chat-close')?.addEventListener('click', _closeChatRoom);
-      document.getElementById('chat-restricted-play-btn')?.addEventListener('click', () => {
-        _closeChatRoom();
-        triggerPlayFlow();
-      });
-      return;
-    }
-
-    // Active Chatroom UI
-    panel.innerHTML = `
-      <!-- Header -->
-      <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(20,20,25,0.5); display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-        <div>
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;">
-            <span style="font-size:1.2rem;">${room.vibe}</span>
-            <span style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.05rem; color:#fff;">${room.name}</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <div style="width:6px; height:6px; border-radius:50%; background:${room.colorHex}; position:relative;">
-              <div style="position:absolute; inset:-3px; border-radius:50%; border:1px solid ${room.colorHex}; animation:wld-pulse-ring 1.5s ease-out infinite;"></div>
-            </div>
-            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:${room.colorHex}; letter-spacing:0.04em;">[WS CONNECTED] ${room.online} nodes</span>
+          <div style="font-size: 11px; color: rgba(255,255,255,0.4); text-align: right; max-width: 160px;">
+            ${userScore ? 'Platinum / Gold Tier rank' : 'No evaluation data found'}
           </div>
         </div>
-        <button id="wld-chat-close" style="background:transparent; border:none; color:rgba(255,255,255,0.4); font-size:24px; cursor:pointer; padding:4px 8px;">&times;</button>
-      </div>
-
-      <!-- Active Users Horizontal List -->
-      <div id="wld-chat-users" style="padding:10px 20px; border-bottom:1px solid rgba(255,255,255,0.04); background:rgba(10,10,12,0.3); display:flex; align-items:center; gap:10px; overflow-x:auto; flex-shrink:0;">
-        <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0; margin-right:4px;">active logs:</span>
-      </div>
-
-      <!-- Message List Area -->
-      <div id="wld-chat-messages" style="flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; scroll-behavior:smooth;">
-        <!-- Terminal Connection Log -->
-        <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; color:#2563eb; line-height:1.5; padding:8px 12px; background:rgba(37,99,235,0.05); border:1px solid rgba(37,99,235,0.12); border-radius:8px; margin-bottom:8px;">
-          <div>SYS_WS: Established socket connection to room nodes.</div>
-          <div>SYS_LINK: Identity authenticated for candidate: ${auth.currentUser?.email || 'unknown'}</div>
-        </div>
-        <div id="chat-messages-container" style="display:flex; flex-direction:column; gap:14px;">
-          <div style="text-align:center; padding:20px; color:rgba(255,255,255,0.2); font-size:11px;">Syncing websocket streams...</div>
-        </div>
-      </div>
-
-      <!-- Reactions Float Overlay Container -->
-      <div id="reactions-float-area" style="position:absolute; bottom:120px; right:30px; width:100px; height:240px; pointer-events:none; overflow:hidden; z-index:9300;"></div>
-
-      <!-- Floating Emojis Quick Bar -->
-      <div style="padding:8px 20px; background:rgba(10,10,12,0.5); border-top:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; gap:8px; flex-shrink:0;">
-        <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.25); text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">REACTION:</span>
-        <div style="display:flex; gap:6px;">
-          ${['🔥', '🧠', '⚡', '👑', '🎯'].map(emoji => `
-            <button class="chat-react-btn" data-emoji="${emoji}" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; transition:all 0.15s;" onmouseenter="this.style.background='rgba(255,255,255,0.1)';this.style.transform='scale(1.15)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.transform='';">${emoji}</button>
-          `).join('')}
-        </div>
-      </div>
-
-      <!-- Message Input Box -->
-      <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08); background:rgba(12,12,14,0.9); display:flex; align-items:center; gap:10px; flex-shrink:0;">
-        <input type="text" id="chat-input" placeholder="Transmit telemetry..." style="flex:1; background:#000; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:12px 14px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:12.5px; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='${room.colorHex}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
-        <button id="chat-send-btn" style="background:${room.colorHex}; color:#fff; border:none; border-radius:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 12px ${room.colorHex}33;" onmouseenter="this.style.transform='scale(1.05)';" onmouseleave="this.style.transform='';">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
+        
+        <button id="lock-modal-btn" style="
+          width: 100%; padding: 13px; border-radius: 10px; border: none;
+          background: #7c3aed; color: #fff; font-family: 'Space Grotesk', sans-serif;
+          font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.08em;
+          cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 24px rgba(124,58,237,0.3);
+        " onmouseenter="this.style.transform='scale(1.02)'" onmouseleave="this.style.transform=''">
+          Take Assessment
         </button>
       </div>
     `;
+    document.body.appendChild(modal);
 
-    // Hook close button
-    document.getElementById('wld-chat-close')?.addEventListener('click', _closeChatRoom);
-
-    // Firestore Realtime subscription
-    const container = document.getElementById('chat-messages-container');
-    const scrollArea = document.getElementById('wld-chat-messages');
-
-    const q = query(
-      collection(db, 'chatroom_messages'),
-      orderBy('createdAt', 'desc'),
-      limit(150)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allMessages = [];
-      snapshot.forEach(doc => {
-        allMessages.push({ id: doc.id, ...doc.data() });
-      });
-
-      // Filter by roomId, reverse to get oldest first (chronological), and get last 50
-      const rawMessages = allMessages
-        .filter(m => m.roomId === room.id)
-        .reverse()
-        .slice(-50);
-
-      // Populate active logs user bar deterministically
-      const activeUserMap = new Map();
-      rawMessages.forEach(m => {
-        if (m.senderName && m.senderHandle) {
-          const matchPlayer = players.find(x => x.handle === m.senderHandle);
-          activeUserMap.set(m.senderHandle, {
-            name: m.senderName,
-            photo: m.senderPhoto,
-            color: matchPlayer ? matchPlayer.avatarColor : '#7c3aed'
-          });
-        }
-      });
-
-      const activeUserHTML = Array.from(activeUserMap.entries()).slice(0, 5).map(([handle, info]) => {
-        return `
-          <div style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:3px 8px; border-radius:20px; flex-shrink:0;">
-            ${info.photo 
-              ? `<img src="${info.photo}" style="width:14px; height:14px; border-radius:50%; border:1px solid #7c3aed;" />`
-              : `<div style="width:14px; height:14px; border-radius:50%; background:${info.color}22; border:1px solid ${info.color}; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-weight:700; font-size:0.45rem; color:${info.color};">${(info.name || 'P')[0].toUpperCase()}</div>`
-            }
-            <span style="font-family:'Space Grotesk',sans-serif; font-size:9.5px; color:rgba(255,255,255,0.7);">${handle}</span>
-          </div>
-        `;
-      }).join('');
-
-      const usersBar = document.getElementById('wld-chat-users');
-      if (usersBar) {
-        usersBar.innerHTML = `<span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0; margin-right:4px;">active logs:</span>` + activeUserHTML;
-      }
-
-      // Render messages
-      if (rawMessages.length === 0) {
-        container.innerHTML = `
-          <div style="text-align:center; padding:40px 20px; color:rgba(255,255,255,0.2); font-size:11px; font-style:italic;">
-            No telemetric packages received. Send a message to initialize feed stream.
-          </div>
-        `;
-      } else {
-        let html = '';
-        rawMessages.forEach(msg => {
-          if (msg.type === 'reaction') {
-            _spawnFloatingReaction(msg.content);
-            return;
-          }
-
-          const isMe = msg.senderEmail === auth.currentUser?.email;
-          const timeStr = msg.createdAt ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-          
-          const badgeCol = msg.senderRank === 'Legend' ? '#7c3aed' : msg.senderRank === 'Master' ? '#d4ff00' : msg.senderRank === 'Diamond' ? '#2563eb' : 'rgba(255,255,255,0.3)';
-          const scoreBadge = msg.senderScore ? `<span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:3px; background:${badgeCol}14; border:1px solid ${badgeCol}33; color:${badgeCol}; vertical-align:middle; margin-left:4px; font-weight:700;">WMI ${msg.senderScore}</span>` : `<span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:3px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.3); vertical-align:middle; margin-left:4px;">GUEST</span>`;
-
-          html += `
-            <div style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}; gap:4px; max-width:85%; align-self:${isMe ? 'flex-end' : 'flex-start'};">
-              <div style="display:flex; align-items:center; gap:6px;">
-                <span style="font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; color:${isMe ? '#7c3aed' : 'rgba(255,255,255,0.7)'};">${msg.senderHandle}</span>
-                ${scoreBadge}
-                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.2);">${timeStr}</span>
-              </div>
-              <div style="
-                background:${isMe ? 'rgba(124,58,237,0.1)' : 'rgba(255,255,255,0.04)'};
-                border:1px solid ${isMe ? 'rgba(124,58,237,0.22)' : 'rgba(255,255,255,0.08)'};
-                border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'};
-                padding:10px 14px; color:#fff; font-size:12.5px; line-height:1.45; word-break:break-word;
-                box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
-              ">
-                ${msg.content}
-              </div>
-            </div>
-          `;
-        });
-        container.innerHTML = html;
-      }
-
-      // Scroll to bottom
-      setTimeout(() => {
-        if (scrollArea) scrollArea.scrollTop = scrollArea.scrollHeight;
-      }, 50);
+    const closeModal = () => modal.remove();
+    document.getElementById('close-lock-modal')?.addEventListener('click', closeModal);
+    document.getElementById('lock-modal-btn')?.addEventListener('click', () => {
+      closeModal();
+      triggerPlayFlow();
     });
-
-    window._wldChatUnsubscribe = unsubscribe;
-
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('chat-send-btn');
-
-    const sendMessage = async () => {
-      if (!input) return;
-      const txt = input.value.trim();
-      if (!txt) return;
-
-      input.value = '';
-      input.focus();
-
-      try {
-        const activeScore = userProfile && userProfile[0] ? Math.round(userProfile[0].score) : null;
-        const activeRank = userProfile && userProfile[0] ? getRankFromScore(userProfile[0].score).rank : 'Guest';
-
-        await addDoc(collection(db, 'chatroom_messages'), {
-          roomId: room.id,
-          senderId: auth.currentUser?.uid || 'anonymous',
-          senderName: auth.currentUser?.displayName || 'Gamer',
-          senderEmail: auth.currentUser?.email || '',
-          senderHandle: '@' + (auth.currentUser?.email || 'player').split('@')[0],
-          senderPhoto: auth.currentUser?.photoURL || '',
-          senderScore: activeScore,
-          senderRank: activeRank,
-          content: txt,
-          type: 'text',
-          createdAt: serverTimestamp()
-        });
-      } catch (e) {
-        console.error("Failed to transmit telemetry payload:", e);
-      }
-    };
-
-    input?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    sendBtn?.addEventListener('click', sendMessage);
-
-    document.querySelectorAll('.chat-react-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const emoji = btn.getAttribute('data-emoji');
-        if (!emoji) return;
-
-        _spawnFloatingReaction(emoji);
-
-        try {
-          await addDoc(collection(db, 'chatroom_messages'), {
-            roomId: room.id,
-            senderId: auth.currentUser?.uid || 'anonymous',
-            senderName: auth.currentUser?.displayName || 'Gamer',
-            senderEmail: auth.currentUser?.email || '',
-            senderHandle: '@' + (auth.currentUser?.email || 'player').split('@')[0],
-            senderPhoto: auth.currentUser?.photoURL || '',
-            senderScore: null,
-            senderRank: 'Guest',
-            content: emoji,
-            type: 'reaction',
-            createdAt: serverTimestamp()
-          });
-        } catch (e) {}
-      });
-    });
-  }
-
-  function _closeChatRoom() {
-    const panel = document.getElementById('wld-chat-panel');
-    const backdrop = document.getElementById('wld-chat-backdrop');
-    if (panel && backdrop) {
-      panel.classList.remove('open');
-      panel.style.right = '-480px';
-      backdrop.style.opacity = '0';
-      backdrop.style.pointerEvents = 'none';
-    }
-
-    if (window._wldChatUnsubscribe) {
-      window._wldChatUnsubscribe();
-      window._wldChatUnsubscribe = null;
-    }
-  }
-
-  function _spawnFloatingReaction(emoji) {
-    const area = document.getElementById('reactions-float-area');
-    if (!area) return;
-
-    const el = document.createElement('div');
-    el.textContent = emoji;
-    
-    const randomX = Math.floor(Math.random() * 60) + 20; 
-    const randomRot = Math.floor(Math.random() * 80) - 40; 
-    
-    el.style.cssText = `
-      position: absolute;
-      bottom: -30px;
-      left: ${randomX}px;
-      font-size: 24px;
-      pointer-events: none;
-      user-select: none;
-      --rot: ${randomRot}deg;
-      animation: wld-reaction-float 2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    `;
-    
-    area.appendChild(el);
-    setTimeout(() => el.remove(), 2000);
   }
 
   _setupChatrooms(players, userProfile);

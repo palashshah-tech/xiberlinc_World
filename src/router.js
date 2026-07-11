@@ -8,6 +8,7 @@ import { TaskView } from './views/TaskView.js';
 import { TransitionView } from './views/TransitionView.js';
 import { CompleteView } from './views/CompleteView.js';
 import { AdminView } from './views/AdminView.js';
+import { RoomView } from './views/RoomView.js';
 import { Storage } from './utils/storage.js';
 
 const routes = {
@@ -20,6 +21,7 @@ const routes = {
   'transition': TransitionView,
   'complete': CompleteView,
   'admin': AdminView,
+  'room': RoomView,
 };
 
 let currentParams = {};
@@ -39,7 +41,7 @@ function handleRouteChange() {
   const handler = routes[route];
 
   // Route protection: redirect to World login if no active session
-  const protectedRoutes = ['instructions', 'task/vwm-pure', 'task/vwm-distractor', 'task/ant', 'transition', 'complete'];
+  const protectedRoutes = ['instructions', 'task/vwm-pure', 'task/vwm-distractor', 'task/ant', 'transition', 'complete', 'room'];
   if (protectedRoutes.includes(route)) {
     const session = Storage.getCurrentSession();
     if (!session) {
