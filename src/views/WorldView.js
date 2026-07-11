@@ -184,9 +184,17 @@ function _initAuth() {
   const isGoogle = user && !user.isAnonymous;
 
   if (isGoogle) {
-    // Already authenticated with Google, go straight to loader
+    // Already authenticated with Google, go straight to loader or dashboard if loaded
     if (authGate) authGate.style.display = 'none';
-    _startLoader();
+    if (sessionStorage.getItem('xiberlinc_world_loaded') === 'true') {
+      const loader = document.getElementById('world-loader');
+      if (loader) loader.style.display = 'none';
+      _fetchWorldData().then(worldData => {
+        _renderDashboard(worldData);
+      });
+    } else {
+      _startLoader();
+    }
   } else {
     // Show Google Auth Gate
     if (loginBtn) {
@@ -297,6 +305,7 @@ async function _runLoader() {
     loader.style.display = 'none';
   }
 
+  sessionStorage.setItem('xiberlinc_world_loaded', 'true');
   _renderDashboard(worldData);
 }
 
@@ -937,6 +946,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
   // Handle Logout (Logs out of Google and returns to Welcome screen)
   document.getElementById('taskbar-logout')?.addEventListener('click', async () => {
     try {
+      sessionStorage.removeItem('xiberlinc_world_loaded');
       await auth.signOut();
     } catch (e) {}
     overlay.style.opacity = '0';
