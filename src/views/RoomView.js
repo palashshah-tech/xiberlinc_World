@@ -1,5 +1,6 @@
 /* ============================================================
    RoomView — Dedicated full-screen splitscreen chatroom cockpit
+   With targeted mini neuro games that affect cognitive states.
    ============================================================ */
 
 import { render } from '../utils/dom.js';
@@ -10,15 +11,6 @@ import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { 
   collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp 
 } from 'firebase/firestore';
-
-// Global variables for audio state across room mounts
-let audioCtx = null;
-let ambientOsc = null;
-let gainNode = null;
-let lfo = null;
-let lfoGain = null;
-let analyserNode = null;
-let isAudioPlaying = false;
 
 export async function RoomView(params = {}) {
   const roomId = params.roomId || 'room_1';
@@ -34,7 +26,7 @@ export async function RoomView(params = {}) {
   const userScore = userProfile && userProfile[0] ? Math.round(userProfile[0].score) : null;
   const userRank = userProfile && userProfile[0] ? getRankFromScore(userProfile[0].score).rank : 'Guest';
 
-  // Inject CSS animations & visualizer styling
+  // Inject CSS animations & game styling
   injectStyle(`
     @keyframes wld-pulse-ring { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.2);opacity:0} }
     @keyframes wld-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
@@ -46,8 +38,9 @@ export async function RoomView(params = {}) {
     @keyframes wld-fade-up-anim { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
     .cockpit-tab-btn {
       background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.4); font-family: 'Space Grotesk', sans-serif;
+      color: rgba(255,255,255,0.5); font-family: 'Space Grotesk', sans-serif;
       padding: 10px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+      font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
     }
     .cockpit-tab-btn.active {
       background: ${room.colorHex}15; border-color: ${room.colorHex}; color: #fff;
@@ -85,7 +78,7 @@ export async function RoomView(params = {}) {
               <div style="width:6px; height:6px; border-radius:50%; background:${room.colorHex}; position:relative;">
                 <div style="position:absolute; inset:-3px; border-radius:50%; border:1px solid ${room.colorHex}; animation:wld-pulse-ring 1.5s ease-out infinite;"></div>
               </div>
-              <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.06em;">WS TELEMETRY NODE CONNECTED · ${room.online} active channels</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.06em;">COGNITIVE state training grounds · ${room.online} active channels</span>
             </div>
           </div>
         </div>
@@ -111,12 +104,10 @@ export async function RoomView(params = {}) {
           <!-- Active Logs Horizontal Header -->
           <div id="wld-chat-users" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.04); background:rgba(5,5,8,0.3); display:flex; align-items:center; gap:8px; overflow-x:auto; flex-shrink:0;">
             <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0;">active logs:</span>
-            <!-- Render dynamic list of typing/recent logs -->
           </div>
 
           <!-- Scrolling Message timeline -->
           <div id="wld-chat-messages" style="flex:1; padding:24px 20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">
-            <!-- Terminal connect log -->
             <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; color:#2563eb; line-height:1.5; padding:10px 14px; background:rgba(37,99,235,0.05); border:1px solid rgba(37,99,235,0.12); border-radius:8px; margin-bottom:8px;">
               <div>SYS_WS: Established socket pipe to neuro room nodes.</div>
               <div>SYS_LINK: Identity authenticated for candidate: ${auth.currentUser?.email || 'unknown'}</div>
@@ -127,7 +118,7 @@ export async function RoomView(params = {}) {
             </div>
           </div>
 
-          <!-- Floating Reaction Area Overlay (inside chat side) -->
+          <!-- Floating Reaction Area Overlay -->
           <div id="reactions-float-area" style="position:absolute; bottom:140px; left:300px; width:100px; height:240px; pointer-events:none; overflow:hidden; z-index:9300;"></div>
 
           <!-- Reactions Emoji Selector -->
@@ -159,7 +150,7 @@ export async function RoomView(params = {}) {
           <div style="display:flex; align-items:center; justify-content:between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:16px;">
             <div>
               <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:0.18em; color:${room.colorHex}; margin-bottom:4px;">interactive cockpit</div>
-              <h2 style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.6rem; color:#fff;">Neuro Deck Activity</h2>
+              <h2 style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.6rem; color:#fff;">Neuro Game Center</h2>
             </div>
           </div>
 
@@ -177,13 +168,10 @@ export async function RoomView(params = {}) {
 
   // Hook back button to router world
   document.getElementById('room-back-btn')?.addEventListener('click', () => {
-    // Unsubscribe from Firestore snapshot
     if (window._roomChatUnsubscribe) {
       window._roomChatUnsubscribe();
       window._roomChatUnsubscribe = null;
     }
-    // Stop Web Audio synth on exit
-    _stopLofiSynth();
     navigate('world');
   });
 
@@ -191,11 +179,11 @@ export async function RoomView(params = {}) {
   _initChatTelemetry(room, userScore, userRank);
 
   // Setup Cockpit Activities
-  _initCockpitActivity(room, userScore, userRank);
+  _initCockpitActivity(room);
 }
 
 /* ════════════════════════════════════════════════════════════
-   FIRESTORE REAL-TIME CHAT telemetry
+   FIRESTORE REAL-TIME CHAT TELEMETRY LOGS
    ════════════════════════════════════════════════════════════ */
 function _initChatTelemetry(room, userScore, userRank) {
   const container = document.getElementById('chat-messages-container');
@@ -213,13 +201,11 @@ function _initChatTelemetry(room, userScore, userRank) {
       allMessages.push({ id: doc.id, ...doc.data() });
     });
 
-    // Filter in memory for roomId, reverse chronologically, take last 50
     const rawMessages = allMessages
       .filter(m => m.roomId === room.id)
       .reverse()
       .slice(-50);
 
-    // Dynamic active users list
     const activeUserMap = new Map();
     rawMessages.forEach(m => {
       if (m.senderName && m.senderHandle) {
@@ -245,10 +231,9 @@ function _initChatTelemetry(room, userScore, userRank) {
 
     const usersBar = document.getElementById('wld-chat-users');
     if (usersBar) {
-      usersBar.innerHTML = `<span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0;">active logs:</span>` + activeUserHTML;
+      usersBar.innerHTML = `<span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0; margin-right:4px;">active logs:</span>` + activeUserHTML;
     }
 
-    // Render messages
     if (rawMessages.length === 0) {
       container.innerHTML = `
         <div style="text-align:center; padding:40px 20px; color:rgba(255,255,255,0.2); font-size:11px; font-style:italic;">
@@ -295,7 +280,6 @@ function _initChatTelemetry(room, userScore, userRank) {
       container.innerHTML = html;
     }
 
-    // Scroll to bottom
     setTimeout(() => {
       if (scrollArea) scrollArea.scrollTop = scrollArea.scrollHeight;
     }, 50);
@@ -303,7 +287,6 @@ function _initChatTelemetry(room, userScore, userRank) {
 
   window._roomChatUnsubscribe = unsubscribe;
 
-  // Send message handlers
   const input = document.getElementById('chat-input');
   const sendBtn = document.getElementById('chat-send-btn');
 
@@ -343,7 +326,6 @@ function _initChatTelemetry(room, userScore, userRank) {
 
   sendBtn?.addEventListener('click', sendMessage);
 
-  // Hook reaction buttons
   document.querySelectorAll('.chat-react-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const emoji = btn.getAttribute('data-emoji');
@@ -395,359 +377,636 @@ function _spawnFloatingReaction(emoji) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   INTERACTIVE COCKPIT INIT & ROUTING BY ROOM
+   NATIVE WEB AUDIO SOUND GENERATOR
    ════════════════════════════════════════════════════════════ */
-function _initCockpitActivity(room, userScore, userRank) {
+function _playNeuroSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    if (type === 'correct') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } else if (type === 'incorrect') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(160, ctx.currentTime);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } else if (type === 'start') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.35);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } else if (type === 'complete') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
+      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08); 
+      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16); 
+      osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.24); 
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } else if (type === 'flow') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    }
+  } catch (e) {}
+}
+
+/* ════════════════════════════════════════════════════════════
+   AUTO-TELEMETRY CHAT BROADCASTER
+   ════════════════════════════════════════════════════════════ */
+async function _broadcastNeuroScore(room, gameName, details) {
+  try {
+    await addDoc(collection(db, 'chatroom_messages'), {
+      roomId: room.id,
+      senderId: 'sys_neuro',
+      senderName: 'SYSTEM_NEURO',
+      senderEmail: '',
+      senderHandle: 'SYS_NEURO',
+      senderPhoto: '',
+      senderScore: 100,
+      senderRank: 'Diamond',
+      content: `⚡ **Candidate session log [${gameName}]:** ${details}`,
+      type: 'text',
+      createdAt: serverTimestamp()
+    });
+  } catch (e) {
+    console.error("Failed to broadcast duel highscore:", e);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   COCKPIT ACTIVITIES ROUTING BY ROOM
+   ============================================================ */
+function _initCockpitActivity(room) {
   const workspace = document.getElementById('cockpit-workspace');
   if (!workspace) return;
 
   switch(room.id) {
-    case 'room_1': // Focus Zone: Pomodoro & Audio Visualizer
+    case 'room_1': // Focus Zone: Vigilance CPT
       _setupFocusCockpit(workspace, room);
       break;
-    case 'room_2': // Hype Zone: Neuro Duel Clicker Game
+    case 'room_2': // Hype Zone: Speed Search
       _setupHypeCockpit(workspace, room);
       break;
-    case 'room_3': // Strategy Talk: Sync Mind Canvas Whiteboard
+    case 'room_3': // Strategy Talk: Spatial N-Back
       _setupStrategyCockpit(workspace, room);
       break;
-    case 'room_4': // Wind Down: Breathing pacer & Sound ambient synth
+    case 'room_4': // Wind Down: Flow Alignment
       _setupWindDownCockpit(workspace, room);
       break;
-    case 'room_5': // Star Meet: Live candidate telemetry
+    case 'room_5': // Star Meet: Cognitive Switch
       _setupStarMeetCockpit(workspace, room);
       break;
-    case 'room_6': // Global Connect: Global Node Pinger
+    case 'room_6': // Global Connect: Grid Router shortest path
     default:
       _setupGlobalCockpit(workspace, room);
       break;
   }
 }
 
-/* ── FOCUS ZONE INTERACTION ─────────────────────────────────── */
+/* ── FOCUS ZONE: VIGILANCE CPT GAME (room_1) ───────────────── */
 function _setupFocusCockpit(container, room) {
   container.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:20px;">
-      
-      <!-- Pomodoro Timer -->
-      <div class="cockpit-panel-card" style="text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
-        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em;">Co-Op Pomodoro Clock</h3>
-        
-        <div style="position:relative; width:160px; height:160px; display:flex; align-items:center; justify-content:center; margin:10px 0;">
-          <svg style="position:absolute; inset:0; transform:rotate(-90deg);" width="160" height="160">
-            <circle cx="80" cy="80" r="70" stroke="rgba(255,255,255,0.03)" stroke-width="6" fill="none" />
-            <circle id="timer-progress" cx="80" cy="80" r="70" stroke="${room.colorHex}" stroke-width="6" fill="none" stroke-dasharray="440" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear;" />
-          </svg>
-          <div id="timer-display" style="font-size:2.4rem; font-family:'Outfit',sans-serif; font-weight:800; color:#fff;">25:00</div>
-        </div>
+    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:20px; align-items:center; text-align:center;">
+      <div>
+        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:4px;">CPT Vigilance training</h3>
+        <p style="color:rgba(255,255,255,0.4); font-size:12.5px; max-width:380px;">A letter flashes every 800ms. Tap the target button or press space <strong>ONLY when the letter "X" appears</strong>!</p>
+      </div>
 
-        <div style="display:flex; gap:10px;">
-          <button id="timer-start" class="cockpit-tab-btn" style="border-color:${room.colorHex}; color:#fff; background:${room.colorHex}10;">Start Focus</button>
-          <button id="timer-pause" class="cockpit-tab-btn">Pause</button>
-          <button id="timer-reset" class="cockpit-tab-btn">Reset</button>
+      <div style="display:flex; gap:32px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); padding:12px 24px; border-radius:12px;">
+        <div>
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">PROGRESS</div>
+          <div id="cpt-progress" style="font-size:1.35rem; font-weight:800;">0/20</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">ACCURACY</div>
+          <div id="cpt-acc" style="font-size:1.35rem; font-weight:800; color:${room.colorHex};">100%</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">AVG RT</div>
+          <div id="cpt-rt" style="font-size:1.35rem; font-weight:800;">0ms</div>
         </div>
       </div>
 
-      <!-- Ambient Web Audio Visualizer -->
-      <div class="cockpit-panel-card">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-          <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em;">Ambient Binaural Visualizer</h3>
-          <button id="ambient-audio-btn" class="cockpit-tab-btn" style="padding:6px 12px; font-size:11px;">Play Audio</button>
-        </div>
-        <canvas id="visualizer-canvas" style="width:100%; height:80px; background:#000; border-radius:10px; border:1px solid rgba(255,255,255,0.06);"></canvas>
+      <!-- Vigilance Screen Arena -->
+      <div id="cpt-screen" style="width:200px; height:200px; border:2px solid rgba(255,255,255,0.08); background:#000; border-radius:16px; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-size:5.5rem; font-weight:900; color:#fff; position:relative; box-shadow:inset 0 0 30px rgba(0,0,0,0.8);">
+        Ready
       </div>
 
+      <div style="width:100%; max-width:320px; display:flex; flex-direction:column; gap:10px;">
+        <button id="cpt-action-btn" class="cockpit-tab-btn" style="width:100%; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:48px;" disabled>TAP ON TARGET (X)</button>
+        <button id="cpt-start-btn" class="cockpit-tab-btn" style="width:100%;">Initialize training</button>
+      </div>
     </div>
   `;
 
-  // Focus Timer Logic
-  let timerDuration = 25 * 60;
-  let timerInterval = null;
-  let isTimerRunning = false;
-  
-  const display = document.getElementById('timer-display');
-  const progress = document.getElementById('timer-progress');
-  const startBtn = document.getElementById('timer-start');
-  const pauseBtn = document.getElementById('timer-pause');
-  const resetBtn = document.getElementById('timer-reset');
+  const screen = document.getElementById('cpt-screen');
+  const actionBtn = document.getElementById('cpt-action-btn');
+  const startBtn = document.getElementById('cpt-start-btn');
+  const progressDisp = document.getElementById('cpt-progress');
+  const accDisp = document.getElementById('cpt-acc');
+  const rtDisp = document.getElementById('cpt-rt');
 
-  const updateTimerDisplay = () => {
-    if (!display) return;
-    const mins = Math.floor(timerDuration / 60).toString().padStart(2, '0');
-    const secs = (timerDuration % 60).toString().padStart(2, '0');
-    display.textContent = `${mins}:${secs}`;
+  let activeIndex = 0;
+  const totalTrials = 20;
+  let gameInterval = null;
+  let hasPressed = false;
+  let currentLetter = '';
+  let startLetterTime = 0;
+
+  // Stats
+  let correctHits = 0; // Pressed X
+  let correctRejections = 0; // Did not press non-X
+  let totalErrors = 0;
+  let sumRT = 0;
+
+  const letterPool = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'X', 'X', 'X']; // ~30% X probability
+
+  const updateStats = () => {
+    if (progressDisp) progressDisp.textContent = `${activeIndex}/${totalTrials}`;
+    const totalCorrect = correctHits + correctRejections;
+    const accuracy = activeIndex > 0 ? Math.round((totalCorrect / activeIndex) * 100) : 100;
+    if (accDisp) accDisp.textContent = `${accuracy}%`;
+    const avgRT = correctHits > 0 ? Math.round(sumRT / correctHits) : 0;
+    if (rtDisp) rtDisp.textContent = `${avgRT}ms`;
+  };
+
+  const handleInput = () => {
+    if (hasPressed) return;
+    hasPressed = true;
+    const clickTime = performance.now();
+    const rt = clickTime - startLetterTime;
+
+    if (currentLetter === 'X') {
+      _playNeuroSound('correct');
+      correctHits++;
+      sumRT += rt;
+      screen.style.color = room.colorHex;
+    } else {
+      _playNeuroSound('incorrect');
+      totalErrors++;
+      screen.style.color = '#ec4899';
+    }
+    updateStats();
+  };
+
+  // Keyboard trigger
+  const handleKeydown = (e) => {
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      handleInput();
+    }
+  };
+
+  const cycleLetter = () => {
+    // Process previous trial omission
+    if (activeIndex > 0 && !hasPressed) {
+      if (currentLetter === 'X') {
+        // Missed target X
+        totalErrors++;
+        _playNeuroSound('incorrect');
+      } else {
+        // Correctly avoided pressing non-X
+        correctRejections++;
+      }
+      updateStats();
+    }
+
+    if (activeIndex >= totalTrials) {
+      clearInterval(gameInterval);
+      window.removeEventListener('keydown', handleKeydown);
+      startBtn.style.display = 'block';
+      actionBtn.setAttribute('disabled', 'true');
+      screen.style.color = '#fff';
+      screen.textContent = 'Done';
+      _playNeuroSound('complete');
+
+      const totalCorrect = correctHits + correctRejections;
+      const acc = Math.round((totalCorrect / totalTrials) * 100);
+      const avg = correctHits > 0 ? Math.round(sumRT / correctHits) : 0;
+
+      // Broadcast completion score
+      _broadcastNeuroScore(
+        room, 
+        'CPT Vigilance', 
+        `Completed sustained attention training with **${acc}% Accuracy** and **${avg}ms average reaction speed**.`
+      );
+      return;
+    }
+
+    // Set up next letter
+    activeIndex++;
+    hasPressed = false;
+    currentLetter = letterPool[Math.floor(Math.random() * letterPool.length)];
+    screen.style.color = '#fff';
+    screen.textContent = currentLetter;
+    startLetterTime = performance.now();
     
-    // update dash offset
-    const offset = 440 - (timerDuration / (25 * 60)) * 440;
-    if (progress) progress.setAttribute('stroke-dashoffset', offset);
+    updateStats();
   };
 
   startBtn?.addEventListener('click', () => {
-    if (isTimerRunning) return;
-    isTimerRunning = true;
-    startBtn.style.opacity = '0.5';
-    timerInterval = setInterval(() => {
-      if (timerDuration > 0) {
-        timerDuration--;
-        updateTimerDisplay();
-      } else {
-        clearInterval(timerInterval);
-        isTimerRunning = false;
-        startBtn.style.opacity = '1';
-        alert('Focus session completed! Take a break.');
-      }
-    }, 1000);
-  });
-
-  pauseBtn?.addEventListener('click', () => {
-    clearInterval(timerInterval);
-    isTimerRunning = false;
-    if (startBtn) startBtn.style.opacity = '1';
-  });
-
-  resetBtn?.addEventListener('click', () => {
-    clearInterval(timerInterval);
-    isTimerRunning = false;
-    timerDuration = 25 * 60;
-    updateTimerDisplay();
-    if (startBtn) startBtn.style.opacity = '1';
-  });
-
-  // Web Audio Visualizer Setup
-  const canvas = document.getElementById('visualizer-canvas');
-  const audioBtn = document.getElementById('ambient-audio-btn');
-  let animationFrameId = null;
-
-  if (audioBtn) {
-    audioBtn.textContent = isAudioPlaying ? 'Pause Ambient' : 'Play Ambient';
-    audioBtn.addEventListener('click', () => {
-      if (isAudioPlaying) {
-        _stopLofiSynth();
-        audioBtn.textContent = 'Play Ambient';
-      } else {
-        _startLofiSynth(110, 'triangle'); // Warm, deep binaural focus frequency
-        audioBtn.textContent = 'Pause Ambient';
-      }
-    });
-  }
-
-  const renderVisualizer = () => {
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width = canvas.clientWidth;
-    const height = canvas.height = canvas.clientHeight;
+    startBtn.style.display = 'none';
+    actionBtn.removeAttribute('disabled');
+    window.addEventListener('keydown', handleKeydown);
     
-    ctx.clearRect(0, 0, width, height);
+    activeIndex = 0;
+    correctHits = 0;
+    correctRejections = 0;
+    totalErrors = 0;
+    sumRT = 0;
+    hasPressed = false;
+    updateStats();
+    _playNeuroSound('start');
 
-    if (isAudioPlaying && analyserNode) {
-      const bufferLength = analyserNode.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      analyserNode.getByteFrequencyData(dataArray);
+    cycleLetter();
+    gameInterval = setInterval(cycleLetter, 950);
+  });
 
-      const barWidth = (width / bufferLength) * 2.5;
-      let x = 0;
+  actionBtn?.addEventListener('mousedown', handleInput);
 
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = (dataArray[i] / 255) * height;
-
-        ctx.fillStyle = room.colorHex;
-        ctx.shadowColor = room.colorHex;
-        ctx.shadowBlur = 10;
-        ctx.fillRect(x, height - barHeight, barWidth - 2, barHeight);
-
-        x += barWidth;
-      }
-    } else {
-      // Draw static baseline
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, height / 2);
-      ctx.lineTo(width, height / 2);
-      ctx.stroke();
-    }
-    
-    animationFrameId = requestAnimationFrame(renderVisualizer);
-  };
-
-  renderVisualizer();
-
-  // Cleanup visualizer animation on parent container discard
+  // Observer to clear listener if page is exited early
   const obs = new MutationObserver(() => {
-    if (!document.getElementById('visualizer-canvas')) {
-      cancelAnimationFrame(animationFrameId);
+    if (!document.getElementById('cpt-screen')) {
+      clearInterval(gameInterval);
+      window.removeEventListener('keydown', handleKeydown);
       obs.disconnect();
     }
   });
   obs.observe(document.body, { childList: true, subtree: true });
 }
 
-/* ── HYPE ZONE INTERACTION (NEURO DUEL GAME) ───────────────── */
+/* ── HYPE ZONE: SPEED SEARCH ODD-ONE-OUT (room_2) ──────────── */
 function _setupHypeCockpit(container, room) {
   container.innerHTML = `
-    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:20px; text-align:center;">
-      <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em;">1v1 Neuro Reflex Duel</h3>
-      <p style="color:rgba(255,255,255,0.45); font-size:12px; margin-top:-10px;">Click the active glowing nodes as fast as possible. Test finishes in 15 seconds.</p>
+    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:20px; align-items:center; text-align:center;">
+      <div>
+        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:4px;">Speed search test</h3>
+        <p style="color:rgba(255,255,255,0.4); font-size:12.5px; max-width:380px;">High-speed pattern recognition. Spot and tap the <strong>one symbol that is different</strong> in the grid as fast as possible!</p>
+      </div>
 
-      <div style="display:flex; justify-content:space-around; align-items:center; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05); padding:12px; border-radius:10px;">
+      <div style="display:flex; justify-content:space-around; align-items:center; width:100%; max-width:360px; background:rgba(0,0,0,0.25); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
         <div>
-          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace; text-transform:uppercase;">Time Remaining</div>
-          <div id="duel-time" style="font-size:1.4rem; font-weight:800; color:#fff;">15s</div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">TIMER</div>
+          <div id="hype-timer" style="font-size:1.35rem; font-weight:800; color:#fff;">15s</div>
         </div>
         <div>
-          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace; text-transform:uppercase;">Nodes Neutralised</div>
-          <div id="duel-score" style="font-size:1.4rem; font-weight:800; color:${room.colorHex};">0</div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">RESOLVED</div>
+          <div id="hype-score" style="font-size:1.35rem; font-weight:800; color:${room.colorHex};">0</div>
         </div>
         <div>
-          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace; text-transform:uppercase;">Speed (Avg RT)</div>
-          <div id="duel-rt" style="font-size:1.4rem; font-weight:800; color:#fff;">0ms</div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">SPEED / CLICK</div>
+          <div id="hype-speed" style="font-size:1.35rem; font-weight:800; color:#fff;">0ms</div>
         </div>
       </div>
 
-      <!-- Duel Grid Arena -->
-      <div id="duel-arena" style="position:relative; height:240px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
-        <button id="duel-start-btn" style="background:${room.colorHex}; color:#000; border:none; padding:12px 28px; font-weight:700; font-size:12px; font-family:'Space Grotesk',sans-serif; text-transform:uppercase; letter-spacing:0.08em; border-radius:8px; cursor:pointer; box-shadow:0 8px 24px ${room.colorHex}44; z-index:10;">Initialize Combat Mode</button>
+      <!-- Game Grid Arena -->
+      <div id="search-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; width:220px; height:220px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px; align-content:center; justify-content:center;">
+        <!-- Filled dynamically -->
+        <div style="grid-column: span 4; color:rgba(255,255,255,0.3); font-size:12px; font-style:italic;">Grid offline.</div>
       </div>
 
-      <!-- Live audio visualizer loop link for Hype vibe -->
-      <button id="hype-audio-btn" class="cockpit-tab-btn" style="align-self:center; border-color:${room.colorHex}; font-size:11px;">Activate Synthwave Ambient</button>
+      <button id="hype-start-btn" class="cockpit-tab-btn" style="width:100%; max-width:240px; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:42px;">Start search duel</button>
     </div>
   `;
 
-  const startBtn = document.getElementById('duel-start-btn');
-  const arena = document.getElementById('duel-arena');
-  const timeDisplay = document.getElementById('duel-time');
-  const scoreDisplay = document.getElementById('duel-score');
-  const rtDisplay = document.getElementById('duel-rt');
-  const audioBtn = document.getElementById('hype-audio-btn');
+  const grid = document.getElementById('search-grid');
+  const startBtn = document.getElementById('hype-start-btn');
+  const timerDisp = document.getElementById('hype-timer');
+  const scoreDisp = document.getElementById('hype-score');
+  const speedDisp = document.getElementById('hype-speed');
 
-  if (audioBtn) {
-    audioBtn.textContent = isAudioPlaying ? 'Mute Audio Loop' : 'Activate Synthwave Ambient';
-    audioBtn.addEventListener('click', () => {
-      if (isAudioPlaying) {
-        _stopLofiSynth();
-        audioBtn.textContent = 'Activate Synthwave Ambient';
-      } else {
-        _startLofiSynth(220, 'square'); // Higher, energetic synthwave square waves
-        audioBtn.textContent = 'Mute Audio Loop';
-      }
-    });
-  }
-
-  let gameTimer = null;
-  let gameDuration = 15;
-  let nodesHit = 0;
+  let activeScore = 0;
   let totalRT = 0;
-  let lastNodeSpawnTime = 0;
-  let activeNode = null;
+  let currentStartTime = 0;
+  let gameTimer = null;
+  let timeRemaining = 15;
+  let isPlaying = false;
 
-  const spawnNode = () => {
-    if (activeNode) activeNode.remove();
+  const letterPairs = [
+    { base: 'O', odd: 'Q' },
+    { base: 'E', odd: 'F' },
+    { base: 'M', odd: 'N' },
+    { base: 'C', odd: 'G' },
+    { base: 'I', odd: 'T' },
+    { base: 'X', odd: 'Y' },
+    { base: '8', odd: 'B' },
+    { base: 'V', odd: 'U' }
+  ];
 
-    const node = document.createElement('div');
-    const width = arena.clientWidth;
-    const height = arena.clientHeight;
+  const generateGrid = () => {
+    if (!isPlaying) return;
+    grid.innerHTML = '';
     
-    // stay within bounds
-    const rx = Math.floor(Math.random() * (width - 44)) + 10;
-    const ry = Math.floor(Math.random() * (height - 44)) + 10;
+    // Choose a random letter pair
+    const pair = letterPairs[Math.floor(Math.random() * letterPairs.length)];
+    const oddIndex = Math.floor(Math.random() * 16); // 16 cells in 4x4 grid
 
-    node.style.cssText = `
-      position: absolute; top: ${ry}px; left: ${rx}px;
-      width: 24px; height: 24px; border-radius: 50%;
-      background: ${room.colorHex}; border: 2px solid #fff;
-      box-shadow: 0 0 16px ${room.colorHex}, 0 0 40px ${room.colorHex};
-      cursor: pointer; transition: transform 0.1s; z-index: 5;
-    `;
-    
-    lastNodeSpawnTime = performance.now();
-    
-    node.addEventListener('mousedown', () => {
-      const clickTime = performance.now();
-      const rt = Math.round(clickTime - lastNodeSpawnTime);
-      totalRT += rt;
-      nodesHit++;
+    for (let i = 0; i < 16; i++) {
+      const cell = document.createElement('button');
+      const isOdd = i === oddIndex;
+      cell.textContent = isOdd ? pair.odd : pair.base;
+      cell.style.cssText = `
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; color: #fff; font-size: 1.8rem; font-weight: 700;
+        font-family: 'Outfit', sans-serif; cursor: pointer; transition: all 0.1s;
+        height: 44px; display: flex; align-items: center; justify-content: center;
+      `;
+      
+      cell.addEventListener('mousedown', () => {
+        if (isOdd) {
+          _playNeuroSound('correct');
+          const elapsed = performance.now() - currentStartTime;
+          totalRT += elapsed;
+          activeScore++;
+          if (scoreDisp) scoreDisp.textContent = activeScore;
+          if (speedDisp) speedDisp.textContent = `${Math.round(totalRT / activeScore)}ms`;
+          
+          currentStartTime = performance.now();
+          generateGrid();
+        } else {
+          _playNeuroSound('incorrect');
+          // penalty flash red
+          cell.style.borderColor = '#ec4899';
+          cell.style.background = 'rgba(236,72,153,0.1)';
+        }
+      });
 
-      if (scoreDisplay) scoreDisplay.textContent = nodesHit;
-      if (rtDisplay) rtDisplay.textContent = `${Math.round(totalRT / nodesHit)}ms`;
-
-      spawnNode();
-    });
-
-    arena.appendChild(node);
-    activeNode = node;
+      grid.appendChild(cell);
+    }
+    currentStartTime = performance.now();
   };
 
   startBtn?.addEventListener('click', () => {
     startBtn.style.display = 'none';
-    nodesHit = 0;
+    isPlaying = true;
+    activeScore = 0;
     totalRT = 0;
-    gameDuration = 15;
-    if (scoreDisplay) scoreDisplay.textContent = 0;
-    if (rtDisplay) rtDisplay.textContent = '0ms';
-    if (timeDisplay) timeDisplay.textContent = '15s';
+    timeRemaining = 15;
+    if (scoreDisp) scoreDisp.textContent = 0;
+    if (speedDisp) speedDisp.textContent = '0ms';
+    if (timerDisp) timerDisp.textContent = '15s';
+    _playNeuroSound('start');
 
-    spawnNode();
+    generateGrid();
 
-    gameTimer = setInterval(async () => {
-      gameDuration--;
-      if (timeDisplay) timeDisplay.textContent = `${gameDuration}s`;
+    gameTimer = setInterval(() => {
+      timeRemaining--;
+      if (timerDisp) timerDisp.textContent = `${timeRemaining}s`;
 
-      if (gameDuration <= 0) {
+      if (timeRemaining <= 0) {
         clearInterval(gameTimer);
-        if (activeNode) activeNode.remove();
+        isPlaying = false;
+        grid.innerHTML = `<div style="grid-column: span 4; color:rgba(255,255,255,0.4); font-size:13px; font-weight:600; text-align:center;">Test complete. Found ${activeScore} targets!</div>`;
         startBtn.style.display = 'block';
-        startBtn.textContent = 'Re-Initialize Combat';
+        startBtn.textContent = 'Restart Duel';
+        _playNeuroSound('complete');
 
-        const finalScore = nodesHit;
-        const avgRT = finalScore > 0 ? Math.round(totalRT / finalScore) : 0;
-
-        // Auto-broadcast highscore telemetry to chatroom!
-        try {
-          await addDoc(collection(db, 'chatroom_messages'), {
-            roomId: room.id,
-            senderId: 'sys_duel',
-            senderName: 'SYSTEM_DUEL',
-            senderEmail: '',
-            senderHandle: 'SYS_DUEL',
-            senderPhoto: '',
-            senderScore: 100,
-            senderRank: 'Diamond',
-            content: `🎯 Candidate telemetry: Neutralised ${finalScore} nodes with avg reaction speed of ${avgRT}ms!`,
-            type: 'text',
-            createdAt: serverTimestamp()
-          });
-        } catch (e) {}
+        const avg = activeScore > 0 ? Math.round(totalRT / activeScore) : 0;
+        _broadcastNeuroScore(
+          room, 
+          'Speed Search', 
+          `Accelerated neural patterns! Spot-clicked **${activeScore} odd-one-out symbols** with an average click velocity of **${avg}ms**.`
+        );
       }
     }, 1000);
   });
+
+  const obs = new MutationObserver(() => {
+    if (!document.getElementById('search-grid')) {
+      clearInterval(gameTimer);
+      obs.disconnect();
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
 }
 
-/* ── STRATEGY TALK INTERACTION (MIND CANVAS WHITEBOARD) ─────── */
+/* ── STRATEGY TALK: SPATIAL N-BACK GAME (room_3) ────────────── */
 function _setupStrategyCockpit(container, room) {
   container.innerHTML = `
-    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:16px;">
-      <div style="display:flex; align-items:center; justify-content:space-between;">
-        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em;">Dynamic Co-Op Mind Canvas</h3>
-        <button id="canvas-clear-btn" class="cockpit-tab-btn" style="padding:6px 12px; font-size:11px;">Clear Screen</button>
+    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:20px; align-items:center; text-align:center;">
+      <div>
+        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:4px;">Spatial N-Back trainer</h3>
+        <p style="color:rgba(255,255,255,0.4); font-size:12.5px; max-width:380px;">Working memory test. Grid positions light up in sequence. Press match if position matches the one <strong>2 flashes ago (2-Back)</strong>!</p>
       </div>
 
-      <div style="display:flex; gap:10px; align-items:center; background:rgba(0,0,0,0.2); padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.05); overflow-x:auto;">
-        <span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; color:rgba(255,255,255,0.25); text-transform:uppercase;">Brush Colour:</span>
-        ${['#7c3aed', '#ec4899', '#2563eb', '#d4ff00', '#06b6d4', '#ffffff'].map(c => `
-          <button class="colour-dot" data-colour="${c}" style="width:16px; height:16px; border-radius:50%; background:${c}; border:1.5px solid transparent; cursor:pointer; transition:transform 0.15s;" onmouseenter="this.style.transform='scale(1.25)'" onmouseleave="this.style.transform=''"></button>
+      <div style="display:flex; gap:24px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); padding:10px 20px; border-radius:10px; width:100%; max-width:320px; justify-content:space-around;">
+        <div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">TRIAL</div>
+          <div id="nback-trial" style="font-size:1.35rem; font-weight:800;">0/15</div>
+        </div>
+        <div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">MATCHES</div>
+          <div id="nback-score" style="font-size:1.35rem; font-weight:800; color:${room.colorHex};">0</div>
+        </div>
+        <div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">ERRORS</div>
+          <div id="nback-errors" style="font-size:1.35rem; font-weight:800; color:#ec4899;">0</div>
+        </div>
+      </div>
+
+      <!-- 3x3 Grid Board -->
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:180px; height:180px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:8px;">
+        ${Array.from({length:9}).map((_, i) => `
+          <div id="nback-cell-${i}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; transition:background-color 0.15s;"></div>
         `).join('')}
       </div>
 
-      <canvas id="mind-whiteboard" style="width:100%; height:260px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; cursor:crosshair;"></canvas>
+      <div style="width:100%; max-width:320px; display:flex; flex-direction:column; gap:10px;">
+        <button id="nback-match-btn" class="cockpit-tab-btn" style="width:100%; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:48px;" disabled>MATCH POSITION (Space)</button>
+        <button id="nback-start-btn" class="cockpit-tab-btn" style="width:100%;">Initialize Spatial 2-Back</button>
+      </div>
     </div>
   `;
 
-  const canvas = document.getElementById('mind-whiteboard');
-  const clearBtn = document.getElementById('canvas-clear-btn');
-  const colourDots = document.querySelectorAll('.colour-dot');
+  const startBtn = document.getElementById('nback-start-btn');
+  const matchBtn = document.getElementById('nback-match-btn');
+  const trialDisp = document.getElementById('nback-trial');
+  const scoreDisp = document.getElementById('nback-score');
+  const errorsDisp = document.getElementById('nback-errors');
+
+  let history = [];
+  let trialIndex = 0;
+  let matches = 0;
+  let errors = 0;
+  let currentActiveCell = -1;
+  let gameInterval = null;
+  let hasPressed = false;
+
+  const cycleTrial = () => {
+    // Process previous trial mismatch if it was a target and was missed
+    if (trialIndex >= 2) {
+      const prevTarget = history[trialIndex - 1 - 2];
+      const currentCell = history[history.length - 1];
+      const isTarget = prevTarget === currentCell;
+      if (isTarget && !hasPressed) {
+        errors++;
+        errorsDisp.textContent = errors;
+        _playNeuroSound('incorrect');
+      }
+    }
+
+    // Clean active styling
+    if (currentActiveCell !== -1) {
+      const prevEl = document.getElementById(`nback-cell-${currentActiveCell}`);
+      if (prevEl) {
+        prevEl.style.backgroundColor = 'rgba(255,255,255,0.02)';
+        prevEl.style.boxShadow = 'none';
+      }
+    }
+
+    if (trialIndex >= 15) {
+      clearInterval(gameInterval);
+      window.removeEventListener('keydown', handleKeydown);
+      startBtn.style.display = 'block';
+      startBtn.textContent = 'Restart 2-Back';
+      matchBtn.setAttribute('disabled', 'true');
+      _playNeuroSound('complete');
+
+      // Calculate accuracy
+      const totalTargets = history.filter((c, idx) => idx >= 2 && c === history[idx - 2]).length;
+      const acc = totalTargets > 0 ? Math.round((matches / totalTargets) * 100) : 100;
+      
+      _broadcastNeuroScore(
+        room, 
+        'Spatial 2-Back', 
+        `Completed working memory cycle with **${acc}% Accuracy** (${matches} hits) and **${errors} errors**.`
+      );
+      return;
+    }
+
+    // Next flash
+    trialIndex++;
+    if (trialDisp) trialDisp.textContent = `${trialIndex}/15`;
+    hasPressed = false;
+
+    // Force ~35% match chance
+    let nextCell;
+    if (trialIndex >= 3 && Math.random() < 0.35) {
+      nextCell = history[history.length - 2]; // Match 2 steps ago
+    } else {
+      nextCell = Math.floor(Math.random() * 9);
+    }
+
+    history.push(nextCell);
+    currentActiveCell = nextCell;
+
+    const el = document.getElementById(`nback-cell-${nextCell}`);
+    if (el) {
+      el.style.backgroundColor = room.colorHex;
+      el.style.boxShadow = `0 0 15px ${room.colorHex}`;
+    }
+  };
+
+  const handleMatch = () => {
+    if (hasPressed || trialIndex < 3) return;
+    hasPressed = true;
+
+    const targetPos = history[trialIndex - 1 - 2];
+    const currentPos = history[history.length - 1];
+
+    if (targetPos === currentPos) {
+      matches++;
+      if (scoreDisp) scoreDisp.textContent = matches;
+      _playNeuroSound('correct');
+    } else {
+      errors++;
+      if (errorsDisp) errorsDisp.textContent = errors;
+      _playNeuroSound('incorrect');
+    }
+  };
+
+  const handleKeydown = (e) => {
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      handleMatch();
+    }
+  };
+
+  startBtn?.addEventListener('click', () => {
+    startBtn.style.display = 'none';
+    matchBtn.removeAttribute('disabled');
+    window.addEventListener('keydown', handleKeydown);
+
+    history = [];
+    trialIndex = 0;
+    matches = 0;
+    errors = 0;
+    currentActiveCell = -1;
+    hasPressed = false;
+
+    if (scoreDisp) scoreDisp.textContent = 0;
+    if (errorsDisp) errorsDisp.textContent = 0;
+    if (trialDisp) trialDisp.textContent = '0/15';
+
+    _playNeuroSound('start');
+    cycleTrial();
+    gameInterval = setInterval(cycleTrial, 2000);
+  });
+
+  matchBtn?.addEventListener('mousedown', handleMatch);
+
+  const obs = new MutationObserver(() => {
+    if (!document.getElementById('nback-cell-0')) {
+      clearInterval(gameInterval);
+      window.removeEventListener('keydown', handleKeydown);
+      obs.disconnect();
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+}
+
+/* ── WIND DOWN: FLOW ALIGNMENT RHYTHM GAME (room_4) ────────── */
+function _setupWindDownCockpit(container, room) {
+  container.innerHTML = `
+    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:16px; align-items:center; text-align:center;">
+      <div>
+        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:4px;">Flow alignment breathing</h3>
+        <p style="color:rgba(255,255,255,0.4); font-size:12.5px; max-width:380px;">Rhythmic calming exercises. Guide the drifting particle through wave gates. Hold or tap the screen to shift wave amplitude.</p>
+      </div>
+
+      <div style="display:flex; justify-content:space-around; width:100%; max-width:320px; background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+        <div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">COHERENCE</div>
+          <div id="flow-accuracy" style="font-size:1.35rem; font-weight:800; color:${room.colorHex};">100%</div>
+        </div>
+        <div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">GATES CLEARED</div>
+          <div id="flow-score" style="font-size:1.35rem; font-weight:800; color:#fff;">0/8</div>
+        </div>
+      </div>
+
+      <canvas id="flow-canvas" style="width:100%; height:160px; background:#000; border-radius:12px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;"></canvas>
+
+      <button id="flow-start-btn" class="cockpit-tab-btn" style="width:100%; max-width:240px; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:42px;">Initialize alignment</button>
+    </div>
+  `;
+
+  const canvas = document.getElementById('flow-canvas');
+  const startBtn = document.getElementById('flow-start-btn');
+  const scoreDisp = document.getElementById('flow-score');
+  const accDisp = document.getElementById('flow-accuracy');
 
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -755,389 +1014,587 @@ function _setupStrategyCockpit(container, room) {
 
   const width = canvas.width = canvas.clientWidth;
   const height = canvas.height = canvas.clientHeight;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 3;
 
-  let currentColour = '#7c3aed';
-  let isDrawing = false;
-  let lastX = 0;
-  let lastY = 0;
+  let isPlaying = false;
+  let ballY = height / 2;
+  let targetAmplitude = 20;
+  let currentAmplitude = 20;
+  let speedX = 1.8;
+  let cycle = 0;
+  let waveLength = 0.015;
 
-  // Set default active color selection
-  const activateDot = (colour) => {
-    colourDots.forEach(dot => {
-      const isMatch = dot.getAttribute('data-colour') === colour;
-      dot.style.borderColor = isMatch ? '#fff' : 'transparent';
-      dot.style.boxShadow = isMatch ? `0 0 10px ${colour}` : 'none';
-    });
+  let gates = [];
+  let score = 0;
+  let totalGates = 8;
+  let passedGatesCount = 0;
+  let loopId = null;
+
+  // Touch and hold triggers
+  let isTapping = false;
+  const setTap = (val) => { isTapping = val; };
+  canvas.addEventListener('mousedown', () => setTap(true));
+  canvas.addEventListener('mouseup', () => setTap(false));
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); setTap(true); });
+  canvas.addEventListener('touchend', () => setTap(false));
+
+  const initGame = () => {
+    gates = [];
+    score = 0;
+    passedGatesCount = 0;
+    ballY = height / 2;
+    cycle = 0;
+
+    // Spawn 8 sequential gates along X coordinate path (e.g. intervals)
+    for (let i = 1; i <= totalGates; i++) {
+      gates.push({
+        x: 180 + i * 220,
+        amp: Math.random() < 0.5 ? 10 : 45, // Target amplitudes
+        width: 32,
+        passed: false
+      });
+    }
   };
-  activateDot(currentColour);
 
-  colourDots.forEach(dot => {
-    dot.addEventListener('click', () => {
-      currentColour = dot.getAttribute('data-colour');
-      activateDot(currentColour);
-    });
-  });
+  const gameLoop = () => {
+    if (!isPlaying) return;
 
-  // Local drawing handlers
-  const drawLine = (x1, y1, x2, y2, colour, localEmit = true) => {
-    ctx.strokeStyle = colour;
-    ctx.shadowColor = colour;
-    ctx.shadowBlur = 4;
+    ctx.clearRect(0, 0, width, height);
+
+    // Transition amplitudes based on tap hold controls
+    targetAmplitude = isTapping ? 45 : 10;
+    currentAmplitude += (targetAmplitude - currentAmplitude) * 0.08;
+
+    // Draw the calming breathing sine path
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
     ctx.stroke();
 
-    if (localEmit) {
-      // Sync draw telemetry coordinates to Firestore
-      try {
-        addDoc(collection(db, 'chatroom_doodles'), {
-          roomId: room.id,
-          x1: parseFloat((x1 / width).toFixed(4)),
-          y1: parseFloat((y1 / height).toFixed(4)),
-          x2: parseFloat((x2 / width).toFixed(4)),
-          y2: parseFloat((y2 / height).toFixed(4)),
-          colour,
-          createdAt: serverTimestamp()
-        });
-      } catch(e) {}
+    // Wave visualization
+    ctx.strokeStyle = `${room.colorHex}55`;
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = room.colorHex;
+    ctx.beginPath();
+    for (let x = 0; x < width; x++) {
+      const y = height / 2 + Math.sin(x * waveLength - cycle) * currentAmplitude;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
-  };
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
-  const getCoordinates = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
-  };
+    // Draw the alignment target ball
+    ballY = height / 2 + Math.sin(100 * waveLength - cycle) * currentAmplitude;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(100, ballY, 8, 0, Math.PI * 2);
+    ctx.fill();
 
-  canvas.addEventListener('mousedown', (e) => {
-    isDrawing = true;
-    const coords = getCoordinates(e);
-    lastX = coords.x;
-    lastY = coords.y;
-  });
+    // Move cycle shift speed
+    cycle += waveLength * speedX;
 
-  canvas.addEventListener('mousemove', (e) => {
-    if (!isDrawing) return;
-    const coords = getCoordinates(e);
-    drawLine(lastX, lastY, coords.x, coords.y, currentColour, true);
-    lastX = coords.x;
-    lastY = coords.y;
-  });
+    // Draw gates
+    gates.forEach(gate => {
+      // Calculate gate Y position matching base sine formula relative to its distance
+      const gateY = height / 2 + Math.sin(gate.x * waveLength - cycle) * gate.amp;
+      
+      // Draw gate path target
+      ctx.strokeStyle = gate.passed ? room.colorHex : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(gate.x, gateY, gate.width / 2, 0, Math.PI * 2);
+      ctx.stroke();
 
-  canvas.addEventListener('mouseup', () => isDrawing = false);
-  canvas.addEventListener('mouseleave', () => isDrawing = false);
+      // Check collision when crossing ball's X index (100)
+      if (!gate.passed && gate.x <= 100) {
+        gate.passed = true;
+        passedGatesCount++;
+        const distance = Math.abs(ballY - gateY);
+        
+        if (distance < gate.width / 2) {
+          score++;
+          _playNeuroSound('flow');
+        } else {
+          _playNeuroSound('incorrect');
+        }
 
-  // Touch support for mobiles
-  canvas.addEventListener('touchstart', (e) => {
-    isDrawing = true;
-    const coords = getCoordinates(e);
-    lastX = coords.x;
-    lastY = coords.y;
-  });
-
-  canvas.addEventListener('touchmove', (e) => {
-    if (!isDrawing) return;
-    const coords = getCoordinates(e);
-    drawLine(lastX, lastY, coords.x, coords.y, currentColour, true);
-    lastX = coords.x;
-    lastY = coords.y;
-  });
-
-  canvas.addEventListener('touchend', () => isDrawing = false);
-
-  // Real-time whiteboard listener
-  const q = query(
-    collection(db, 'chatroom_doodles'),
-    where('roomId', '==', room.id),
-    orderBy('createdAt', 'asc'),
-    limit(400) // load latest 400 paths
-  );
-
-  const unsubscribeCanvas = onSnapshot(q, (snapshot) => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === 'added') {
-        const d = change.doc.data();
-        // Skip drawing if local or already drawn (check timeline timestamp)
-        // Redraw on whiteboard canvas scale coordinates
-        drawLine(
-          d.x1 * width,
-          d.y1 * height,
-          d.x2 * width,
-          d.y2 * height,
-          d.colour,
-          false
-        );
+        if (scoreDisp) scoreDisp.textContent = `${score}/${totalGates}`;
+        const acc = passedGatesCount > 0 ? Math.round((score / passedGatesCount) * 100) : 100;
+        if (accDisp) accDisp.textContent = `${acc}%`;
       }
+
+      // Move gate position left
+      gate.x -= speedX;
     });
-  });
 
-  // Clear canvas triggers locally
-  clearBtn?.addEventListener('click', () => {
-    ctx.clearRect(0, 0, width, height);
-  });
+    // Check completion
+    const lastGate = gates[gates.length - 1];
+    if (lastGate && lastGate.x < 60) {
+      isPlaying = false;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = "12.5px 'Space Grotesk'";
+      ctx.fillText("Alignment complete. Rhythms synced.", width / 2 - 100, height / 2);
+      
+      startBtn.style.display = 'block';
+      startBtn.textContent = 'Re-align Rhythms';
+      _playNeuroSound('complete');
 
-  // Store canvas unsubscribe to router exit hooks
-  const oldUnsubscribe = window._roomChatUnsubscribe;
-  window._roomChatUnsubscribe = () => {
-    if (oldUnsubscribe) oldUnsubscribe();
-    unsubscribeCanvas();
-  };
-}
-
-/* ── WIND DOWN INTERACTION (BREATHING PACER & AUDIO) ───────── */
-function _setupWindDownCockpit(container, room) {
-  container.innerHTML = `
-    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:20px; text-align:center;">
-      <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em;">Nature Ambient Breathing Pacer</h3>
-      <p style="color:rgba(255,255,255,0.45); font-size:12px; margin-top:-10px;">Decompress with the expanding pacer dot. Sync your breath: Inhale / Exhale.</p>
-
-      <div style="position:relative; height:180px; display:flex; align-items:center; justify-content:center; margin:10px 0;">
-        <div id="breathing-ring" style="
-          width: 50px; height: 50px; border-radius: 50%;
-          background: ${room.colorHex}15; border: 3px solid ${room.colorHex};
-          box-shadow: 0 0 16px ${room.colorHex}, 0 0 45px ${room.colorHex};
-          transition: all 4s cubic-bezier(0.445, 0.05, 0.55, 0.95);
-        "></div>
-        <div id="breathing-text" style="position:absolute; font-weight:700; font-size:12px; color:#fff; pointer-events:none; letter-spacing:0.1em; text-transform:uppercase;">Inhale</div>
-      </div>
-
-      <div style="display:flex; justify-content:center; gap:10px;">
-        <button id="wind-audio-btn" class="cockpit-tab-btn" style="border-color:${room.colorHex}; color:#fff; background:${room.colorHex}10;">Synthesize Wind Ambient</button>
-      </div>
-    </div>
-  `;
-
-  // Breathing Loop Animation
-  const ring = document.getElementById('breathing-ring');
-  const text = document.getElementById('breathing-text');
-  let breathState = 'inhale';
-
-  const breathCycle = () => {
-    if (!ring || !text) return;
-    if (breathState === 'inhale') {
-      ring.style.width = '120px';
-      ring.style.height = '120px';
-      ring.style.boxShadow = `0 0 25px ${room.colorHex}, 0 0 60px ${room.colorHex}`;
-      text.textContent = 'Inhale';
-      breathState = 'exhale';
-    } else {
-      ring.style.width = '40px';
-      ring.style.height = '40px';
-      ring.style.boxShadow = `0 0 10px ${room.colorHex}, 0 0 30px ${room.colorHex}`;
-      text.textContent = 'Exhale';
-      breathState = 'inhale';
+      const acc = Math.round((score / totalGates) * 100);
+      _broadcastNeuroScore(
+        room, 
+        'Flow Alignment', 
+        `Achieved a **${acc}% Parasympathetic Coherence index** by clearing **${score}/${totalGates} wave alignment gates**.`
+      );
+      return;
     }
+
+    loopId = requestAnimationFrame(gameLoop);
   };
 
-  const breathInterval = setInterval(breathCycle, 4000);
-  breathCycle(); // trigger initial run
+  startBtn?.addEventListener('click', () => {
+    startBtn.style.display = 'none';
+    isPlaying = true;
+    if (scoreDisp) scoreDisp.textContent = `0/${totalGates}`;
+    if (accDisp) accDisp.textContent = '100%';
+    _playNeuroSound('start');
+    initGame();
+    gameLoop();
+  });
 
-  const audioBtn = document.getElementById('wind-audio-btn');
-  if (audioBtn) {
-    audioBtn.textContent = isAudioPlaying ? 'Pause Ambient' : 'Synthesize Wind Ambient';
-    audioBtn.addEventListener('click', () => {
-      if (isAudioPlaying) {
-        _stopLofiSynth();
-        audioBtn.textContent = 'Synthesize Wind Ambient';
-      } else {
-        _startLofiSynth(80, 'sine'); // Deep, soothing low wind sine wave frequencies
-        audioBtn.textContent = 'Pause Ambient';
-      }
-    });
-  }
-
-  // Cleanup pacer interval
   const obs = new MutationObserver(() => {
-    if (!document.getElementById('breathing-ring')) {
-      clearInterval(breathInterval);
+    if (!document.getElementById('flow-canvas')) {
+      cancelAnimationFrame(loopId);
       obs.disconnect();
     }
   });
   obs.observe(document.body, { childList: true, subtree: true });
 }
 
-/* ── STAR MEET INTERACTION (ELITE DATABASE TELEMETRY) ──────── */
-async function _setupStarMeetCockpit(container, room) {
+/* ── STAR MEET: COGNITIVE SWITCH GAME (room_5) ─────────────── */
+function _setupStarMeetCockpit(container, room) {
   container.innerHTML = `
-    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:16px;">
-      <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em;">Elite Database Telemetry Logs</h3>
-      <p style="color:rgba(255,255,255,0.45); font-size:12px; margin-top:-10px;">Direct access feed to the candidates database telemetry profile records.</p>
-      
-      <div id="star-records-container" style="display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto; padding-right:6px;">
-        <div style="text-align:center; padding:20px; font-size:12px; color:rgba(255,255,255,0.3);">Accessing database clusters...</div>
+    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:20px; align-items:center; text-align:center;">
+      <div>
+        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:4px;">Task switching test</h3>
+        <p style="color:rgba(255,255,255,0.4); font-size:12.5px; max-width:380px;">Trains cognitive flexibility. Check card background and click matching answer key:</p>
+        <div style="font-size:11px; color:#fff; display:flex; gap:16px; justify-content:center; margin-top:8px;">
+          <span><span style="display:inline-block; width:10px; height:10px; background:#7c3aed; border-radius:2px; margin-right:4px;"></span>VIOLET: <strong>NUMBER</strong> (Even/Odd)</span>
+          <span><span style="display:inline-block; width:10px; height:10px; background:#ec4899; border-radius:2px; margin-right:4px;"></span>PINK: <strong>LETTER</strong> (Vowel/Cons)</span>
+        </div>
       </div>
+
+      <div style="display:flex; justify-content:space-around; align-items:center; width:100%; max-width:320px; background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+        <div>
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">TRIAL</div>
+          <div id="switch-trial" style="font-size:1.3rem; font-weight:800;">0/15</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">ACCURACY</div>
+          <div id="switch-acc" style="font-size:1.3rem; font-weight:800; color:${room.colorHex};">100%</div>
+        </div>
+      </div>
+
+      <!-- Cognitive Switch Card Display -->
+      <div id="switch-card" style="width:160px; height:100px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition:all 0.15s;">
+        <span style="font-size:11px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.4); text-transform:uppercase;" id="switch-cue">Rule</span>
+        <span style="font-size:2.8rem; font-weight:800; font-family:'Outfit',sans-serif; color:#fff;" id="switch-symbols">--</span>
+      </div>
+
+      <div style="display:flex; gap:10px; width:100%; max-width:320px;">
+        <button id="switch-btn-left" class="cockpit-tab-btn" style="flex:1;" disabled>EVEN / VOWEL</button>
+        <button id="switch-btn-right" class="cockpit-tab-btn" style="flex:1;" disabled>ODD / CONSONANT</button>
+      </div>
+
+      <button id="switch-start-btn" class="cockpit-tab-btn" style="width:100%; max-width:240px; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:42px;">Start Training</button>
     </div>
   `;
 
-  // Fetch real Top candidate list
-  const recordsArea = document.getElementById('star-records-container');
-  try {
-    const list = await fetchUserProfile('shahpalash10@gmail.com'); // query sample records or list
-    if (recordsArea) {
-      if (!list || list.length === 0) {
-        recordsArea.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:rgba(255,255,255,0.2);">No elite profile entries decrypted in telemetry.</div>`;
-      } else {
-        recordsArea.innerHTML = list.map((c, i) => `
-          <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.04); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:${room.colorHex}; font-weight:700; margin-right:6px;">#${i+1}</span>
-              <span style="font-size:12.5px; font-weight:700; color:#fff;">Score telemetry package</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:14px; text-align:right;">
-              <div>
-                <div style="font-size:13px; font-weight:800; color:${room.colorHex};">${Math.round(c.score)}</div>
-                <div style="font-size:8px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">WMI</div>
-              </div>
-              <div>
-                <div style="font-size:13px; font-weight:800; color:#fff;">${c.reactionMs}ms</div>
-                <div style="font-size:8px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">RT</div>
-              </div>
-            </div>
-          </div>
-        `).join('');
-      }
-    }
-  } catch(e) {
-    if (recordsArea) recordsArea.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:#ec4899;">Decryption pipeline error. Connection timeout.</div>`;
-  }
-}
+  const startBtn = document.getElementById('switch-start-btn');
+  const card = document.getElementById('switch-card');
+  const cueDisp = document.getElementById('switch-cue');
+  const symDisp = document.getElementById('switch-symbols');
+  const btnLeft = document.getElementById('switch-btn-left');
+  const btnRight = document.getElementById('switch-btn-right');
+  const trialDisp = document.getElementById('switch-trial');
+  const accDisp = document.getElementById('switch-acc');
 
-/* ── GLOBAL CONNECT INTERACTION (SERVER TERMINAL INTERACTIVE) ── */
-function _setupGlobalCockpit(container, room) {
-  container.innerHTML = `
-    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:14px;">
-      <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em;">Global Node Terminal Pipe</h3>
-      <p style="color:rgba(255,255,255,0.45); font-size:12px; margin-top:-10px;">Ping and query active server connection nodes on the 7-chain global grid.</p>
+  let activeIndex = 0;
+  const totalTrials = 15;
+  let correctResponses = 0;
+  let currentTask = ''; // 'number' (even/odd) or 'letter' (vowel/consonant)
+  let currentNum = 0;
+  let currentLet = '';
+  let trialStartTime = 0;
+  let totalSwitchRT = 0;
+  let totalRepeatRT = 0;
+  let switchTrialsCount = 0;
+  let repeatTrialsCount = 0;
+  let previousTask = '';
 
-      <div id="term-logs" style="height:180px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; overflow-y:auto; font-family:'JetBrains Mono',monospace; font-size:10px; color:#38bdf8; display:flex; flex-direction:column; gap:6px; line-height:1.5;">
-        <div>GRID_PING: Type command to ping connection clusters.</div>
-        <div>Available nodes: [tokyo, shibuya, global_core, candidate_hub]</div>
-      </div>
+  const vowels = ['A', 'E', 'I', 'O', 'U'];
+  const consonants = ['B', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T'];
 
-      <div style="display:flex; gap:10px;">
-        <input type="text" id="term-input" placeholder="Enter node name (e.g. tokyo)..." style="flex:1; background:#000; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:10px 14px; color:#fff; font-family:'JetBrains Mono',monospace; font-size:11.5px; outline:none;" />
-        <button id="term-btn" style="background:${room.colorHex}; color:#000; border:none; border-radius:8px; padding:0 16px; font-size:11px; font-weight:700; cursor:pointer;">PING</button>
-      </div>
-    </div>
-  `;
+  const spawnSwitchCard = () => {
+    activeIndex++;
+    if (trialDisp) trialDisp.textContent = `${activeIndex}/${totalTrials}`;
 
-  const input = document.getElementById('term-input');
-  const btn = document.getElementById('term-btn');
-  const logs = document.getElementById('term-logs');
+    // Decide task (violet = number, pink = letter)
+    currentTask = Math.random() < 0.5 ? 'number' : 'letter';
+    currentNum = Math.floor(Math.random() * 9) + 1; // 1-9
+    currentLet = Math.random() < 0.5 
+      ? vowels[Math.floor(Math.random() * vowels.length)] 
+      : consonants[Math.floor(Math.random() * consonants.length)];
 
-  const executePing = () => {
-    if (!input || !logs) return;
-    const txt = input.value.trim().toLowerCase();
-    if (!txt) return;
-
-    input.value = '';
-    
-    const cmdDiv = document.createElement('div');
-    cmdDiv.style.color = '#fff';
-    cmdDiv.textContent = `> ping ${txt}`;
-    logs.appendChild(cmdDiv);
-
-    const resDiv = document.createElement('div');
-    resDiv.style.color = room.colorHex;
-    
-    if (['tokyo', 'shibuya', 'global_core', 'candidate_hub'].includes(txt)) {
-      resDiv.innerHTML = `
-        <div>SYS_PING: Connecting to node: ${txt}...</div>
-        <div>[CONNECTED] telemetry response packet received in ${Math.floor(Math.random()*60)+10}ms.</div>
-        <div>Packet status: 200 OK / Gravity index 0.94</div>
-      `;
+    if (currentTask === 'number') {
+      card.style.background = 'rgba(124,58,237,0.18)';
+      card.style.borderColor = 'rgba(124,58,237,0.4)';
+      card.style.boxShadow = '0 0 20px rgba(124,58,237,0.12)';
+      cueDisp.textContent = 'NUMBER';
     } else {
-      resDiv.style.color = '#ec4899';
-      resDiv.textContent = `SYS_ERROR: Address resolution failed for: ${txt}. Unknown node identity.`;
+      card.style.background = 'rgba(236,72,153,0.18)';
+      card.style.borderColor = 'rgba(236,72,153,0.4)';
+      card.style.boxShadow = '0 0 20px rgba(236,72,153,0.12)';
+      cueDisp.textContent = 'LETTER';
     }
 
-    logs.appendChild(resDiv);
-    logs.scrollTop = logs.scrollHeight;
+    symDisp.textContent = `${currentLet}${currentNum}`;
+    trialStartTime = performance.now();
   };
 
-  input?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      executePing();
+  const handleResponse = (isLeftBtn) => {
+    const elapsed = performance.now() - trialStartTime;
+    let isCorrect = false;
+
+    if (currentTask === 'number') {
+      const isEven = currentNum % 2 === 0;
+      isCorrect = isLeftBtn ? isEven : !isEven;
+    } else {
+      const isVow = vowels.includes(currentLet);
+      isCorrect = isLeftBtn ? isVow : !isVow;
     }
+
+    if (isCorrect) {
+      _playNeuroSound('correct');
+      correctResponses++;
+      // Switch cost calculation
+      if (previousTask !== '') {
+        if (previousTask === currentTask) {
+          totalRepeatRT += elapsed;
+          repeatTrialsCount++;
+        } else {
+          totalSwitchRT += elapsed;
+          switchTrialsCount++;
+        }
+      }
+    } else {
+      _playNeuroSound('incorrect');
+    }
+
+    previousTask = currentTask;
+
+    const acc = Math.round((correctResponses / activeIndex) * 100);
+    if (accDisp) accDisp.textContent = `${acc}%`;
+
+    if (activeIndex >= totalTrials) {
+      // Done
+      cueDisp.textContent = 'Done';
+      symDisp.textContent = '--';
+      card.style.background = 'rgba(255,255,255,0.02)';
+      card.style.borderColor = 'rgba(255,255,255,0.08)';
+      card.style.boxShadow = 'none';
+
+      btnLeft.setAttribute('disabled', 'true');
+      btnRight.setAttribute('disabled', 'true');
+      startBtn.style.display = 'block';
+      startBtn.textContent = 'Restart Switch training';
+      _playNeuroSound('complete');
+
+      const avgSwitch = switchTrialsCount > 0 ? Math.round(totalSwitchRT / switchTrialsCount) : 0;
+      const avgRepeat = repeatTrialsCount > 0 ? Math.round(totalRepeatRT / repeatTrialsCount) : 0;
+      const switchCost = Math.max(0, avgSwitch - avgRepeat);
+
+      _broadcastNeuroScore(
+        room, 
+        'Cognitive Switch', 
+        `Demonstrated cognitive flexibility with **${acc}% Accuracy** and a **Task Switch Cost of only ${switchCost}ms**.`
+      );
+      return;
+    }
+
+    spawnSwitchCard();
+  };
+
+  startBtn?.addEventListener('click', () => {
+    startBtn.style.display = 'none';
+    btnLeft.removeAttribute('disabled');
+    btnRight.removeAttribute('disabled');
+
+    activeIndex = 0;
+    correctResponses = 0;
+    totalSwitchRT = 0;
+    totalRepeatRT = 0;
+    switchTrialsCount = 0;
+    repeatTrialsCount = 0;
+    previousTask = '';
+
+    if (accDisp) accDisp.textContent = '100%';
+    if (trialDisp) trialDisp.textContent = '0/15';
+
+    _playNeuroSound('start');
+    spawnSwitchCard();
   });
 
-  btn?.addEventListener('click', executePing);
+  btnLeft?.addEventListener('mousedown', () => handleResponse(true));
+  btnRight?.addEventListener('mousedown', () => handleResponse(false));
 }
 
-/* ════════════════════════════════════════════════════════════
-   WEB AUDIO OSCILLATOR CONTROLS
-   ════════════════════════════════════════════════════════════ */
-function _startLofiSynth(freq = 110, type = 'sine') {
-  if (isAudioPlaying) _stopLofiSynth();
+/* ── GLOBAL CONNECT: GRID ROUTER SHORTEST PATH (room_6) ────── */
+function _setupGlobalCockpit(container, room) {
+  container.innerHTML = `
+    <div class="cockpit-panel-card" style="display:flex; flex-direction:column; gap:16px; align-items:center; text-align:center;">
+      <div>
+        <h3 style="font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:4px;">Grid router pathfinder</h3>
+        <p style="color:rgba(255,255,255,0.4); font-size:12.5px; max-width:380px;">Trains spatial routing. Complete the network circuit from **Node A (Start)** to **Node E (Target)** with the **absolute lowest latency cost**.</p>
+      </div>
 
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Carrier oscillator
-    ambientOsc = audioCtx.createOscillator();
-    ambientOsc.type = type;
-    ambientOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      <div style="display:flex; justify-content:space-around; width:100%; max-width:320px; background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+        <div>
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">EFFICIENCY</div>
+          <div id="route-eff" style="font-size:1.3rem; font-weight:800; color:${room.colorHex};">100%</div>
+        </div>
+        <div>
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.3); font-family:'JetBrains Mono',monospace;">ROUND</div>
+          <div id="route-round" style="font-size:1.3rem; font-weight:800; color:#fff;">0/5</div>
+        </div>
+      </div>
 
-    // LFO for frequency pitch modulation (creates a warm detuned drift)
-    lfo = audioCtx.createOscillator();
-    lfo.frequency.setValueAtTime(0.3, audioCtx.currentTime); // 0.3 Hz drift
-    lfoGain = audioCtx.createGain();
-    lfoGain.gain.setValueAtTime(freq * 0.02, audioCtx.currentTime); // mod amplitude
+      <canvas id="router-canvas" style="width:100%; height:180px; background:#000; border-radius:12px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;"></canvas>
 
-    lfo.connect(lfoGain);
-    lfoGain.connect(ambientOsc.frequency);
+      <button id="router-start-btn" class="cockpit-tab-btn" style="width:100%; max-width:240px; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:42px;">Initialize Router Grid</button>
+    </div>
+  `;
 
-    // Gain node for volume damping
-    gainNode = audioCtx.createGain();
-    gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+  const canvas = document.getElementById('router-canvas');
+  const startBtn = document.getElementById('router-start-btn');
+  const effDisp = document.getElementById('route-eff');
+  const roundDisp = document.getElementById('route-round');
 
-    // Analyser node for visualizer canvas rendering
-    analyserNode = audioCtx.createAnalyser();
-    analyserNode.fftSize = 64;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
-    ambientOsc.connect(gainNode);
-    gainNode.connect(analyserNode);
-    analyserNode.connect(audioCtx.destination);
+  const width = canvas.width = canvas.clientWidth;
+  const height = canvas.height = canvas.clientHeight;
 
-    ambientOsc.start();
-    lfo.start();
-    isAudioPlaying = true;
-  } catch(e) {
-    console.warn("Native audio context failed to initialize:", e);
-  }
-}
+  let activeRound = 0;
+  const totalRounds = 5;
+  let totalBestCost = 0;
+  let totalUserCost = 0;
+  let nodes = [];
+  let links = [];
+  let userPath = [];
+  let isPlaying = false;
 
-function _stopLofiSynth() {
-  try {
-    if (ambientOsc) {
-      ambientOsc.stop();
-      ambientOsc.disconnect();
-      ambientOsc = null;
+  const buildGraph = () => {
+    // Generate a fixed 5-node graph structure
+    nodes = [
+      { id: 'A', x: 40, y: height / 2, label: 'Start (A)' },
+      { id: 'B', x: width / 3 + 10, y: 35, label: 'B' },
+      { id: 'C', x: width / 3 + 10, y: height - 35, label: 'C' },
+      { id: 'D', x: (width / 3) * 2 - 10, y: height / 2, label: 'D' },
+      { id: 'E', x: width - 40, y: height / 2, label: 'Target (E)' }
+    ];
+
+    // Randomized cost indices
+    const r1 = Math.floor(Math.random() * 20) + 10; // A-B
+    const r2 = Math.floor(Math.random() * 20) + 10; // A-C
+    const r3 = Math.floor(Math.random() * 25) + 15; // B-D
+    const r4 = Math.floor(Math.random() * 25) + 15; // C-D
+    const r5 = Math.floor(Math.random() * 15) + 10; // D-E
+    const r6 = Math.floor(Math.random() * 35) + 20; // B-C cross link
+
+    links = [
+      { from: 'A', to: 'B', cost: r1 },
+      { from: 'A', to: 'C', cost: r2 },
+      { from: 'B', to: 'D', cost: r3 },
+      { from: 'C', to: 'D', cost: r4 },
+      { from: 'D', to: 'E', cost: r5 },
+      { from: 'B', to: 'C', cost: r6 }
+    ];
+
+    userPath = ['A'];
+  };
+
+  const findShortestCost = () => {
+    // Simple exhaustive path check for 5 node paths:
+    // Paths: 
+    // 1: A -> B -> D -> E (c1)
+    // 2: A -> C -> D -> E (c2)
+    // 3: A -> B -> C -> D -> E (c3)
+    // 4: A -> C -> B -> D -> E (c4)
+    let best = 9999;
+    const getLinkCost = (f, t) => {
+      const l = links.find(x => (x.from === f && x.to === t) || (x.from === t && x.to === f));
+      return l ? l.cost : 9999;
+    };
+
+    const p1 = getLinkCost('A', 'B') + getLinkCost('B', 'D') + getLinkCost('D', 'E');
+    const p2 = getLinkCost('A', 'C') + getLinkCost('C', 'D') + getLinkCost('D', 'E');
+    const p3 = getLinkCost('A', 'B') + getLinkCost('B', 'C') + getLinkCost('C', 'D') + getLinkCost('D', 'E');
+    const p4 = getLinkCost('A', 'C') + getLinkCost('C', 'B') + getLinkCost('B', 'D') + getLinkCost('D', 'E');
+
+    return Math.min(p1, p2, p3, p4);
+  };
+
+  const drawGraph = () => {
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw Links
+    links.forEach(l => {
+      const fromNode = nodes.find(n => n.id === l.from);
+      const toNode = nodes.find(n => n.id === l.to);
+      if (!fromNode || !toNode) return;
+
+      const inUserPath = (userPath.includes(l.from) && userPath.includes(l.to));
+      ctx.strokeStyle = inUserPath ? room.colorHex : 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = inUserPath ? 4 : 2;
+      ctx.beginPath();
+      ctx.moveTo(fromNode.x, fromNode.y);
+      ctx.lineTo(toNode.x, toNode.y);
+      ctx.stroke();
+
+      // Draw cost weight badge
+      const mx = (fromNode.x + toNode.x) / 2;
+      const my = (fromNode.y + toNode.y) / 2;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(mx - 15, my - 9, 30, 18);
+      ctx.strokeStyle = inUserPath ? room.colorHex : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(mx - 15, my - 9, 30, 18);
+
+      ctx.fillStyle = '#fff';
+      ctx.font = "10px 'JetBrains Mono'";
+      ctx.textAlign = 'center';
+      ctx.fillText(`${l.cost}ms`, mx, my + 4);
+    });
+
+    // Draw Nodes
+    nodes.forEach(n => {
+      const isSelected = userPath.includes(n.id);
+      const isCurrent = userPath[userPath.length - 1] === n.id;
+
+      ctx.fillStyle = isCurrent ? room.colorHex : isSelected ? `${room.colorHex}77` : '#0d0d10';
+      ctx.strokeStyle = isSelected ? '#fff' : 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = isCurrent ? 3 : 1.5;
+
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = "bold 11px 'Space Grotesk'";
+      ctx.textAlign = 'center';
+      ctx.fillText(n.id, n.x, n.y + 4);
+    });
+  };
+
+  const handleCanvasClick = (e) => {
+    if (!isPlaying) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    // Find clicked node
+    const clickedNode = nodes.find(n => {
+      const dist = Math.hypot(n.x - mx, n.y - my);
+      return dist <= 24; // buffer
+    });
+
+    if (!clickedNode) return;
+
+    // Must be adjacent to current node
+    const currentNode = userPath[userPath.length - 1];
+    const isAdjacent = links.some(l => 
+      (l.from === currentNode && l.to === clickedNode.id) ||
+      (l.from === clickedNode.id && l.to === currentNode)
+    );
+
+    if (!isAdjacent) return;
+
+    // Move
+    _playNeuroSound('correct');
+    userPath.push(clickedNode.id);
+    drawGraph();
+
+    // Check target reached
+    if (clickedNode.id === 'E') {
+      isPlaying = false;
+      
+      // Calculate user score cost
+      let pathCost = 0;
+      for (let i = 0; i < userPath.length - 1; i++) {
+        const from = userPath[i];
+        const to = userPath[i + 1];
+        const l = links.find(x => (x.from === from && x.to === to) || (x.from === to && x.to === from));
+        if (l) pathCost += l.cost;
+      }
+
+      const bestCost = findShortestCost();
+      totalBestCost += bestCost;
+      totalUserCost += pathCost;
+
+      const efficiency = Math.round((totalBestCost / totalUserCost) * 100);
+      if (effDisp) effDisp.textContent = `${efficiency}%`;
+
+      setTimeout(() => {
+        if (activeRound >= totalRounds) {
+          // Completed
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          ctx.font = "12.5px 'Space Grotesk'";
+          ctx.fillText("Grid routing completed.", width / 2 - 80, height / 2);
+          
+          startBtn.style.display = 'block';
+          startBtn.textContent = 'Restart Router grid';
+          _playNeuroSound('complete');
+
+          _broadcastNeuroScore(
+            room, 
+            'Grid Router', 
+            `Completed routing simulation with a pathing accuracy of **${efficiency}% Efficiency**.`
+          );
+        } else {
+          activeRound++;
+          if (roundDisp) roundDisp.textContent = `${activeRound}/5`;
+          isPlaying = true;
+          buildGraph();
+          drawGraph();
+        }
+      }, 900);
     }
-    if (lfo) {
-      lfo.stop();
-      lfo.disconnect();
-      lfo = null;
-    }
-    if (gainNode) {
-      gainNode.disconnect();
-      gainNode = null;
-    }
-    if (audioCtx) {
-      audioCtx.close();
-      audioCtx = null;
-    }
-  } catch(e) {}
-  isAudioPlaying = false;
+  };
+
+  startBtn?.addEventListener('click', () => {
+    startBtn.style.display = 'none';
+    isPlaying = true;
+    activeRound = 1;
+    totalBestCost = 0;
+    totalUserCost = 0;
+
+    if (roundDisp) roundDisp.textContent = '1/5';
+    if (effDisp) effDisp.textContent = '100%';
+
+    _playNeuroSound('start');
+    buildGraph();
+    drawGraph();
+  });
+
+  canvas.addEventListener('mousedown', handleCanvasClick);
 }
 
 function getRankFromScore(composite) {
