@@ -30,6 +30,7 @@ let isAudioMuted = false;
 
 let localStream = null;
 const peerConnections = new Map(); // peerId -> RTCPeerConnection
+const queuedCandidates = new Map(); // peerId -> array of candidates
 let myPeerId = null;
 let voiceSignalingUnsub = null;
 let voicePresenceUnsub = null;
@@ -665,6 +666,7 @@ async function _disconnectFromVoiceChannel() {
     _closePeerConnection(peerId);
   });
   peerConnections.clear();
+  queuedCandidates.clear();
 
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
@@ -734,6 +736,20 @@ async function _initiateConnection(peerId) {
   }
 }
 
+async function _processQueuedCandidates(peerId, pc) {
+  const queue = queuedCandidates.get(peerId);
+  if (queue) {
+    for (const cand of queue) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(cand));
+      } catch (e) {
+        console.error("Error adding queued ice candidate:", e);
+      }
+    }
+    queuedCandidates.delete(peerId);
+  }
+}
+
 async function _handleOffer(peerId, sdp) {
   let pc = peerConnections.get(peerId);
   if (!pc) {
@@ -755,21 +771,31 @@ async function _handleOffer(peerId, sdp) {
   } catch (e) {
     console.error("Error sending answer:", e);
   }
+
+  await _processQueuedCandidates(peerId, pc);
 }
 
 async function _handleAnswer(peerId, sdp) {
   const pc = peerConnections.get(peerId);
   if (pc) {
     await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+    await _processQueuedCandidates(peerId, pc);
   }
 }
 
 async function _handleCandidate(peerId, candidate) {
   const pc = peerConnections.get(peerId);
-  if (pc) {
+  if (pc && pc.remoteDescription) {
     try {
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
-    } catch (e) {}
+    } catch (e) {
+      console.error("Error adding direct ice candidate:", e);
+    }
+  } else {
+    if (!queuedCandidates.has(peerId)) {
+      queuedCandidates.set(peerId, []);
+    }
+    queuedCandidates.get(peerId).push(candidate);
   }
 }
 
@@ -779,6 +805,7 @@ function _closePeerConnection(peerId) {
     pc.close();
     peerConnections.delete(peerId);
   }
+  queuedCandidates.delete(peerId);
 
   const audioEl = document.getElementById(`audio-remote-${peerId}`);
   if (audioEl) {
