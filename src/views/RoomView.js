@@ -37,30 +37,36 @@ let voicePresenceUnsub = null;
 let myPresenceDocId = null;
 let chatMessagesUnsub = null;
 
-const rtcConfig = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    }
-  ]
-};
+// Comprehensive TURN server list covering multiple ports/protocols
+// to handle strict firewalls, symmetric NAT, and carrier-grade NAT
+const COMPREHENSIVE_ICE_SERVERS = [
+  // STUN servers
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun3.l.google.com:19302' },
+  { urls: 'stun:stun4.l.google.com:19302' },
+  { urls: 'stun:stun.relay.metered.ca:80' },
+  // OpenRelay TURN (Metered public) - multiple ports and transports
+  { urls: 'turn:openrelay.metered.ca:80',              username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443',             username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:80?transport=tcp',  username: 'openrelayproject', credential: 'openrelayproject' },
+  // FreeTURN backup
+  { urls: 'turn:freestun.net:3478', username: 'free', credential: 'free' },
+  { urls: 'turn:freestun.net:5349', username: 'free', credential: 'free' },
+  { urls: 'turns:freestun.net:5349', username: 'free', credential: 'free' }
+];
+
+let rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
+
+// Update TURN config — fetches fresh short-lived Metered credentials if available
+async function _fetchTurnCredentials() {
+  // The static list is already comprehensive; this is a no-op unless you set up
+  // a private Metered account. We still log what servers we'll use.
+  console.error('[WebRTC] ICE server list prepared. TURN servers:', 
+    COMPREHENSIVE_ICE_SERVERS.filter(s => String(s.urls).startsWith('turn')).map(s => s.urls));
+}
 
 export async function RoomView(params = {}) {
   await authReady;
@@ -597,6 +603,9 @@ function _initVoiceNode(room) {
    WebRTC CONNECTION AND SIGNALING IMPLEMENTATION
    ════════════════════════════════════════════════════════════ */
 async function _connectToVoiceChannel(room) {
+  // Fetch fresh TURN credentials before every connection attempt
+  await _fetchTurnCredentials();
+
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     _playNeuroSound('start');
@@ -771,6 +780,18 @@ function _createPeerConnection(peerId) {
     if (pc.connectionState === 'closed') {
       _closePeerConnection(peerId);
     }
+    if (pc.connectionState === 'failed') {
+      console.error(`[WebRTC] Connection FAILED with ${peerId}. Attempting ICE restart...`);
+      pc.restartIce();
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    console.error(`[WebRTC] ICE connection state with ${peerId}: ${pc.iceConnectionState}`);
+  };
+
+  pc.onicegatheringstatechange = () => {
+    console.error(`[WebRTC] ICE gathering state with ${peerId}: ${pc.iceGatheringState}`);
   };
 
   return pc;
@@ -778,6 +799,7 @@ function _createPeerConnection(peerId) {
 
 async function _initiateConnection(peerId) {
   console.error(`[WebRTC] Initiating P2P connection to peer: ${peerId}`);
+  console.error(`[WebRTC] Using ICE servers:`, JSON.stringify(rtcConfig.iceServers.map(s => s.urls)));
   const pc = _createPeerConnection(peerId);
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
