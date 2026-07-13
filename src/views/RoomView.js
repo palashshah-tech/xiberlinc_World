@@ -35,18 +35,27 @@ let myPeerId = null;
 let voiceSignalingUnsub = null;
 let voicePresenceUnsub = null;
 let myPresenceDocId = null;
+let chatMessagesUnsub = null;
 
 const rtcConfig = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
     {
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp'
-      ],
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
       username: 'openrelayproject',
       credential: 'openrelayproject'
     }
@@ -441,6 +450,42 @@ export async function RoomView(params = {}) {
 
   // Setup soundboard SFX buttons
   _initSoundboardButtons(room, userRank);
+
+  // Unmount listener: clean up room presence, voice, and chat when leaving this view
+  const handleRoomUnmount = () => {
+    if (!window.location.hash.startsWith('#/room')) {
+      console.error("[WebRTC] Unmounting RoomView. Executing cleanup routine...");
+      
+      // 1. Unsubscribe from roster presence updates
+      if (window._roomPresenceUnsubscribe) {
+        window._roomPresenceUnsubscribe();
+        window._roomPresenceUnsubscribe = null;
+      }
+
+      // 2. Unsubscribe from chat updates
+      if (chatMessagesUnsub) {
+        chatMessagesUnsub();
+        chatMessagesUnsub = null;
+      }
+      
+      // 3. Delete room presence database entry
+      try {
+        deleteDoc(doc(db, 'room_presence', myRoomPresenceId));
+      } catch (e) {
+        console.error("[WebRTC] Error deleting room presence on unmount:", e);
+      }
+
+      // 4. Disconnect from voice channel (closes RTCPeerConnections, terminates streams, deletes voice presence doc)
+      _disconnectFromVoiceChannel();
+
+      // 5. Turn off synths
+      _stopLofiSynth();
+
+      // 6. Clean up unmount hook
+      window.removeEventListener('hashchange', handleRoomUnmount);
+    }
+  };
+  window.addEventListener('hashchange', handleRoomUnmount);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -882,7 +927,12 @@ function _initChatTelemetry(room, userScore, userRank) {
     limit(150)
   );
 
-  const unsubscribe = onSnapshot(q, (snapshot) => {
+  if (chatMessagesUnsub) {
+    chatMessagesUnsub();
+    chatMessagesUnsub = null;
+  }
+
+  chatMessagesUnsub = onSnapshot(q, (snapshot) => {
     const allMessages = [];
     snapshot.forEach(doc => {
       allMessages.push({ id: doc.id, ...doc.data() });
