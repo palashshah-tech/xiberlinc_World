@@ -683,10 +683,10 @@ function _createPeerConnection(peerId) {
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
   pc.ontrack = (event) => {
-    console.log(`[WebRTC] Received remote track from ${peerId}:`, event.track.kind);
+    console.warn(`[WebRTC] Received remote track from ${peerId}:`, event.track.kind);
     let remoteStream = event.streams[0];
     if (!remoteStream) {
-      console.log(`[WebRTC] event.streams is empty, fallback to creating new MediaStream for remote track`);
+      console.warn(`[WebRTC] event.streams is empty, fallback to creating new MediaStream for remote track`);
       remoteStream = new MediaStream();
       remoteStream.addTrack(event.track);
     }
@@ -701,12 +701,12 @@ function _createPeerConnection(peerId) {
       document.body.appendChild(audioEl);
     }
     audioEl.srcObject = remoteStream;
-    audioEl.play().catch(e => console.warn("[WebRTC] Remote stream play blocked:", e));
+    audioEl.play().catch(e => console.error("[WebRTC] Remote stream play blocked:", e));
   };
 
   pc.onicecandidate = async (event) => {
     if (event.candidate && myPeerId) {
-      console.log(`[WebRTC] Gathered local candidate for peer ${peerId}:`, event.candidate.candidate);
+      console.warn(`[WebRTC] Gathered local candidate for peer ${peerId}:`, event.candidate.candidate);
       try {
         await addDoc(collection(db, 'room_voice_signaling'), {
           from: myPeerId,
@@ -722,7 +722,7 @@ function _createPeerConnection(peerId) {
   };
 
   pc.onconnectionstatechange = () => {
-    console.log(`[WebRTC] Connection state with ${peerId} changed to: ${pc.connectionState}`);
+    console.warn(`[WebRTC] Connection state with ${peerId} changed to: ${pc.connectionState}`);
     if (pc.connectionState === 'closed') {
       _closePeerConnection(peerId);
     }
@@ -732,7 +732,7 @@ function _createPeerConnection(peerId) {
 }
 
 async function _initiateConnection(peerId) {
-  console.log(`[WebRTC] Initiating P2P connection to peer: ${peerId}`);
+  console.warn(`[WebRTC] Initiating P2P connection to peer: ${peerId}`);
   const pc = _createPeerConnection(peerId);
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -745,7 +745,7 @@ async function _initiateConnection(peerId) {
       sdp: offer.sdp,
       createdAt: serverTimestamp()
     });
-    console.log(`[WebRTC] Offer SDP successfully posted to DB for ${peerId}`);
+    console.warn(`[WebRTC] Offer SDP successfully posted to DB for ${peerId}`);
   } catch (e) {
     console.error("[WebRTC] Error sending offer SDP:", e);
   }
@@ -754,11 +754,11 @@ async function _initiateConnection(peerId) {
 async function _processQueuedCandidates(peerId, pc) {
   const queue = queuedCandidates.get(peerId);
   if (queue) {
-    console.log(`[WebRTC] Draining and applying ${queue.length} queued ICE candidates for ${peerId}`);
+    console.warn(`[WebRTC] Draining and applying ${queue.length} queued ICE candidates for ${peerId}`);
     for (const cand of queue) {
       try {
         await pc.addIceCandidate(new RTCIceCandidate(cand));
-        console.log(`[WebRTC] Successfully applied queued ICE candidate for ${peerId}`);
+        console.warn(`[WebRTC] Successfully applied queued ICE candidate for ${peerId}`);
       } catch (e) {
         console.error("[WebRTC] Error adding queued ICE candidate:", e);
       }
@@ -768,7 +768,7 @@ async function _processQueuedCandidates(peerId, pc) {
 }
 
 async function _handleOffer(peerId, sdp) {
-  console.log(`[WebRTC] Received offer SDP from peer: ${peerId}`);
+  console.warn(`[WebRTC] Received offer SDP from peer: ${peerId}`);
   let pc = peerConnections.get(peerId);
   if (!pc) {
     pc = _createPeerConnection(peerId);
@@ -786,7 +786,7 @@ async function _handleOffer(peerId, sdp) {
       sdp: answer.sdp,
       createdAt: serverTimestamp()
     });
-    console.log(`[WebRTC] Answer SDP successfully posted to DB for ${peerId}`);
+    console.warn(`[WebRTC] Answer SDP successfully posted to DB for ${peerId}`);
   } catch (e) {
     console.error("[WebRTC] Error sending answer SDP:", e);
   }
@@ -795,11 +795,11 @@ async function _handleOffer(peerId, sdp) {
 }
 
 async function _handleAnswer(peerId, sdp) {
-  console.log(`[WebRTC] Received answer SDP from peer: ${peerId}`);
+  console.warn(`[WebRTC] Received answer SDP from peer: ${peerId}`);
   const pc = peerConnections.get(peerId);
   if (pc) {
     await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
-    console.log(`[WebRTC] Applied remote answer description from ${peerId}`);
+    console.warn(`[WebRTC] Applied remote answer description from ${peerId}`);
     await _processQueuedCandidates(peerId, pc);
   }
 }
@@ -809,12 +809,12 @@ async function _handleCandidate(peerId, candidate) {
   if (pc && pc.remoteDescription) {
     try {
       await pc.addIceCandidate(new RTCIceCandidate(candidate));
-      console.log(`[WebRTC] Successfully applied remote candidate from ${peerId}`);
+      console.warn(`[WebRTC] Successfully applied remote candidate from ${peerId}`);
     } catch (e) {
       console.error("[WebRTC] Error adding direct remote ICE candidate:", e);
     }
   } else {
-    console.log(`[WebRTC] Queued remote candidate from ${peerId} (remoteDesc is null)`);
+    console.warn(`[WebRTC] Queued remote candidate from ${peerId} (remoteDesc is null)`);
     if (!queuedCandidates.has(peerId)) {
       queuedCandidates.set(peerId, []);
     }
