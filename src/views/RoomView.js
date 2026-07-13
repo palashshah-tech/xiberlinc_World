@@ -11,7 +11,7 @@ import { fetchUserProfile } from '../utils/worldData.js';
 import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { 
   collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp,
-  deleteDoc, doc, getDocs
+  deleteDoc, doc, getDocs, setDoc
 } from 'firebase/firestore';
 
 // Global variables for audio state across room mounts
@@ -63,6 +63,28 @@ export async function RoomView(params = {}) {
   }
   const userScore = userProfile && userProfile[0] ? Math.round(userProfile[0].score) : null;
   const userRank = userProfile && userProfile[0] ? getRankFromScore(userProfile[0].score).rank : 'Guest';
+
+  const myRoomPresenceId = auth.currentUser.uid + '_' + roomId;
+
+  const registerRoomPresence = async (activityStatus = 'Active in cockpit') => {
+    try {
+      await setDoc(doc(db, 'room_presence', myRoomPresenceId), {
+        roomId,
+        userId: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        handle: '@' + auth.currentUser.email.split('@')[0],
+        name: auth.currentUser.displayName || 'Gamer',
+        photo: auth.currentUser.photoURL || '',
+        status: activityStatus,
+        rank: userRank,
+        joinedAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Presence registration failed:", e);
+    }
+  };
+
+  window._updateMyRoomPresence = registerRoomPresence;
 
   // Inject CSS animations & game styling
   injectStyle(`
@@ -348,19 +370,55 @@ export async function RoomView(params = {}) {
     });
   }
 
+  // Handle tab closing / browser exit safely
+  const handleUnload = () => {
+    deleteDoc(doc(db, 'room_presence', myRoomPresenceId));
+  };
+  window.addEventListener('beforeunload', handleUnload);
+
   // Hook back button to router world
-  document.getElementById('room-back-btn')?.addEventListener('click', () => {
-    // Unsubscribe from Firestore snapshot
+  document.getElementById('room-back-btn')?.addEventListener('click', async () => {
+    window.removeEventListener('beforeunload', handleUnload);
+    // Unsubscribe from chat stream
     if (window._roomChatUnsubscribe) {
       window._roomChatUnsubscribe();
       window._roomChatUnsubscribe = null;
     }
+    // Unsubscribe from room presence
+    if (window._roomPresenceUnsubscribe) {
+      window._roomPresenceUnsubscribe();
+      window._roomPresenceUnsubscribe = null;
+    }
+    // Delete room presence from DB
+    try {
+      await deleteDoc(doc(db, 'room_presence', myRoomPresenceId));
+    } catch(e) {}
+
     // Disconnect from WebRTC voice channel
     _disconnectFromVoiceChannel();
     // Stop Web Audio synth on exit
     _stopLofiSynth();
     navigate('world');
   });
+
+  // Initial presence registration
+  registerRoomPresence();
+
+  // Listen to room presence in real-time
+  const qPresence = query(
+    collection(db, 'room_presence'),
+    where('roomId', '==', roomId)
+  );
+
+  const presenceUnsub = onSnapshot(qPresence, (snapshot) => {
+    const peers = [];
+    snapshot.forEach(doc => {
+      peers.push({ id: doc.id, ...doc.data() });
+    });
+    _renderRosterList(peers, room);
+  });
+
+  window._roomPresenceUnsubscribe = presenceUnsub;
 
   // Setup Discord-IRL Voice connection
   _initVoiceNode(room);
@@ -443,13 +501,14 @@ function _initVoiceNode(room) {
     
     if (isVoiceConnected) {
       await _connectToVoiceChannel(room);
+      if (window._updateMyRoomPresence) {
+        window._updateMyRoomPresence('🔊 Voice Connected');
+      }
     } else {
       await _disconnectFromVoiceChannel();
-    }
-    
-    const activityDisp = document.getElementById('roster-me-activity');
-    if (activityDisp) {
-      activityDisp.textContent = isVoiceConnected ? '🔊 In Voice Channel' : 'Active in cockpit';
+      if (window._updateMyRoomPresence) {
+        window._updateMyRoomPresence('Active in cockpit');
+      }
     }
 
     updateVoiceUI();
@@ -2328,4 +2387,81 @@ function _spawnFloatingReaction(emoji) {
   setTimeout(() => {
     react.remove();
   }, 2500);
+}
+
+/* ════════════════════════════════════════════════════════════
+   REAL-TIME CANDIDATE ROSTER RENDERING
+   ════════════════════════════════════════════════════════════ */
+function _renderRosterList(peers, room) {
+  const rosterList = document.getElementById('member-roster-list');
+  if (!rosterList) return;
+
+  const sorted = [...peers].sort((a, b) => {
+    const isMeA = a.userId === auth.currentUser?.uid;
+    const isMeB = b.userId === auth.currentUser?.uid;
+    if (isMeA && !isMeB) return -1;
+    if (!isMeA && isMeB) return 1;
+    return a.handle.localeCompare(b.handle);
+  });
+
+  let html = '';
+  
+  html += `
+    <div>
+      <div style="font-size:9.5px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.3); text-transform:uppercase; margin-bottom:8px;">online — ${sorted.length}</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+  `;
+
+  sorted.forEach(peer => {
+    const isMe = peer.userId === auth.currentUser?.uid;
+    const badgeCol = peer.rank === 'Legend' ? '#7c3aed' : peer.rank === 'Master' ? '#d4ff00' : peer.rank === 'Diamond' ? '#2563eb' : 'rgba(255,255,255,0.3)';
+    const inVoice = peerConnections.has(peer.peerId) || (isMe && isVoiceConnected);
+    
+    html += `
+      <div style="display:flex; align-items:center; justify-content:space-between;" id="${isMe ? 'roster-me-row' : ''}">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="position:relative;">
+            ${peer.photo 
+              ? `<img src="${peer.photo}" class="${inVoice ? 'speaking-avatar' : ''}" style="width:28px; height:28px; border-radius:50%; border:1px solid ${inVoice ? '#38bdf8' : room.colorHex};" />`
+              : `<div class="${inVoice ? 'speaking-avatar' : ''}" style="width:28px; height:28px; border-radius:50%; background:${room.colorHex}22; border:1px solid ${inVoice ? '#38bdf8' : room.colorHex}; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-weight:700; font-size:10px; color:${room.colorHex};">${(peer.name || 'P')[0].toUpperCase()}</div>`
+            }
+            <div style="position:absolute; bottom:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:#10b981; border:1.5px solid #050508;"></div>
+          </div>
+          <div>
+            <div style="font-size:11.5px; font-weight:700; color:#fff;">${peer.handle}</div>
+            <div style="font-size:8.5px; color:rgba(255,255,255,0.35);">${peer.status}</div>
+          </div>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:8px; padding:1px 4px; border-radius:3px; background:${badgeCol}15; border:1px solid ${badgeCol}33; color:${badgeCol}; font-weight:700;">${peer.rank || 'Guest'}</span>
+      </div>
+    `;
+  });
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  html += `
+    <div style="margin-top:14px;">
+      <div style="font-size:9.5px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.3); text-transform:uppercase; margin-bottom:8px;">ai core bots — 1</div>
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="position:relative;">
+            <div style="width:28px; height:28px; border-radius:50%; background:#2563eb22; border:1px solid #2563eb; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-weight:700; font-size:10px; color:#2563eb;">🤖</div>
+            <div style="position:absolute; bottom:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:#10b981; border:1.5px solid #050508;"></div>
+          </div>
+          <div>
+            <div style="font-size:11.5px; font-weight:700; color:#fff; display:flex; align-items:center; gap:4px;">
+              XiberBot
+              <span style="font-family:'JetBrains Mono',monospace; font-size:7px; background:#2563eb; color:#fff; padding:1px 3px; border-radius:3px; font-weight:700;">BOT</span>
+            </div>
+            <div style="font-size:8.5px; color:rgba(255,255,255,0.35);">Listening to commands</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  rosterList.innerHTML = html;
 }
