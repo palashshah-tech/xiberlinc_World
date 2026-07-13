@@ -1052,7 +1052,7 @@ function _initChatTelemetry(room, userScore, userRank) {
     }, 50);
   });
 
-  window._roomChatUnsubscribe = unsubscribe;
+  window._roomChatUnsubscribe = chatMessagesUnsub;
 
   // Send message handlers
   const input = document.getElementById('chat-input');
