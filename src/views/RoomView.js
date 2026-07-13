@@ -10,7 +10,8 @@ import { auth, db } from '../utils/firebase.js';
 import { fetchUserProfile } from '../utils/worldData.js';
 import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { 
-  collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp 
+  collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp,
+  deleteDoc, doc, getDocs
 } from 'firebase/firestore';
 
 // Global variables for audio state across room mounts
@@ -26,6 +27,21 @@ let isAudioPlaying = false;
 let isVoiceConnected = false;
 let isMicrophoneMuted = false;
 let isAudioMuted = false;
+
+let localStream = null;
+const peerConnections = new Map(); // peerId -> RTCPeerConnection
+let myPeerId = null;
+let voiceSignalingUnsub = null;
+let voicePresenceUnsub = null;
+let myPresenceDocId = null;
+
+const rtcConfig = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' }
+  ]
+};
 
 export async function RoomView(params = {}) {
   const roomId = params.roomId || 'room_1';
@@ -332,6 +348,8 @@ export async function RoomView(params = {}) {
       window._roomChatUnsubscribe();
       window._roomChatUnsubscribe = null;
     }
+    // Disconnect from WebRTC voice channel
+    _disconnectFromVoiceChannel();
     // Stop Web Audio synth on exit
     _stopLofiSynth();
     navigate('world');
@@ -377,7 +395,6 @@ function _initVoiceNode(room) {
       }
       if (actionBar) actionBar.style.display = 'flex';
       
-      // Roster outline pulsing speaking
       if (rosterMeAvatar) {
         rosterMeAvatar.classList.add('speaking-avatar');
         rosterMeAvatar.style.borderColor = '#38bdf8';
@@ -403,14 +420,26 @@ function _initVoiceNode(room) {
     }
   };
 
-  // Restore state UI
   updateVoiceUI();
 
-  connectBtn?.addEventListener('click', () => {
+  if (isMicrophoneMuted) {
+    muteMic.textContent = '🎙️ Unmute';
+    muteMic.style.color = '#ef4444';
+  }
+  if (isAudioMuted) {
+    muteAudio.textContent = '🎧 Undeafen';
+    muteAudio.style.color = '#ef4444';
+  }
+
+  connectBtn?.addEventListener('click', async () => {
     isVoiceConnected = !isVoiceConnected;
-    _playNeuroSound(isVoiceConnected ? 'start' : 'incorrect');
     
-    // update status message activity
+    if (isVoiceConnected) {
+      await _connectToVoiceChannel(room);
+    } else {
+      await _disconnectFromVoiceChannel();
+    }
+    
     const activityDisp = document.getElementById('roster-me-activity');
     if (activityDisp) {
       activityDisp.textContent = isVoiceConnected ? '🔊 In Voice Channel' : 'Active in cockpit';
@@ -423,13 +452,264 @@ function _initVoiceNode(room) {
     isMicrophoneMuted = !isMicrophoneMuted;
     muteMic.textContent = isMicrophoneMuted ? '🎙️ Unmute' : '🎙️ Mute';
     muteMic.style.color = isMicrophoneMuted ? '#ef4444' : 'rgba(255,255,255,0.5)';
+    
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => track.enabled = !isMicrophoneMuted);
+    }
   });
 
   muteAudio?.addEventListener('click', () => {
     isAudioMuted = !isAudioMuted;
     muteAudio.textContent = isAudioMuted ? '🎧 Undeafen' : '🎧 Deafen';
     muteAudio.style.color = isAudioMuted ? '#ef4444' : 'rgba(255,255,255,0.5)';
+
+    peerConnections.forEach((pc, peerId) => {
+      const audioEl = document.getElementById(`audio-remote-${peerId}`);
+      if (audioEl) {
+        audioEl.muted = isAudioMuted;
+      }
+    });
   });
+}
+
+/* ════════════════════════════════════════════════════════════
+   WebRTC CONNECTION AND SIGNALING IMPLEMENTATION
+   ════════════════════════════════════════════════════════════ */
+async function _connectToVoiceChannel(room) {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    _playNeuroSound('start');
+    if (isMicrophoneMuted) {
+      localStream.getAudioTracks().forEach(track => track.enabled = false);
+    }
+  } catch (err) {
+    console.error("Microphone access denied:", err);
+    _playNeuroSound('incorrect');
+    alert("Microphone permission denied. Voice chat cannot connect.");
+    isVoiceConnected = false;
+    const connectBtn = document.getElementById('voice-connect-btn');
+    if (connectBtn) {
+      connectBtn.textContent = 'Join Voice';
+      connectBtn.style.background = `${room.colorHex}12`;
+      connectBtn.style.borderColor = room.colorHex;
+    }
+    const statusText = document.getElementById('voice-status-text');
+    if (statusText) {
+      statusText.textContent = 'Mic Blocked';
+      statusText.style.color = '#ef4444';
+    }
+    return;
+  }
+
+  myPeerId = auth.currentUser.uid + '_' + Math.random().toString(36).slice(2, 6);
+
+  try {
+    const docRef = await addDoc(collection(db, 'room_voice_presence'), {
+      roomId: room.id,
+      peerId: myPeerId,
+      userId: auth.currentUser.uid,
+      email: auth.currentUser.email,
+      handle: '@' + auth.currentUser.email.split('@')[0],
+      name: auth.currentUser.displayName || 'Gamer',
+      joinedAt: serverTimestamp()
+    });
+    myPresenceDocId = docRef.id;
+  } catch (err) {
+    console.error("Error setting presence:", err);
+  }
+
+  const sigQuery = query(
+    collection(db, 'room_voice_signaling'),
+    where('to', '==', myPeerId)
+  );
+
+  voiceSignalingUnsub = onSnapshot(sigQuery, (snapshot) => {
+    snapshot.docChanges().forEach(async (change) => {
+      if (change.type === 'added') {
+        const sig = change.doc.data();
+        const docId = change.doc.id;
+        
+        try {
+          await deleteDoc(doc(db, 'room_voice_signaling', docId));
+        } catch (e) {}
+
+        if (sig.type === 'offer') {
+          await _handleOffer(sig.from, sig.sdp);
+        } else if (sig.type === 'answer') {
+          await _handleAnswer(sig.from, sig.sdp);
+        } else if (sig.type === 'candidate') {
+          await _handleCandidate(sig.from, sig.candidate);
+        }
+      }
+    });
+  });
+
+  const presQuery = query(
+    collection(db, 'room_voice_presence'),
+    where('roomId', '==', room.id)
+  );
+
+  voicePresenceUnsub = onSnapshot(presQuery, async (snapshot) => {
+    snapshot.docChanges().forEach(async (change) => {
+      const peer = change.doc.data();
+      if (peer.peerId === myPeerId) return;
+
+      if (change.type === 'added') {
+        if (myPeerId > peer.peerId) {
+          if (!peerConnections.has(peer.peerId)) {
+            await _initiateConnection(peer.peerId);
+          }
+        }
+      } else if (change.type === 'removed') {
+        _closePeerConnection(peer.peerId);
+      }
+    });
+  });
+}
+
+async function _disconnectFromVoiceChannel() {
+  _playNeuroSound('incorrect');
+
+  if (voiceSignalingUnsub) {
+    voiceSignalingUnsub();
+    voiceSignalingUnsub = null;
+  }
+  if (voicePresenceUnsub) {
+    voicePresenceUnsub();
+    voicePresenceUnsub = null;
+  }
+
+  if (myPresenceDocId) {
+    try {
+      await deleteDoc(doc(db, 'room_voice_presence', myPresenceDocId));
+    } catch (e) {}
+    myPresenceDocId = null;
+  }
+
+  peerConnections.forEach((pc, peerId) => {
+    _closePeerConnection(peerId);
+  });
+  peerConnections.clear();
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  myPeerId = null;
+}
+
+function _createPeerConnection(peerId) {
+  const pc = new RTCPeerConnection(rtcConfig);
+  peerConnections.set(peerId, pc);
+
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  pc.ontrack = (event) => {
+    const remoteStream = event.streams[0];
+    let audioEl = document.getElementById(`audio-remote-${peerId}`);
+    if (!audioEl) {
+      audioEl = document.createElement('audio');
+      audioEl.id = `audio-remote-${peerId}`;
+      audioEl.autoplay = true;
+      audioEl.muted = isAudioMuted;
+      document.body.appendChild(audioEl);
+    }
+    audioEl.srcObject = remoteStream;
+  };
+
+  pc.onicecandidate = async (event) => {
+    if (event.candidate && myPeerId) {
+      try {
+        await addDoc(collection(db, 'room_voice_signaling'), {
+          from: myPeerId,
+          to: peerId,
+          type: 'candidate',
+          candidate: event.candidate.toJSON(),
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {}
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      _closePeerConnection(peerId);
+    }
+  };
+
+  return pc;
+}
+
+async function _initiateConnection(peerId) {
+  const pc = _createPeerConnection(peerId);
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  try {
+    await addDoc(collection(db, 'room_voice_signaling'), {
+      from: myPeerId,
+      to: peerId,
+      type: 'offer',
+      sdp: offer.sdp,
+      createdAt: serverTimestamp()
+    });
+  } catch (e) {
+    console.error("Error sending offer:", e);
+  }
+}
+
+async function _handleOffer(peerId, sdp) {
+  let pc = peerConnections.get(peerId);
+  if (!pc) {
+    pc = _createPeerConnection(peerId);
+  }
+
+  await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp }));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  try {
+    await addDoc(collection(db, 'room_voice_signaling'), {
+      from: myPeerId,
+      to: peerId,
+      type: 'answer',
+      sdp: answer.sdp,
+      createdAt: serverTimestamp()
+    });
+  } catch (e) {
+    console.error("Error sending answer:", e);
+  }
+}
+
+async function _handleAnswer(peerId, sdp) {
+  const pc = peerConnections.get(peerId);
+  if (pc) {
+    await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+  }
+}
+
+async function _handleCandidate(peerId, candidate) {
+  const pc = peerConnections.get(peerId);
+  if (pc) {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (e) {}
+  }
+}
+
+function _closePeerConnection(peerId) {
+  const pc = peerConnections.get(peerId);
+  if (pc) {
+    pc.close();
+    peerConnections.delete(peerId);
+  }
+
+  const audioEl = document.getElementById(`audio-remote-${peerId}`);
+  if (audioEl) {
+    audioEl.srcObject = null;
+    audioEl.remove();
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
