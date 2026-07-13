@@ -683,7 +683,14 @@ function _createPeerConnection(peerId) {
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
   pc.ontrack = (event) => {
-    const remoteStream = event.streams[0];
+    console.log(`[WebRTC] Received remote track from ${peerId}:`, event.track.kind);
+    let remoteStream = event.streams[0];
+    if (!remoteStream) {
+      console.log(`[WebRTC] event.streams is empty, fallback to creating new MediaStream for remote track`);
+      remoteStream = new MediaStream();
+      remoteStream.addTrack(event.track);
+    }
+    
     let audioEl = document.getElementById(`audio-remote-${peerId}`);
     if (!audioEl) {
       audioEl = document.createElement('audio');
@@ -694,7 +701,7 @@ function _createPeerConnection(peerId) {
       document.body.appendChild(audioEl);
     }
     audioEl.srcObject = remoteStream;
-    audioEl.play().catch(e => console.warn("Remote stream play blocked:", e));
+    audioEl.play().catch(e => console.warn("[WebRTC] Remote stream play blocked:", e));
   };
 
   pc.onicecandidate = async (event) => {
