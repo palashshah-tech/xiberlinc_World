@@ -1,6 +1,7 @@
 /* ============================================================
    RoomView — Dedicated full-screen splitscreen chatroom cockpit
-   With targeted mini neuro games that affect cognitive states.
+   With "Discord IRL" Voice connection, Soundboard, Member Roster,
+   Markdown, and XiberBot telemetry agent.
    ============================================================ */
 
 import { render } from '../utils/dom.js';
@@ -11,6 +12,20 @@ import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { 
   collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp 
 } from 'firebase/firestore';
+
+// Global variables for audio state across room mounts
+let audioCtx = null;
+let ambientOsc = null;
+let gainNode = null;
+let lfo = null;
+let lfoGain = null;
+let analyserNode = null;
+let isAudioPlaying = false;
+
+// Voice Node global state
+let isVoiceConnected = false;
+let isMicrophoneMuted = false;
+let isAudioMuted = false;
 
 export async function RoomView(params = {}) {
   const roomId = params.roomId || 'room_1';
@@ -34,6 +49,14 @@ export async function RoomView(params = {}) {
       0% { transform: translateY(0) scale(0.8) rotate(0deg); opacity: 1; }
       100% { transform: translateY(-320px) scale(1.5) rotate(var(--rot)); opacity: 0; }
     }
+    @keyframes speak-ring-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(56, 189, 248, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+    .speaking-avatar {
+      animation: speak-ring-pulse 1.2s infinite;
+    }
     .wld-fade-up { animation: wld-fade-up-anim 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     @keyframes wld-fade-up-anim { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
     .cockpit-tab-btn {
@@ -46,6 +69,16 @@ export async function RoomView(params = {}) {
       background: ${room.colorHex}15; border-color: ${room.colorHex}; color: #fff;
       box-shadow: 0 4px 15px ${room.colorHex}22;
     }
+    .sfx-btn {
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 8px; padding: 10px; color: rgba(255,255,255,0.7); font-size: 11px;
+      font-family: 'JetBrains Mono', monospace; cursor: pointer; transition: all 0.15s;
+      text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center;
+    }
+    .sfx-btn:hover {
+      background: ${room.colorHex}15; border-color: ${room.colorHex}; color: #fff;
+      transform: translateY(-2px); box-shadow: 0 4px 12px ${room.colorHex}15;
+    }
     .cockpit-panel-card {
       background: rgba(13,13,16,0.65); border: 1px solid rgba(255,255,255,0.05);
       border-radius: 16px; padding: 24px; backdrop-filter: blur(20px);
@@ -56,7 +89,7 @@ export async function RoomView(params = {}) {
     #wld-chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
   `);
 
-  // Render the full screen layouts
+  // Render the full screen layouts (Three-Column splitscreen)
   render(`
     <div style="position:fixed; inset:0; z-index:9000; background:#050508; color:#fff; display:flex; flex-direction:column; font-family:'Space Grotesk',sans-serif; overflow:hidden;">
       
@@ -78,12 +111,16 @@ export async function RoomView(params = {}) {
               <div style="width:6px; height:6px; border-radius:50%; background:${room.colorHex}; position:relative;">
                 <div style="position:absolute; inset:-3px; border-radius:50%; border:1px solid ${room.colorHex}; animation:wld-pulse-ring 1.5s ease-out infinite;"></div>
               </div>
-              <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.06em;">COGNITIVE state training grounds · ${room.online} active channels</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.06em;">COGNITIVE STATE training grounds · ${room.online} active channels</span>
             </div>
           </div>
         </div>
         
         <div style="display:flex; align-items:center; gap:16px;">
+          <!-- Collapsible Member Toggle -->
+          <button id="member-sidebar-toggle" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#fff; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';">
+            👥 ROSTER
+          </button>
           <div style="text-align:right;">
             <div style="font-size:10px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.3); text-transform:uppercase;">Identity Node</div>
             <div style="font-size:12.5px; font-weight:700; color:${room.colorHex};">@${(auth.currentUser?.email || 'player').split('@')[0]}</div>
@@ -95,13 +132,13 @@ export async function RoomView(params = {}) {
         </div>
       </header>
 
-      <!-- SPLITSCREEN LAYOUT CONTAINER -->
+      <!-- THREE-COLUMN DISCORD IRL LAYOUT CONTAINER -->
       <div style="flex:1; display:flex; overflow:hidden;">
         
-        <!-- LEFT COLUMN: LIVE CHAT STREAM -->
-        <div style="width:480px; border-right:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; background:rgba(8,8,11,0.45); flex-shrink:0;">
+        <!-- COLUMN 1: LIVE CHAT STREAM -->
+        <div style="width:380px; border-right:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; background:rgba(8,8,11,0.45); flex-shrink:0;">
           
-          <!-- Active Logs Horizontal Header -->
+          <!-- Active Logs Header -->
           <div id="wld-chat-users" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.04); background:rgba(5,5,8,0.3); display:flex; align-items:center; gap:8px; overflow-x:auto; flex-shrink:0;">
             <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0;">active logs:</span>
           </div>
@@ -119,71 +156,316 @@ export async function RoomView(params = {}) {
           </div>
 
           <!-- Floating Reaction Area Overlay -->
-          <div id="reactions-float-area" style="position:absolute; bottom:140px; left:300px; width:100px; height:240px; pointer-events:none; overflow:hidden; z-index:9300;"></div>
+          <div id="reactions-float-area" style="position:absolute; bottom:200px; left:260px; width:80px; height:200px; pointer-events:none; overflow:hidden; z-index:9300;"></div>
 
           <!-- Reactions Emoji Selector -->
-          <div style="padding:10px 20px; background:rgba(10,10,12,0.4); border-top:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; gap:8px; flex-shrink:0;">
+          <div style="padding:8px 20px; background:rgba(10,10,12,0.4); border-top:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; gap:8px; flex-shrink:0;">
             <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.25); text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">REACTION:</span>
             <div style="display:flex; gap:6px;">
               ${['🔥', '🧠', '⚡', '👑', '🎯'].map(emoji => `
-                <button class="chat-react-btn" data-emoji="${emoji}" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:6px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; transition:all 0.15s;" onmouseenter="this.style.background='rgba(255,255,255,0.1)';this.style.transform='scale(1.15)';" onmouseleave="this.style.background='rgba(255,255,255,0.03)';this.style.transform='';">${emoji}</button>
+                <button class="chat-react-btn" data-emoji="${emoji}" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:12px; cursor:pointer; transition:all 0.15s;" onmouseenter="this.style.background='rgba(255,255,255,0.1)';" onmouseleave="this.style.background='rgba(255,255,255,0.03)';">${emoji}</button>
               `).join('')}
             </div>
           </div>
 
           <!-- Message input console -->
-          <div style="padding:16px 20px; border-top:1px solid rgba(255,255,255,0.08); background:rgba(10,10,12,0.9); display:flex; align-items:center; gap:10px; flex-shrink:0;">
-            <input type="text" id="chat-input" placeholder="Transmit telemetry..." style="flex:1; background:#000; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:12px 16px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:12.5px; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='${room.colorHex}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
-            <button id="chat-send-btn" style="background:${room.colorHex}; color:#fff; border:none; border-radius:10px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 12px ${room.colorHex}33;" onmouseenter="this.style.transform='scale(1.05)';" onmouseleave="this.style.transform='';">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <div style="padding:12px 20px; border-top:1px solid rgba(255,255,255,0.08); background:rgba(10,10,12,0.9); display:flex; align-items:center; gap:10px; flex-shrink:0;">
+            <input type="text" id="chat-input" placeholder="Type message... (e.g. /bot status)" style="flex:1; background:#000; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px 14px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:12px; outline:none;" />
+            <button id="chat-send-btn" style="background:${room.colorHex}; color:#fff; border:none; border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
             </button>
           </div>
 
-        </div>
-
-        <!-- RIGHT COLUMN: INTERACTIVE ROOM DECK -->
-        <main style="flex:1; padding:32px; overflow-y:auto; background:#07070a; display:flex; flex-direction:column; gap:24px;">
-          
-          <div style="display:flex; align-items:center; justify-content:between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:16px;">
-            <div>
-              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:0.18em; color:${room.colorHex}; margin-bottom:4px;">interactive cockpit</div>
-              <h2 style="font-family:'Outfit',sans-serif; font-weight:800; font-size:1.6rem; color:#fff;">Neuro Game Center</h2>
+          <!-- DISCORD VOICE PANEL WIDGET -->
+          <div id="voice-node-panel" style="padding:12px 20px; background:rgba(13,13,18,0.95); border-top:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:10px; flex-shrink:0;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.15);" id="voice-signal-dot"></div>
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.04em;">Telemetry Voice</div>
+                  <div style="font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.4);" id="voice-status-text">Disconnected</div>
+                </div>
+              </div>
+              <button id="voice-connect-btn" class="cockpit-tab-btn" style="padding:6px 12px; font-size:9.5px; border-color:${room.colorHex}; color:#fff; background:${room.colorHex}12;">Join Voice</button>
+            </div>
+            
+            <!-- Voice action bar (visible when connected) -->
+            <div id="voice-action-bar" style="display:none; align-items:center; justify-content:space-between; border-top:1px solid rgba(255,255,255,0.04); padding-top:8px; margin-top:2px;">
+              <div style="display:flex; gap:12px;">
+                <button id="voice-mute-mic" style="background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px;">🎙️ Mute</button>
+                <button id="voice-mute-audio" style="background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px;">🎧 Deafen</button>
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#10b981;">PING: 18ms</span>
             </div>
           </div>
 
+        </div>
+
+        <!-- COLUMN 2: CENTER COCKPIT & NEURO GAME DECK -->
+        <main style="flex:1; padding:28px 24px; overflow-y:auto; background:#07070a; display:flex; flex-direction:column; gap:20px;">
+          
           <!-- COCKPIT CONTROL CENTRE DYNAMIC WORKSPACE -->
           <div id="cockpit-workspace" class="wld-fade-up">
             <!-- Dynamically populated by room features -->
           </div>
 
+          <!-- SYNCHRONIZED Web Audio SOUNDBOARD -->
+          <div class="cockpit-panel-card">
+            <h3 style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:12px;">global telemetry soundboard</h3>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px;">
+              <button class="sfx-btn" data-sfx="correct">
+                <span>🔊</span>
+                <span>Neuro Resonance</span>
+              </button>
+              <button class="sfx-btn" data-sfx="incorrect">
+                <span>🚨</span>
+                <span>Security Alert</span>
+              </button>
+              <button class="sfx-btn" data-sfx="start">
+                <span>📡</span>
+                <span>Quantum Ping</span>
+              </button>
+              <button class="sfx-btn" data-sfx="complete">
+                <span>🧬</span>
+                <span>Cognitive Synapse</span>
+              </button>
+              <button class="sfx-btn" data-sfx="flow">
+                <span>🎐</span>
+                <span>Flow Drone</span>
+              </button>
+            </div>
+          </div>
+
         </main>
+
+        <!-- COLUMN 3: RIGHT COLLAPSIBLE MEMBER SIDEBAR -->
+        <div id="member-sidebar" style="width:240px; border-left:1px solid rgba(255,255,255,0.06); background:rgba(8,8,11,0.5); display:flex; flex-direction:column; transition:width 0.25s; overflow:hidden;">
+          <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.04); font-family:'JetBrains Mono',monospace; font-size:9px; text-transform:uppercase; color:rgba(255,255,255,0.4); letter-spacing:0.08em;">
+            CANDIDATE DIRECTORY
+          </div>
+          
+          <div id="member-roster-list" style="flex:1; padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:14px;">
+            <!-- Active Candidates -->
+            <div>
+              <div style="font-size:9.5px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.3); text-transform:uppercase; margin-bottom:8px;">online — 2</div>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                
+                <div style="display:flex; align-items:center; justify-content:space-between;" id="roster-me-row">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="position:relative;">
+                      ${auth.currentUser?.photoURL 
+                        ? `<img id="roster-me-img" src="${auth.currentUser.photoURL}" style="width:28px; height:28px; border-radius:50%; border:1px solid ${room.colorHex};" />`
+                        : `<div id="roster-me-div" style="width:28px; height:28px; border-radius:50%; background:${room.colorHex}22; border:1px solid ${room.colorHex}; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-weight:700; font-size:10px; color:${room.colorHex};">${(auth.currentUser?.displayName || 'P')[0].toUpperCase()}</div>`
+                      }
+                      <div style="position:absolute; bottom:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:#10b981; border:1.5px solid #050508;"></div>
+                    </div>
+                    <div>
+                      <div style="font-size:11.5px; font-weight:700; color:#fff;">@${(auth.currentUser?.email || 'player').split('@')[0]}</div>
+                      <div style="font-size:8.5px; color:rgba(255,255,255,0.35);" id="roster-me-activity">Active in cockpit</div>
+                    </div>
+                  </div>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:8px; padding:1px 4px; border-radius:3px; background:${room.colorHex}15; border:1px solid ${room.colorHex}33; color:${room.colorHex}; font-weight:700;">${userRank}</span>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="position:relative;">
+                      <div style="width:28px; height:28px; border-radius:50%; background:#ec489922; border:1px solid #ec4899; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-weight:700; font-size:10px; color:#ec4899;">A</div>
+                      <div style="position:absolute; bottom:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:#10b981; border:1.5px solid #050508;"></div>
+                    </div>
+                    <div>
+                      <div style="font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.85);">@alex_xib</div>
+                      <div style="font-size:8.5px; color:rgba(255,255,255,0.35);">Playing Speed Search</div>
+                    </div>
+                  </div>
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:8px; padding:1px 4px; border-radius:3px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.5);">Guest</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Bot Core Agents -->
+            <div>
+              <div style="font-size:9.5px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.3); text-transform:uppercase; margin-bottom:8px;">ai core bots — 1</div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="position:relative;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:#2563eb22; border:1px solid #2563eb; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-weight:700; font-size:10px; color:#2563eb;">🤖</div>
+                    <div style="position:absolute; bottom:-2px; right:-2px; width:8px; height:8px; border-radius:50%; background:#10b981; border:1.5px solid #050508;"></div>
+                  </div>
+                  <div>
+                    <div style="font-size:11.5px; font-weight:700; color:#fff; display:flex; align-items:center; gap:4px;">
+                      XiberBot
+                      <span style="font-family:'JetBrains Mono',monospace; font-size:7px; background:#2563eb; color:#fff; padding:1px 3px; border-radius:3px; font-weight:700;">BOT</span>
+                    </div>
+                    <div style="font-size:8.5px; color:rgba(255,255,255,0.35);">Listening to commands</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
 
       </div>
 
     </div>
   `);
 
+  // Collapsible member sidebar toggle
+  const sidebar = document.getElementById('member-sidebar');
+  const toggleBtn = document.getElementById('member-sidebar-toggle');
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener('click', () => {
+      const isCollapsed = sidebar.style.width === '0px';
+      sidebar.style.width = isCollapsed ? '240px' : '0px';
+    });
+  }
+
   // Hook back button to router world
   document.getElementById('room-back-btn')?.addEventListener('click', () => {
+    // Unsubscribe from Firestore snapshot
     if (window._roomChatUnsubscribe) {
       window._roomChatUnsubscribe();
       window._roomChatUnsubscribe = null;
     }
+    // Stop Web Audio synth on exit
+    _stopLofiSynth();
     navigate('world');
   });
+
+  // Setup Discord-IRL Voice connection
+  _initVoiceNode(room);
 
   // Setup Chat real-time streams
   _initChatTelemetry(room, userScore, userRank);
 
   // Setup Cockpit Activities
   _initCockpitActivity(room);
+
+  // Setup soundboard SFX buttons
+  _initSoundboardButtons(room, userRank);
 }
 
 /* ════════════════════════════════════════════════════════════
-   FIRESTORE REAL-TIME CHAT TELEMETRY LOGS
+   DISCORD-IRL VOICE TELEMETRY PIPE
+   ════════════════════════════════════════════════════════════ */
+function _initVoiceNode(room) {
+  const connectBtn = document.getElementById('voice-connect-btn');
+  const signalDot = document.getElementById('voice-signal-dot');
+  const statusText = document.getElementById('voice-status-text');
+  const actionBar = document.getElementById('voice-action-bar');
+  const muteMic = document.getElementById('voice-mute-mic');
+  const muteAudio = document.getElementById('voice-mute-audio');
+  const rosterMeAvatar = document.getElementById('roster-me-img') || document.getElementById('roster-me-div');
+
+  const updateVoiceUI = () => {
+    if (isVoiceConnected) {
+      connectBtn.textContent = 'Disconnect';
+      connectBtn.style.background = '#ef444422';
+      connectBtn.style.borderColor = '#ef4444';
+      if (statusText) {
+        statusText.textContent = 'Voice Connected';
+        statusText.style.color = '#10b981';
+      }
+      if (signalDot) {
+        signalDot.style.background = '#10b981';
+        signalDot.style.boxShadow = '0 0 10px #10b981';
+      }
+      if (actionBar) actionBar.style.display = 'flex';
+      
+      // Roster outline pulsing speaking
+      if (rosterMeAvatar) {
+        rosterMeAvatar.classList.add('speaking-avatar');
+        rosterMeAvatar.style.borderColor = '#38bdf8';
+      }
+    } else {
+      connectBtn.textContent = 'Join Voice';
+      connectBtn.style.background = `${room.colorHex}12`;
+      connectBtn.style.borderColor = room.colorHex;
+      if (statusText) {
+        statusText.textContent = 'Disconnected';
+        statusText.style.color = 'rgba(255,255,255,0.4)';
+      }
+      if (signalDot) {
+        signalDot.style.background = 'rgba(255,255,255,0.15)';
+        signalDot.style.boxShadow = 'none';
+      }
+      if (actionBar) actionBar.style.display = 'none';
+      
+      if (rosterMeAvatar) {
+        rosterMeAvatar.classList.remove('speaking-avatar');
+        rosterMeAvatar.style.borderColor = room.colorHex;
+      }
+    }
+  };
+
+  // Restore state UI
+  updateVoiceUI();
+
+  connectBtn?.addEventListener('click', () => {
+    isVoiceConnected = !isVoiceConnected;
+    _playNeuroSound(isVoiceConnected ? 'start' : 'incorrect');
+    
+    // update status message activity
+    const activityDisp = document.getElementById('roster-me-activity');
+    if (activityDisp) {
+      activityDisp.textContent = isVoiceConnected ? '🔊 In Voice Channel' : 'Active in cockpit';
+    }
+
+    updateVoiceUI();
+  });
+
+  muteMic?.addEventListener('click', () => {
+    isMicrophoneMuted = !isMicrophoneMuted;
+    muteMic.textContent = isMicrophoneMuted ? '🎙️ Unmute' : '🎙️ Mute';
+    muteMic.style.color = isMicrophoneMuted ? '#ef4444' : 'rgba(255,255,255,0.5)';
+  });
+
+  muteAudio?.addEventListener('click', () => {
+    isAudioMuted = !isAudioMuted;
+    muteAudio.textContent = isAudioMuted ? '🎧 Undeafen' : '🎧 Deafen';
+    muteAudio.style.color = isAudioMuted ? '#ef4444' : 'rgba(255,255,255,0.5)';
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   SYNCHRONIZED WEB AUDIO SOUNDBOARD
+   ════════════════════════════════════════════════════════════ */
+function _initSoundboardButtons(room, userRank) {
+  document.querySelectorAll('.sfx-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const sfx = btn.getAttribute('data-sfx');
+      if (!sfx) return;
+
+      // Trigger local synthesis immediately
+      _playNeuroSound(sfx);
+
+      // Broadcast globally over Firestore chat stream (sfx document type)
+      try {
+        await addDoc(collection(db, 'chatroom_messages'), {
+          roomId: room.id,
+          senderId: auth.currentUser?.uid || 'anonymous',
+          senderName: auth.currentUser?.displayName || 'Gamer',
+          senderEmail: auth.currentUser?.email || '',
+          senderHandle: '@' + (auth.currentUser?.email || 'player').split('@')[0],
+          senderPhoto: auth.currentUser?.photoURL || '',
+          senderScore: null,
+          senderRank: userRank,
+          content: sfx,
+          type: 'sfx',
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {}
+    });
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
+   FIRESTORE REAL-TIME CHAT & MARKDOWN
    ════════════════════════════════════════════════════════════ */
 function _initChatTelemetry(room, userScore, userRank) {
   const container = document.getElementById('chat-messages-container');
@@ -208,7 +490,7 @@ function _initChatTelemetry(room, userScore, userRank) {
 
     const activeUserMap = new Map();
     rawMessages.forEach(m => {
-      if (m.senderName && m.senderHandle) {
+      if (m.senderName && m.senderHandle && m.type !== 'sfx') {
         activeUserMap.set(m.senderHandle, {
           name: m.senderName,
           photo: m.senderPhoto,
@@ -234,6 +516,7 @@ function _initChatTelemetry(room, userScore, userRank) {
       usersBar.innerHTML = `<span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0; margin-right:4px;">active logs:</span>` + activeUserHTML;
     }
 
+    // Render messages
     if (rawMessages.length === 0) {
       container.innerHTML = `
         <div style="text-align:center; padding:40px 20px; color:rgba(255,255,255,0.2); font-size:11px; font-style:italic;">
@@ -243,36 +526,65 @@ function _initChatTelemetry(room, userScore, userRank) {
     } else {
       let html = '';
       rawMessages.forEach(msg => {
+        // Handle floating reactions
         if (msg.type === 'reaction') {
           _spawnFloatingReaction(msg.content);
           return;
         }
 
+        // Handle synchronized soundboard sfx
+        if (msg.type === 'sfx') {
+          // Play sfx if sender is NOT me (we already play it on click for zero latency)
+          const isMe = msg.senderEmail === auth.currentUser?.email;
+          if (!isMe && !isAudioMuted) {
+            _playNeuroSound(msg.content);
+          }
+          
+          // Flash speaking outline on roster list avatar if matches
+          const rosterUserRow = document.getElementById(isMe ? 'roster-me-row' : '');
+          if (rosterUserRow) {
+            const avatar = rosterUserRow.querySelector('img') || rosterUserRow.querySelector('div');
+            if (avatar) {
+              avatar.classList.add('speaking-avatar');
+              avatar.style.borderColor = '#10b981';
+              setTimeout(() => {
+                avatar.classList.remove('speaking-avatar');
+                avatar.style.borderColor = isMe ? room.colorHex : 'rgba(255,255,255,0.3)';
+              }, 1200);
+            }
+          }
+          return;
+        }
+
         const isMe = msg.senderEmail === auth.currentUser?.email;
+        const isBot = msg.senderId === 'xiberbot';
+        
         const timeStr = msg.createdAt 
           ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
           : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
-        const badgeCol = msg.senderRank === 'Legend' ? '#7c3aed' : msg.senderRank === 'Master' ? '#d4ff00' : msg.senderRank === 'Diamond' ? '#2563eb' : 'rgba(255,255,255,0.3)';
-        const scoreBadge = msg.senderScore 
-          ? `<span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:3px; background:${badgeCol}14; border:1px solid ${badgeCol}33; color:${badgeCol}; vertical-align:middle; margin-left:4px; font-weight:700;">WMI ${msg.senderScore}</span>` 
-          : `<span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:3px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.3); vertical-align:middle; margin-left:4px;">GUEST</span>`;
+        const badgeCol = isBot ? '#2563eb' : msg.senderRank === 'Legend' ? '#7c3aed' : msg.senderRank === 'Master' ? '#d4ff00' : msg.senderRank === 'Diamond' ? '#2563eb' : 'rgba(255,255,255,0.3)';
+        const scoreBadge = isBot 
+          ? `<span style="font-family:'JetBrains Mono',monospace; font-size:7px; background:#2563eb; color:#fff; padding:1px 3px; border-radius:3px; font-weight:700; vertical-align:middle; margin-left:4px;">BOT</span>`
+          : msg.senderScore 
+            ? `<span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:3px; background:${badgeCol}14; border:1px solid ${badgeCol}33; color:${badgeCol}; vertical-align:middle; margin-left:4px; font-weight:700;">WMI ${msg.senderScore}</span>` 
+            : `<span style="font-family:'JetBrains Mono',monospace; font-size:8.5px; padding:1px 5px; border-radius:3px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.3); vertical-align:middle; margin-left:4px;">GUEST</span>`;
 
         html += `
           <div style="display:flex; flex-direction:column; align-items:${isMe ? 'flex-end' : 'flex-start'}; gap:4px; max-width:85%; align-self:${isMe ? 'flex-end' : 'flex-start'};">
             <div style="display:flex; align-items:center; gap:6px;">
-              <span style="font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; color:${isMe ? room.colorHex : 'rgba(255,255,255,0.7)'};">${msg.senderHandle}</span>
+              <span style="font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; color:${isBot ? '#38bdf8' : isMe ? room.colorHex : 'rgba(255,255,255,0.7)'};">${msg.senderHandle}</span>
               ${scoreBadge}
               <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.2);">${timeStr}</span>
             </div>
             <div style="
-              background:${isMe ? `${room.colorHex}15` : 'rgba(255,255,255,0.04)'};
-              border:1px solid ${isMe ? `${room.colorHex}33` : 'rgba(255,255,255,0.08)'};
+              background:${isBot ? 'rgba(37,99,235,0.08)' : isMe ? `${room.colorHex}15` : 'rgba(255,255,255,0.04)'};
+              border:1px solid ${isBot ? 'rgba(37,99,235,0.2)' : isMe ? `${room.colorHex}33` : 'rgba(255,255,255,0.08)'};
               border-radius:${isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px'};
-              padding:10px 14px; color:#fff; font-size:12.5px; line-height:1.45; word-break:break-word;
+              padding:10px 14px; color:${isBot ? '#e0f2fe' : '#fff'}; font-size:12.5px; line-height:1.45; word-break:break-word;
               box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
             ">
-              ${msg.content}
+              ${_parseMarkdown(msg.content)}
             </div>
           </div>
         `;
@@ -287,6 +599,7 @@ function _initChatTelemetry(room, userScore, userRank) {
 
   window._roomChatUnsubscribe = unsubscribe;
 
+  // Send message handlers
   const input = document.getElementById('chat-input');
   const sendBtn = document.getElementById('chat-send-btn');
 
@@ -298,7 +611,11 @@ function _initChatTelemetry(room, userScore, userRank) {
     input.value = '';
     input.focus();
 
+    // Check if it's a bot command
+    const isBotCommand = txt.startsWith('/bot ') || txt === '/bot';
+
     try {
+      // 1. Post candidate's message
       await addDoc(collection(db, 'chatroom_messages'), {
         roomId: room.id,
         senderId: auth.currentUser?.uid || 'anonymous',
@@ -312,6 +629,29 @@ function _initChatTelemetry(room, userScore, userRank) {
         type: 'text',
         createdAt: serverTimestamp()
       });
+
+      // 2. Intercept and run XiberBot response
+      if (isBotCommand) {
+        _playNeuroSound('correct');
+        const cmd = txt.replace('/bot', '').trim();
+        setTimeout(async () => {
+          const botResponse = _getXiberBotResponse(cmd, userScore);
+          await addDoc(collection(db, 'chatroom_messages'), {
+            roomId: room.id,
+            senderId: 'xiberbot',
+            senderName: 'XiberBot [BOT]',
+            senderEmail: '',
+            senderHandle: 'XiberBot',
+            senderPhoto: '',
+            senderScore: 130,
+            senderRank: 'Legend',
+            content: botResponse,
+            type: 'text',
+            createdAt: serverTimestamp()
+          });
+        }, 1200);
+      }
+
     } catch (e) {
       console.error("Telemetry failed to send:", e);
     }
@@ -326,6 +666,7 @@ function _initChatTelemetry(room, userScore, userRank) {
 
   sendBtn?.addEventListener('click', sendMessage);
 
+  // Hook reaction buttons
   document.querySelectorAll('.chat-react-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const emoji = btn.getAttribute('data-emoji');
@@ -352,112 +693,82 @@ function _initChatTelemetry(room, userScore, userRank) {
   });
 }
 
-function _spawnFloatingReaction(emoji) {
-  const area = document.getElementById('reactions-float-area');
-  if (!area) return;
+/* ── CUSTOM CHAT MARKDOWN PARSER ── */
+function _parseMarkdown(text) {
+  if (!text) return '';
+  let parsed = text;
+  
+  // HTML sanitise basic tag blocks
+  parsed = parsed.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  const el = document.createElement('div');
-  el.textContent = emoji;
-  const randomX = Math.floor(Math.random() * 60) + 20; 
-  const randomRot = Math.floor(Math.random() * 80) - 40; 
+  // Bold (**text**)
+  parsed = parsed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   
-  el.style.cssText = `
-    position: absolute;
-    bottom: -30px;
-    left: ${randomX}px;
-    font-size: 24px;
-    pointer-events: none;
-    user-select: none;
-    --rot: ${randomRot}deg;
-    animation: wld-reaction-float 2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  `;
+  // Italic (*text*)
+  parsed = parsed.replace(/\*(.*?)\*/g, '<em>$1</em>');
   
-  area.appendChild(el);
-  setTimeout(() => el.remove(), 2000);
+  // Code (`code`)
+  parsed = parsed.replace(/`(.*?)`/g, '<code style="font-family:\'JetBrains Mono\', monospace; background:rgba(255,255,255,0.06); padding:2.5px 5px; border-radius:4.5px; font-size:11.5px; border:1px solid rgba(255,255,255,0.05); color:#38bdf8;">$1</code>');
+
+  // Custom Emotes mapping
+  const emotes = {
+    ':brain:': '🧠',
+    ':volt:': '⚡',
+    ':hype:': '🔥',
+    ':lock:': '🔒',
+    ':star:': '👑',
+    ':speed:': '🎯'
+  };
+
+  Object.entries(emotes).forEach(([token, emoji]) => {
+    parsed = parsed.replaceAll(token, emoji);
+  });
+
+  return parsed;
 }
 
-/* ════════════════════════════════════════════════════════════
-   NATIVE WEB AUDIO SOUND GENERATOR
-   ════════════════════════════════════════════════════════════ */
-function _playNeuroSound(type) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    if (type === 'correct') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.12);
-    } else if (type === 'incorrect') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(160, ctx.currentTime);
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
-    } else if (type === 'start') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(300, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.35);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.35);
-    } else if (type === 'complete') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
-      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08); 
-      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16); 
-      osc.frequency.setValueAtTime(1046.50, ctx.currentTime + 0.24); 
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
-    } else if (type === 'flow') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.4);
-    }
-  } catch (e) {}
-}
+/* ── XIBERBOT TELEMETRY INTERPRETER ── */
+function _getXiberBotResponse(command, score) {
+  const cleanCmd = command.toLowerCase().trim();
 
-/* ════════════════════════════════════════════════════════════
-   AUTO-TELEMETRY CHAT BROADCASTER
-   ════════════════════════════════════════════════════════════ */
-async function _broadcastNeuroScore(room, gameName, details) {
-  try {
-    await addDoc(collection(db, 'chatroom_messages'), {
-      roomId: room.id,
-      senderId: 'sys_neuro',
-      senderName: 'SYSTEM_NEURO',
-      senderEmail: '',
-      senderHandle: 'SYS_NEURO',
-      senderPhoto: '',
-      senderScore: 100,
-      senderRank: 'Diamond',
-      content: `⚡ **Candidate session log [${gameName}]:** ${details}`,
-      type: 'text',
-      createdAt: serverTimestamp()
-    });
-  } catch (e) {
-    console.error("Failed to broadcast duel highscore:", e);
+  const tips = [
+    "🧠 **Neuro tip**: Cognitive efficiency is heavily constrained by distractor nodes. Anchor your eyes strictly to targets and filter perimeter flickers during visual search.",
+    "🎯 **Speed advice**: Reaction speed is optimized by slow, deep inhalation. Breathe in for 4s before reflex duels to drop heart rate fluctuations.",
+    "⚡ **Capacity tip**: Working memory retention is limited to $7 \\pm 2$ chunks. When playing N-Back, group positions mentally into patterns rather than counting coordinates.",
+    "👑 **Peak performance**: Ensure your prefrontal cortex is hydrated. Take a 3-minute screen break if your average Vigilance reaction time drops below 350ms."
+  ];
+
+  if (cleanCmd === 'status') {
+    return `📡 **Active Node telemetry log:**
+- Server Nodes online: Tokyo, Shibuya, Core Cluster.
+- Database latency: \`12.4ms\`
+- active telemetry channels: \`${Math.floor(Math.random()*4)+4}\`
+- active candidate: \`@${(auth.currentUser?.email || 'player').split('@')[0]}\`
+- verified candidate profile composite index: \`${score || 'Not Evaluated'}\``;
+  } else if (cleanCmd === 'tip') {
+    return tips[Math.floor(Math.random() * tips.length)];
+  } else if (cleanCmd === 'hack') {
+    return `👾 **Initializing crypto bypass...**
+\`\`\`
+[GATEWAY]: connect.xiberlinc.one -> success
+[HANDSHAKE]: cipher authenticated
+[DECRYPTION]: WMI metadata extracted: ${score || 100}
+\`\`\`
+Connection pipeline clear. You are fully synced.`;
   }
+
+  // Help command list fallback
+  return `🤖 **XiberBot agent active.** 
+Unknown command: \`/bot ${command}\`. 
+Available directives:
+- \`/bot status\` : Decrypt grid node statuses.
+- \`/bot tip\` : Request spatial training tip.
+- \`/bot hack\` : Decrypt core terminal cipher log.`;
 }
 
 /* ════════════════════════════════════════════════════════════
-   COCKPIT ACTIVITIES ROUTING BY ROOM
-   ============================================================ */
+   INTERACTIVE COCKPIT INIT & ROUTING BY ROOM
+   ════════════════════════════════════════════════════════════ */
 function _initCockpitActivity(room) {
   const workspace = document.getElementById('cockpit-workspace');
   if (!workspace) return;
@@ -510,7 +821,7 @@ function _setupFocusCockpit(container, room) {
       </div>
 
       <!-- Vigilance Screen Arena -->
-      <div id="cpt-screen" style="width:200px; height:200px; border:2px solid rgba(255,255,255,0.08); background:#000; border-radius:16px; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-size:5.5rem; font-weight:900; color:#fff; position:relative; box-shadow:inset 0 0 30px rgba(0,0,0,0.8);">
+      <div id="cpt-screen" style="width:160px; height:160px; border:2px solid rgba(255,255,255,0.08); background:#000; border-radius:16px; display:flex; align-items:center; justify-content:center; font-family:'Outfit',sans-serif; font-size:4.5rem; font-weight:900; color:#fff; position:relative; box-shadow:inset 0 0 30px rgba(0,0,0,0.8);">
         Ready
       </div>
 
@@ -536,12 +847,12 @@ function _setupFocusCockpit(container, room) {
   let startLetterTime = 0;
 
   // Stats
-  let correctHits = 0; // Pressed X
-  let correctRejections = 0; // Did not press non-X
+  let correctHits = 0; 
+  let correctRejections = 0; 
   let totalErrors = 0;
   let sumRT = 0;
 
-  const letterPool = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'X', 'X', 'X']; // ~30% X probability
+  const letterPool = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'X', 'X', 'X']; 
 
   const updateStats = () => {
     if (progressDisp) progressDisp.textContent = `${activeIndex}/${totalTrials}`;
@@ -571,7 +882,6 @@ function _setupFocusCockpit(container, room) {
     updateStats();
   };
 
-  // Keyboard trigger
   const handleKeydown = (e) => {
     if (e.key === ' ' || e.code === 'Space') {
       e.preventDefault();
@@ -580,14 +890,11 @@ function _setupFocusCockpit(container, room) {
   };
 
   const cycleLetter = () => {
-    // Process previous trial omission
     if (activeIndex > 0 && !hasPressed) {
       if (currentLetter === 'X') {
-        // Missed target X
         totalErrors++;
         _playNeuroSound('incorrect');
       } else {
-        // Correctly avoided pressing non-X
         correctRejections++;
       }
       updateStats();
@@ -606,7 +913,6 @@ function _setupFocusCockpit(container, room) {
       const acc = Math.round((totalCorrect / totalTrials) * 100);
       const avg = correctHits > 0 ? Math.round(sumRT / correctHits) : 0;
 
-      // Broadcast completion score
       _broadcastNeuroScore(
         room, 
         'CPT Vigilance', 
@@ -615,7 +921,6 @@ function _setupFocusCockpit(container, room) {
       return;
     }
 
-    // Set up next letter
     activeIndex++;
     hasPressed = false;
     currentLetter = letterPool[Math.floor(Math.random() * letterPool.length)];
@@ -646,7 +951,6 @@ function _setupFocusCockpit(container, room) {
 
   actionBtn?.addEventListener('mousedown', handleInput);
 
-  // Observer to clear listener if page is exited early
   const obs = new MutationObserver(() => {
     if (!document.getElementById('cpt-screen')) {
       clearInterval(gameInterval);
@@ -682,8 +986,7 @@ function _setupHypeCockpit(container, room) {
       </div>
 
       <!-- Game Grid Arena -->
-      <div id="search-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; width:220px; height:220px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px; align-content:center; justify-content:center;">
-        <!-- Filled dynamically -->
+      <div id="search-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; width:180px; height:180px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:10px; align-content:center; justify-content:center;">
         <div style="grid-column: span 4; color:rgba(255,255,255,0.3); font-size:12px; font-style:italic;">Grid offline.</div>
       </div>
 
@@ -710,18 +1013,15 @@ function _setupHypeCockpit(container, room) {
     { base: 'M', odd: 'N' },
     { base: 'C', odd: 'G' },
     { base: 'I', odd: 'T' },
-    { base: 'X', odd: 'Y' },
-    { base: '8', odd: 'B' },
-    { base: 'V', odd: 'U' }
+    { base: 'X', odd: 'Y' }
   ];
 
   const generateGrid = () => {
     if (!isPlaying) return;
     grid.innerHTML = '';
     
-    // Choose a random letter pair
     const pair = letterPairs[Math.floor(Math.random() * letterPairs.length)];
-    const oddIndex = Math.floor(Math.random() * 16); // 16 cells in 4x4 grid
+    const oddIndex = Math.floor(Math.random() * 16);
 
     for (let i = 0; i < 16; i++) {
       const cell = document.createElement('button');
@@ -729,9 +1029,9 @@ function _setupHypeCockpit(container, room) {
       cell.textContent = isOdd ? pair.odd : pair.base;
       cell.style.cssText = `
         background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 8px; color: #fff; font-size: 1.8rem; font-weight: 700;
+        border-radius: 6px; color: #fff; font-size: 1.5rem; font-weight: 700;
         font-family: 'Outfit', sans-serif; cursor: pointer; transition: all 0.1s;
-        height: 44px; display: flex; align-items: center; justify-content: center;
+        height: 38px; display: flex; align-items: center; justify-content: center;
       `;
       
       cell.addEventListener('mousedown', () => {
@@ -747,7 +1047,6 @@ function _setupHypeCockpit(container, room) {
           generateGrid();
         } else {
           _playNeuroSound('incorrect');
-          // penalty flash red
           cell.style.borderColor = '#ec4899';
           cell.style.background = 'rgba(236,72,153,0.1)';
         }
@@ -827,7 +1126,7 @@ function _setupStrategyCockpit(container, room) {
       </div>
 
       <!-- 3x3 Grid Board -->
-      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:180px; height:180px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:8px;">
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; width:160px; height:160px; background:#000; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:8px;">
         ${Array.from({length:9}).map((_, i) => `
           <div id="nback-cell-${i}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:6px; transition:background-color 0.15s;"></div>
         `).join('')}
@@ -855,7 +1154,6 @@ function _setupStrategyCockpit(container, room) {
   let hasPressed = false;
 
   const cycleTrial = () => {
-    // Process previous trial mismatch if it was a target and was missed
     if (trialIndex >= 2) {
       const prevTarget = history[trialIndex - 1 - 2];
       const currentCell = history[history.length - 1];
@@ -867,7 +1165,6 @@ function _setupStrategyCockpit(container, room) {
       }
     }
 
-    // Clean active styling
     if (currentActiveCell !== -1) {
       const prevEl = document.getElementById(`nback-cell-${currentActiveCell}`);
       if (prevEl) {
@@ -884,7 +1181,6 @@ function _setupStrategyCockpit(container, room) {
       matchBtn.setAttribute('disabled', 'true');
       _playNeuroSound('complete');
 
-      // Calculate accuracy
       const totalTargets = history.filter((c, idx) => idx >= 2 && c === history[idx - 2]).length;
       const acc = totalTargets > 0 ? Math.round((matches / totalTargets) * 100) : 100;
       
@@ -896,15 +1192,13 @@ function _setupStrategyCockpit(container, room) {
       return;
     }
 
-    // Next flash
     trialIndex++;
     if (trialDisp) trialDisp.textContent = `${trialIndex}/15`;
     hasPressed = false;
 
-    // Force ~35% match chance
     let nextCell;
     if (trialIndex >= 3 && Math.random() < 0.35) {
-      nextCell = history[history.length - 2]; // Match 2 steps ago
+      nextCell = history[history.length - 2]; 
     } else {
       nextCell = Math.floor(Math.random() * 9);
     }
@@ -997,7 +1291,7 @@ function _setupWindDownCockpit(container, room) {
         </div>
       </div>
 
-      <canvas id="flow-canvas" style="width:100%; height:160px; background:#000; border-radius:12px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;"></canvas>
+      <canvas id="flow-canvas" style="width:100%; height:130px; background:#000; border-radius:12px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;"></canvas>
 
       <button id="flow-start-btn" class="cockpit-tab-btn" style="width:100%; max-width:240px; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:42px;">Initialize alignment</button>
     </div>
@@ -1029,7 +1323,6 @@ function _setupWindDownCockpit(container, room) {
   let passedGatesCount = 0;
   let loopId = null;
 
-  // Touch and hold triggers
   let isTapping = false;
   const setTap = (val) => { isTapping = val; };
   canvas.addEventListener('mousedown', () => setTap(true));
@@ -1044,12 +1337,11 @@ function _setupWindDownCockpit(container, room) {
     ballY = height / 2;
     cycle = 0;
 
-    // Spawn 8 sequential gates along X coordinate path (e.g. intervals)
     for (let i = 1; i <= totalGates; i++) {
       gates.push({
         x: 180 + i * 220,
-        amp: Math.random() < 0.5 ? 10 : 45, // Target amplitudes
-        width: 32,
+        amp: Math.random() < 0.5 ? 10 : 35, 
+        width: 28,
         passed: false
       });
     }
@@ -1060,11 +1352,9 @@ function _setupWindDownCockpit(container, room) {
 
     ctx.clearRect(0, 0, width, height);
 
-    // Transition amplitudes based on tap hold controls
-    targetAmplitude = isTapping ? 45 : 10;
+    targetAmplitude = isTapping ? 35 : 10;
     currentAmplitude += (targetAmplitude - currentAmplitude) * 0.08;
 
-    // Draw the calming breathing sine path
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1072,7 +1362,6 @@ function _setupWindDownCockpit(container, room) {
     ctx.lineTo(width, height / 2);
     ctx.stroke();
 
-    // Wave visualization
     ctx.strokeStyle = `${room.colorHex}55`;
     ctx.lineWidth = 3;
     ctx.shadowBlur = 8;
@@ -1086,29 +1375,23 @@ function _setupWindDownCockpit(container, room) {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Draw the alignment target ball
     ballY = height / 2 + Math.sin(100 * waveLength - cycle) * currentAmplitude;
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(100, ballY, 8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Move cycle shift speed
     cycle += waveLength * speedX;
 
-    // Draw gates
     gates.forEach(gate => {
-      // Calculate gate Y position matching base sine formula relative to its distance
       const gateY = height / 2 + Math.sin(gate.x * waveLength - cycle) * gate.amp;
       
-      // Draw gate path target
       ctx.strokeStyle = gate.passed ? room.colorHex : 'rgba(255,255,255,0.2)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(gate.x, gateY, gate.width / 2, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Check collision when crossing ball's X index (100)
       if (!gate.passed && gate.x <= 100) {
         gate.passed = true;
         passedGatesCount++;
@@ -1126,11 +1409,9 @@ function _setupWindDownCockpit(container, room) {
         if (accDisp) accDisp.textContent = `${acc}%`;
       }
 
-      // Move gate position left
       gate.x -= speedX;
     });
 
-    // Check completion
     const lastGate = gates[gates.length - 1];
     if (lastGate && lastGate.x < 60) {
       isPlaying = false;
@@ -1199,9 +1480,9 @@ function _setupStarMeetCockpit(container, room) {
       </div>
 
       <!-- Cognitive Switch Card Display -->
-      <div id="switch-card" style="width:160px; height:100px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition:all 0.15s;">
+      <div id="switch-card" style="width:160px; height:90px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition:all 0.15s;">
         <span style="font-size:11px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.4); text-transform:uppercase;" id="switch-cue">Rule</span>
-        <span style="font-size:2.8rem; font-weight:800; font-family:'Outfit',sans-serif; color:#fff;" id="switch-symbols">--</span>
+        <span style="font-size:2.4rem; font-weight:800; font-family:'Outfit',sans-serif; color:#fff;" id="switch-symbols">--</span>
       </div>
 
       <div style="display:flex; gap:10px; width:100%; max-width:320px;">
@@ -1225,7 +1506,7 @@ function _setupStarMeetCockpit(container, room) {
   let activeIndex = 0;
   const totalTrials = 15;
   let correctResponses = 0;
-  let currentTask = ''; // 'number' (even/odd) or 'letter' (vowel/consonant)
+  let currentTask = ''; 
   let currentNum = 0;
   let currentLet = '';
   let trialStartTime = 0;
@@ -1242,9 +1523,8 @@ function _setupStarMeetCockpit(container, room) {
     activeIndex++;
     if (trialDisp) trialDisp.textContent = `${activeIndex}/${totalTrials}`;
 
-    // Decide task (violet = number, pink = letter)
     currentTask = Math.random() < 0.5 ? 'number' : 'letter';
-    currentNum = Math.floor(Math.random() * 9) + 1; // 1-9
+    currentNum = Math.floor(Math.random() * 9) + 1; 
     currentLet = Math.random() < 0.5 
       ? vowels[Math.floor(Math.random() * vowels.length)] 
       : consonants[Math.floor(Math.random() * consonants.length)];
@@ -1280,7 +1560,6 @@ function _setupStarMeetCockpit(container, room) {
     if (isCorrect) {
       _playNeuroSound('correct');
       correctResponses++;
-      // Switch cost calculation
       if (previousTask !== '') {
         if (previousTask === currentTask) {
           totalRepeatRT += elapsed;
@@ -1300,7 +1579,6 @@ function _setupStarMeetCockpit(container, room) {
     if (accDisp) accDisp.textContent = `${acc}%`;
 
     if (activeIndex >= totalTrials) {
-      // Done
       cueDisp.textContent = 'Done';
       symDisp.textContent = '--';
       card.style.background = 'rgba(255,255,255,0.02)';
@@ -1372,7 +1650,7 @@ function _setupGlobalCockpit(container, room) {
         </div>
       </div>
 
-      <canvas id="router-canvas" style="width:100%; height:180px; background:#000; border-radius:12px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;"></canvas>
+      <canvas id="router-canvas" style="width:100%; height:140px; background:#000; border-radius:12px; border:1px solid rgba(255,255,255,0.06); cursor:pointer;"></canvas>
 
       <button id="router-start-btn" class="cockpit-tab-btn" style="width:100%; max-width:240px; border-color:${room.colorHex}; background:${room.colorHex}15; color:#fff; height:42px;">Initialize Router Grid</button>
     </div>
@@ -1400,22 +1678,20 @@ function _setupGlobalCockpit(container, room) {
   let isPlaying = false;
 
   const buildGraph = () => {
-    // Generate a fixed 5-node graph structure
     nodes = [
-      { id: 'A', x: 40, y: height / 2, label: 'Start (A)' },
-      { id: 'B', x: width / 3 + 10, y: 35, label: 'B' },
-      { id: 'C', x: width / 3 + 10, y: height - 35, label: 'C' },
+      { id: 'A', x: 30, y: height / 2, label: 'Start (A)' },
+      { id: 'B', x: width / 3 + 10, y: 25, label: 'B' },
+      { id: 'C', x: width / 3 + 10, y: height - 25, label: 'C' },
       { id: 'D', x: (width / 3) * 2 - 10, y: height / 2, label: 'D' },
-      { id: 'E', x: width - 40, y: height / 2, label: 'Target (E)' }
+      { id: 'E', x: width - 30, y: height / 2, label: 'Target (E)' }
     ];
 
-    // Randomized cost indices
-    const r1 = Math.floor(Math.random() * 20) + 10; // A-B
-    const r2 = Math.floor(Math.random() * 20) + 10; // A-C
-    const r3 = Math.floor(Math.random() * 25) + 15; // B-D
-    const r4 = Math.floor(Math.random() * 25) + 15; // C-D
-    const r5 = Math.floor(Math.random() * 15) + 10; // D-E
-    const r6 = Math.floor(Math.random() * 35) + 20; // B-C cross link
+    const r1 = Math.floor(Math.random() * 20) + 10; 
+    const r2 = Math.floor(Math.random() * 20) + 10; 
+    const r3 = Math.floor(Math.random() * 25) + 15; 
+    const r4 = Math.floor(Math.random() * 25) + 15; 
+    const r5 = Math.floor(Math.random() * 15) + 10; 
+    const r6 = Math.floor(Math.random() * 35) + 20; 
 
     links = [
       { from: 'A', to: 'B', cost: r1 },
@@ -1430,14 +1706,7 @@ function _setupGlobalCockpit(container, room) {
   };
 
   const findShortestCost = () => {
-    // Simple exhaustive path check for 5 node paths:
-    // Paths: 
-    // 1: A -> B -> D -> E (c1)
-    // 2: A -> C -> D -> E (c2)
-    // 3: A -> B -> C -> D -> E (c3)
-    // 4: A -> C -> B -> D -> E (c4)
-    let best = 9999;
-    const getLinkCost = (f, t) => {
+    let getLinkCost = (f, t) => {
       const l = links.find(x => (x.from === f && x.to === t) || (x.from === t && x.to === f));
       return l ? l.cost : 9999;
     };
@@ -1453,7 +1722,6 @@ function _setupGlobalCockpit(container, room) {
   const drawGraph = () => {
     ctx.clearRect(0, 0, width, height);
 
-    // Draw Links
     links.forEach(l => {
       const fromNode = nodes.find(n => n.id === l.from);
       const toNode = nodes.find(n => n.id === l.to);
@@ -1467,7 +1735,6 @@ function _setupGlobalCockpit(container, room) {
       ctx.lineTo(toNode.x, toNode.y);
       ctx.stroke();
 
-      // Draw cost weight badge
       const mx = (fromNode.x + toNode.x) / 2;
       const my = (fromNode.y + toNode.y) / 2;
       ctx.fillStyle = '#000';
@@ -1477,12 +1744,11 @@ function _setupGlobalCockpit(container, room) {
       ctx.strokeRect(mx - 15, my - 9, 30, 18);
 
       ctx.fillStyle = '#fff';
-      ctx.font = "10px 'JetBrains Mono'";
+      ctx.font = "9.5px 'JetBrains Mono'";
       ctx.textAlign = 'center';
       ctx.fillText(`${l.cost}ms`, mx, my + 4);
     });
 
-    // Draw Nodes
     nodes.forEach(n => {
       const isSelected = userPath.includes(n.id);
       const isCurrent = userPath[userPath.length - 1] === n.id;
@@ -1492,14 +1758,14 @@ function _setupGlobalCockpit(container, room) {
       ctx.lineWidth = isCurrent ? 3 : 1.5;
 
       ctx.beginPath();
-      ctx.arc(n.x, n.y, 18, 0, Math.PI * 2);
+      ctx.arc(n.x, n.y, 14, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
       ctx.fillStyle = '#fff';
-      ctx.font = "bold 11px 'Space Grotesk'";
+      ctx.font = "bold 10px 'Space Grotesk'";
       ctx.textAlign = 'center';
-      ctx.fillText(n.id, n.x, n.y + 4);
+      ctx.fillText(n.id, n.x, n.y + 3.5);
     });
   };
 
@@ -1509,15 +1775,13 @@ function _setupGlobalCockpit(container, room) {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    // Find clicked node
     const clickedNode = nodes.find(n => {
       const dist = Math.hypot(n.x - mx, n.y - my);
-      return dist <= 24; // buffer
+      return dist <= 20; 
     });
 
     if (!clickedNode) return;
 
-    // Must be adjacent to current node
     const currentNode = userPath[userPath.length - 1];
     const isAdjacent = links.some(l => 
       (l.from === currentNode && l.to === clickedNode.id) ||
@@ -1526,16 +1790,13 @@ function _setupGlobalCockpit(container, room) {
 
     if (!isAdjacent) return;
 
-    // Move
     _playNeuroSound('correct');
     userPath.push(clickedNode.id);
     drawGraph();
 
-    // Check target reached
     if (clickedNode.id === 'E') {
       isPlaying = false;
       
-      // Calculate user score cost
       let pathCost = 0;
       for (let i = 0; i < userPath.length - 1; i++) {
         const from = userPath[i];
@@ -1553,7 +1814,6 @@ function _setupGlobalCockpit(container, room) {
 
       setTimeout(() => {
         if (activeRound >= totalRounds) {
-          // Completed
           ctx.clearRect(0, 0, width, height);
           ctx.fillStyle = 'rgba(255,255,255,0.4)';
           ctx.font = "12.5px 'Space Grotesk'";
@@ -1597,6 +1857,69 @@ function _setupGlobalCockpit(container, room) {
   canvas.addEventListener('mousedown', handleCanvasClick);
 }
 
+/* ════════════════════════════════════════════════════════════
+   AUDIO OSCILLATOR FOR CHORD GENERATORS
+   ============================================================ */
+function _startLofiSynth(freq = 110, type = 'sine') {
+  if (isAudioPlaying) _stopLofiSynth();
+
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    ambientOsc = audioCtx.createOscillator();
+    ambientOsc.type = type;
+    ambientOsc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+    lfo = audioCtx.createOscillator();
+    lfo.frequency.setValueAtTime(0.3, audioCtx.currentTime); 
+    lfoGain = audioCtx.createGain();
+    lfoGain.gain.setValueAtTime(freq * 0.02, audioCtx.currentTime); 
+
+    lfo.connect(lfoGain);
+    lfoGain.connect(ambientOsc.frequency);
+
+    gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+    analyserNode = audioCtx.createAnalyser();
+    analyserNode.fftSize = 64;
+
+    ambientOsc.connect(gainNode);
+    gainNode.connect(analyserNode);
+    analyserNode.connect(audioCtx.destination);
+
+    ambientOsc.start();
+    lfo.start();
+    isAudioPlaying = true;
+  } catch(e) {
+    console.warn("Native audio context failed to initialize:", e);
+  }
+}
+
+function _stopLofiSynth() {
+  try {
+    if (ambientOsc) {
+      ambientOsc.stop();
+      ambientOsc.disconnect();
+      ambientOsc = null;
+    }
+    if (lfo) {
+      lfo.stop();
+      lfo.disconnect();
+      lfo = null;
+    }
+    if (gainNode) {
+      gainNode.disconnect();
+      gainNode = null;
+    }
+    if (audioCtx) {
+      audioCtx.close();
+      audioCtx = null;
+    }
+  } catch(e) {}
+  isAudioPlaying = false;
+}
+
 function getRankFromScore(composite) {
   if (composite >= 130) return { rank: 'Legend',   tier: 'star' };
   if (composite >= 115) return { rank: 'Master',   tier: 'star' };
@@ -1604,4 +1927,118 @@ function getRankFromScore(composite) {
   if (composite >= 85)  return { rank: 'Platinum', tier: 'community' };
   if (composite >= 70)  return { rank: 'Gold',     tier: 'community' };
   return                       { rank: 'Silver',   tier: 'community' };
+}
+
+/* ════════════════════════════════════════════════════════════
+   DISCORD-IRL AUDIO SYNTHESIZER
+   ════════════════════════════════════════════════════════════ */
+function _playNeuroSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    const now = ctx.currentTime;
+    
+    if (type === 'correct') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } else if (type === 'incorrect') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.linearRampToValueAtTime(80, now + 0.2);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } else if (type === 'start') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.25);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } else if (type === 'complete') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+      osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+      osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if (type === 'flow') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(329.63, now); // E4
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.4);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    }
+  } catch(e) {
+    console.warn("Audio context error:", e);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   AUTO-TELEMETRY TELEGRAM BROADCASTER
+   ════════════════════════════════════════════════════════════ */
+async function _broadcastNeuroScore(room, gameName, resultSummary) {
+  try {
+    await addDoc(collection(db, 'chatroom_messages'), {
+      roomId: room.id,
+      senderId: 'xiberbot',
+      senderName: 'XiberBot [BOT]',
+      senderEmail: '',
+      senderHandle: 'XiberBot',
+      senderPhoto: '',
+      senderScore: 130,
+      senderRank: 'Legend',
+      content: `📡 **Telemetry Alert: Training Registered**\n\nCandidate: @${(auth.currentUser?.email || 'player').split('@')[0]}\nTraining Zone: **${gameName}**\n\n${resultSummary}`,
+      type: 'text',
+      createdAt: serverTimestamp()
+    });
+  } catch(e) {
+    console.error("Auto broadcast failed:", e);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   FLOATING EMOTE REACTION EMITTER
+   ════════════════════════════════════════════════════════════ */
+function _spawnFloatingReaction(emoji) {
+  const area = document.getElementById('reactions-float-area');
+  if (!area) return;
+  
+  const react = document.createElement('div');
+  react.textContent = emoji;
+  
+  const rot = (Math.random() * 40 - 20) + 'deg';
+  const left = Math.floor(Math.random() * 40) + 'px';
+  
+  react.style.cssText = `
+    position: absolute;
+    bottom: 0;
+    left: ${left};
+    font-size: 24px;
+    pointer-events: none;
+    --rot: ${rot};
+    animation: wld-reaction-float 2.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  `;
+  
+  area.appendChild(react);
+  setTimeout(() => {
+    react.remove();
+  }, 2500);
 }
