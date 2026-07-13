@@ -41,7 +41,7 @@ function handleRouteChange() {
   const handler = routes[route];
 
   // Route protection: redirect to World login if no active session
-  const protectedRoutes = ['instructions', 'task/vwm-pure', 'task/vwm-distractor', 'task/ant', 'transition', 'complete', 'room'];
+  const protectedRoutes = ['instructions', 'task/vwm-pure', 'task/vwm-distractor', 'task/ant', 'transition', 'complete'];
   if (protectedRoutes.includes(route)) {
     const session = Storage.getCurrentSession();
     if (!session) {

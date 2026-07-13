@@ -6,7 +6,7 @@
 
 import { render } from '../utils/dom.js';
 import { navigate, injectStyle } from '../router.js';
-import { auth, db } from '../utils/firebase.js';
+import { auth, db, authReady } from '../utils/firebase.js';
 import { fetchUserProfile } from '../utils/worldData.js';
 import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { 
@@ -44,6 +44,13 @@ const rtcConfig = {
 };
 
 export async function RoomView(params = {}) {
+  await authReady;
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) {
+    navigate('');
+    return;
+  }
+
   const roomId = params.roomId || 'room_1';
   const room = NEURO_ROOMS.find(r => r.id === roomId) || NEURO_ROOMS[0];
 
