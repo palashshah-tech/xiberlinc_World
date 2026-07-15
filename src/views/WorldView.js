@@ -216,7 +216,7 @@ function _initAuth() {
   }
 }
 
-const LOADER_MS = 15000;
+const LOADER_MS = 3000;
 
 function _startLoader() {
   const loader = document.getElementById('world-loader');
@@ -361,9 +361,27 @@ function _initConstellationCanvas(players) {
   const graph = getSocialGraphData(players);
   let mouse = { x: -1000, y: -1000 };
   let hoveredNode = null;
+  let draggedNode = null;
   let animFrame = null;
   let time = 0;
 
+  // Initialize nodes with dynamic positions & physical properties
+  const nodes = graph.nodes.map((node) => {
+    const angle = Math.random() * Math.PI * 2;
+    // User is dead-center, other nodes orbit at varying distances
+    const dist = node.isUser ? 0 : 70 + Math.random() * 110;
+    return {
+      ...node,
+      x: width / 2 + Math.cos(angle) * dist,
+      y: height / 2 + Math.sin(angle) * dist,
+      vx: 0,
+      vy: 0,
+      fx: 0,
+      fy: 0
+    };
+  });
+
+  // Track mouse coordinates for hover and drag
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     mouse.x = e.clientX - rect.left;
@@ -373,18 +391,182 @@ function _initConstellationCanvas(players) {
   canvas.addEventListener('mouseleave', () => {
     mouse = { x: -1000, y: -1000 };
     hoveredNode = null;
+    draggedNode = null;
     if (tooltip) tooltip.style.opacity = '0';
   });
 
-  const ringRadii = [0.12, 0.28, 0.44, 0.60];
+  // Drag and Drop listeners
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    let closest = null;
+    let minDist = 26; // drag radius activation
+    nodes.forEach(n => {
+      const dx = n.x - mx;
+      const dy = n.y - my;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = n;
+      }
+    });
+
+    if (closest) {
+      draggedNode = closest;
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => {
+    draggedNode = null;
+  });
+
+  // Touch support for mobile devices
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.touches[0].clientX - rect.left;
+    const my = e.touches[0].clientY - rect.top;
+    mouse.x = mx;
+    mouse.y = my;
+
+    let closest = null;
+    let minDist = 35;
+    nodes.forEach(n => {
+      const dx = n.x - mx;
+      const dy = n.y - my;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = n;
+      }
+    });
+
+    if (closest) {
+      draggedNode = closest;
+    }
+  });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.touches[0].clientX - rect.left;
+    mouse.y = e.touches[0].clientY - rect.top;
+  });
+
+  canvas.addEventListener('touchend', () => {
+    draggedNode = null;
+    mouse = { x: -1000, y: -1000 };
+  });
 
   function draw() {
     time += 0.015;
     ctx.clearRect(0, 0, width, height);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+    // ── PHYSICS RESOLUTIONS ──
+    const cx = width / 2;
+    const cy = height / 2;
+
+    // Reset forces & apply central gravity
+    nodes.forEach(n => {
+      n.fx = 0;
+      n.fy = 0;
+
+      if (!n.isUser) {
+        const dx = cx - n.x;
+        const dy = cy - n.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const gravityStrength = 0.055;
+        n.fx += (dx / dist) * gravityStrength;
+        n.fy += (dy / dist) * gravityStrength;
+      }
+    });
+
+    // Node repulsion (keeps nodes spaced out cleanly)
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const n1 = nodes[i];
+        const n2 = nodes[j];
+        const dx = n2.x - n1.x;
+        const dy = n2.y - n1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+        const minDistance = 75; // separation range
+        if (dist < minDistance) {
+          const force = (minDistance - dist) / minDistance * 0.22;
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+          n1.fx -= fx;
+          n1.fy -= fy;
+          n2.fx += fx;
+          n2.fy += fy;
+        }
+      }
+    }
+
+    // Edge spring forces (links pull nodes together)
+    graph.edges.forEach(edge => {
+      const n1 = nodes.find(n => n.id === edge.from);
+      const n2 = nodes.find(n => n.id === edge.to);
+      if (!n1 || !n2) return;
+
+      const dx = n2.x - n1.x;
+      const dy = n2.y - n1.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+      const springLength = n2.ring ? 60 + n2.ring * 35 : 90;
+      const k = 0.02; // spring strength
+      const stretch = dist - springLength;
+      const force = stretch * k;
+
+      const fx = (dx / dist) * force;
+      const fy = (dy / dist) * force;
+
+      n1.fx += fx;
+      n1.fy += fy;
+      n2.fx -= fx;
+      n2.fy -= fy;
+    });
+
+    // Override positions if dragging
+    if (draggedNode) {
+      draggedNode.x = mouse.x;
+      draggedNode.y = mouse.y;
+      draggedNode.vx = 0;
+      draggedNode.vy = 0;
+      draggedNode.fx = 0;
+      draggedNode.fy = 0;
+    }
+
+    // Apply velocities and limit node positions
+    nodes.forEach(n => {
+      if (n.isUser && !draggedNode) {
+        // User stays anchored in the middle
+        n.x += (cx - n.x) * 0.12;
+        n.y += (cy - n.y) * 0.12;
+        return;
+      }
+
+      n.vx = (n.vx + n.fx) * 0.84; // friction factor
+      n.vy = (n.vy + n.fy) * 0.84;
+      n.x += n.vx;
+      n.y += n.vy;
+
+      // Restrict inside padding boundaries
+      const pad = 24;
+      if (n.x < pad) n.x = pad;
+      if (n.x > width - pad) n.x = width - pad;
+      if (n.y < pad) n.y = pad;
+      if (n.y > height - pad) n.y = height - pad;
+    });
+
+    // ── DRAW GRAPHICS ──
+
+    // Draw holographic grid background
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
     ctx.lineWidth = 1;
-    const gridSize = 32;
+    const gridSize = 40;
     for (let x = 0; x < width; x += gridSize) {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
     }
@@ -392,90 +574,97 @@ function _initConstellationCanvas(players) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
     }
 
-    ctx.strokeStyle = 'rgba(124, 58, 237, 0.05)';
-    ctx.lineWidth = 1;
-    const ringRadiusPx = ringRadii.map(r => r * Math.min(width, height));
-    ringRadiusPx.forEach((rPx) => {
+    // Draw concentric orbital rings
+    ctx.strokeStyle = 'rgba(124, 58, 237, 0.06)';
+    ctx.lineWidth = 1.2;
+    const ringRadiiPx = [70, 125, 185];
+    ringRadiiPx.forEach(r => {
       ctx.beginPath();
-      ctx.arc(width / 2, height / 2, rPx, 0, 2 * Math.PI);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.stroke();
     });
 
-    const scaleCoord = (node) => {
-      const cx = width / 2;
-      const cy = height / 2;
-      if (node.isUser) return { x: cx, y: cy };
-      
-      const rIdx = node.ring - 1;
-      const ringRadius = ringRadii[rIdx] * Math.min(width, height);
-      const thetaOffset = time * (0.08 / (rIdx + 1));
-      
-      const nodesInRing = graph.nodes.filter(n => n.ring === node.ring);
-      const angle = (2 * Math.PI) / Math.max(1, nodesInRing.length);
-      const nodeIndex = nodesInRing.indexOf(node);
-      const theta = angle * nodeIndex - Math.PI / 2 + thetaOffset;
-
-      return {
-        x: cx + ringRadius * Math.cos(theta),
-        y: cy + ringRadius * Math.sin(theta)
-      };
-    };
+    // Draw connected edges with sliding glowing packets
+    const packetProgress = (time * 0.35) % 1.0;
 
     graph.edges.forEach((edge) => {
-      const fromNode = graph.nodes.find(n => n.id === edge.from);
-      const toNode = graph.nodes.find(n => n.id === edge.to);
+      const fromNode = nodes.find(n => n.id === edge.from);
+      const toNode = nodes.find(n => n.id === edge.to);
       if (!fromNode || !toNode) return;
 
-      const p1 = scaleCoord(fromNode);
-      const p2 = scaleCoord(toNode);
+      const grad = ctx.createLinearGradient(fromNode.x, fromNode.y, toNode.x, toNode.y);
+      grad.addColorStop(0, fromNode.color);
+      grad.addColorStop(1, toNode.color);
 
-      const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
-      grad.addColorStop(0, '#d4ff00');
-      grad.addColorStop(1, '#7c3aed');
-
+      // Edge link line
       ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
+      ctx.moveTo(fromNode.x, fromNode.y);
+      ctx.lineTo(toNode.x, toNode.y);
       ctx.strokeStyle = grad;
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = edge.opacity * (0.7 + 0.3 * Math.sin(time * 2 + edge.opacity * 10));
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = edge.opacity * (0.6 + 0.35 * Math.sin(time * 2.5 + edge.opacity * 8));
       ctx.stroke();
       ctx.globalAlpha = 1.0;
-    });
 
-    let newHovered = null;
-    graph.nodes.forEach((node) => {
-      const p = scaleCoord(node);
-      const r = node.radius + Math.sin(time * 3 + node.radius) * 1.5;
-
-      const dx = mouse.x - p.x;
-      const dy = mouse.y - p.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const isHovered = dist < node.radius + 8;
-
-      if (isHovered) newHovered = node;
+      // Glowing data packets floating along connection link
+      const px = fromNode.x + (toNode.x - fromNode.x) * packetProgress;
+      const py = fromNode.y + (toNode.y - fromNode.y) * packetProgress;
 
       ctx.save();
-      ctx.shadowBlur = isHovered ? 25 : 12;
-      ctx.shadowColor = node.color;
-
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = toNode.color;
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, isHovered ? r * 1.3 : r, 0, 2 * Math.PI);
-      ctx.fillStyle = node.color;
+      ctx.arc(px, py, 3.0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
+    });
 
+    // Draw nodes
+    let newHovered = null;
+
+    nodes.forEach((node) => {
+      const dx = mouse.x - node.x;
+      const dy = mouse.y - node.y;
+      const isHovered = Math.sqrt(dx * dx + dy * dy) < node.radius + 8;
+      if (isHovered) newHovered = node;
+
+      const baseRadius = node.radius;
+      const pulse = Math.sin(time * 2.8 + node.radius) * 1.5;
+      const r = isHovered ? (baseRadius + pulse) * 1.25 : baseRadius + pulse;
+
+      ctx.save();
+      ctx.shadowBlur = isHovered ? 28 : 12;
+      ctx.shadowColor = node.color;
+      
+      // Node core circle
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
+      ctx.fillStyle = node.color;
+      ctx.fill();
+      
+      // Node outer glow ring
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, r + 4, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Node label
       if (node.isUser || isHovered) {
         ctx.fillStyle = '#ffffff';
-        ctx.font = `600 ${isHovered ? 11 : 9.5}px 'Space Grotesk', sans-serif`;
+        ctx.font = `600 ${isHovered ? 11.5 : 10}px 'Space Grotesk', sans-serif`;
       } else {
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
         ctx.font = "9px 'Space Grotesk', sans-serif";
       }
       ctx.textAlign = 'center';
-      ctx.fillText(node.label, p.x, p.y - r - 6);
+      ctx.fillText(node.label, node.x, node.y - r - 9);
     });
 
+    // Handle tooltips on hovered nodes
     if (newHovered !== hoveredNode) {
       hoveredNode = newHovered;
       if (hoveredNode && tooltip) {
@@ -504,9 +693,8 @@ function _initConstellationCanvas(players) {
     }
 
     if (hoveredNode && tooltip) {
-      const p = scaleCoord(hoveredNode);
-      tooltip.style.left = `${p.x + 12}px`;
-      tooltip.style.top = `${p.y - 40}px`;
+      tooltip.style.left = `${hoveredNode.x + 12}px`;
+      tooltip.style.top = `${hoveredNode.y - 45}px`;
     }
 
     animFrame = requestAnimationFrame(draw);

@@ -49,6 +49,9 @@ let visualizerLoopId = null;
 let matrixRipples = []; 
 let matrixMousePos = { x: null, y: null };
 
+// XiberBot Memory and Room telemetry variables
+let roomMessages = [];
+let botSessionNotes = []; 
 
 // Comprehensive TURN server list covering multiple ports/protocols
 // to handle strict firewalls, symmetric NAT, and carrier-grade NAT
@@ -1107,6 +1110,9 @@ function _initChatTelemetry(room, userScore, userRank) {
       .reverse()
       .slice(-50);
 
+    roomMessages = rawMessages;
+
+
     const activeUserMap = new Map();
     rawMessages.forEach(m => {
       if (m.senderName && m.senderHandle && m.type !== 'sfx') {
@@ -1254,7 +1260,7 @@ function _initChatTelemetry(room, userScore, userRank) {
         _playNeuroSound('correct');
         const cmd = txt.replace('/bot', '').trim();
         setTimeout(async () => {
-          const botResponse = _getXiberBotResponse(cmd, userScore);
+          const botResponse = _getXiberBotResponse(cmd, userScore, room);
           await addDoc(collection(db, 'chatroom_messages'), {
             roomId: room.id,
             senderId: 'xiberbot',
@@ -1347,8 +1353,9 @@ function _parseMarkdown(text) {
 }
 
 /* ── XIBERBOT TELEMETRY INTERPRETER ── */
-function _getXiberBotResponse(command, score) {
-  const cleanCmd = command.toLowerCase().trim();
+function _getXiberBotResponse(command, score, room) {
+  const cleanCmd = command.trim();
+  const lowerCmd = cleanCmd.toLowerCase();
 
   const tips = [
     "🧠 **Neuro tip**: Cognitive efficiency is heavily constrained by distractor nodes. Anchor your eyes strictly to targets and filter perimeter flickers during visual search.",
@@ -1357,16 +1364,86 @@ function _getXiberBotResponse(command, score) {
     "👑 **Peak performance**: Ensure your prefrontal cortex is hydrated. Take a 3-minute screen break if your average Vigilance reaction time drops below 350ms."
   ];
 
-  if (cleanCmd === 'status') {
+  // 1. REMEMBER COMMAND: Store note in local session memory
+  if (lowerCmd.startsWith('remember ')) {
+    const note = cleanCmd.substring(9).trim();
+    if (!note) return "🤖 **XiberBot**: Specify a note to remember. E.g. `/bot remember meeting at 9pm`.";
+    
+    // Save to memory
+    botSessionNotes.push({
+      note,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      user: '@' + (auth.currentUser?.email || 'player').split('@')[0]
+    });
+    
+    return `💾 **XiberBot memory log updated:**
+I have synchronized this note to my cognitive buffer for **${room.name}**:
+_"${note}"_
+Use \`/bot recall\` to dump my memory.`;
+  }
+
+  // 2. RECALL COMMAND: List all stored notes
+  if (lowerCmd === 'recall' || lowerCmd === 'memory') {
+    if (botSessionNotes.length === 0) {
+      return `🤖 **XiberBot Cognition Recall:**
+My session memory buffer is empty. You can store notes inside this room by typing \`/bot remember <your note>\`.`;
+    }
+    
+    let listHtml = `🤖 **XiberBot Cognition Recall for ${room.name}:**\n`;
+    botSessionNotes.forEach((n, idx) => {
+      listHtml += `${idx + 1}. **[${n.timestamp}]** _"${n.note}"_ (saved by ${n.user})\n`;
+    });
+    return listHtml;
+  }
+
+  // 3. CHATLOG/SUMMARIZE COMMAND: Analyze recent room activity
+  if (lowerCmd === 'chatlog' || lowerCmd === 'summarize') {
+    const textMsgs = roomMessages.filter(m => m.type === 'text' && m.senderHandle !== 'XiberBot');
+    if (textMsgs.length === 0) {
+      return `📊 **Telemetry Feed Summary for ${room.name}:**
+No user message logs detected in the active stream buffer yet.`;
+    }
+
+    const uniqueSenders = [...new Set(textMsgs.map(m => m.senderHandle))];
+    const latestText = textMsgs[textMsgs.length - 1];
+    
+    return `📊 **Telemetry Feed Summary for ${room.name}:**
+- active stream nodes: \`${uniqueSenders.join(', ') || 'None'}\`
+- total packages buffered: \`${textMsgs.length} messages\`
+- last message received: **${latestText.senderHandle}**: _"${latestText.content}"_
+- current network status: **SYNCED**`;
+  }
+
+  // 4. BEST SCORES COMMAND: Scan chat for highest WMI score
+  if (lowerCmd === 'best' || lowerCmd === 'highest') {
+    const scoreMsgs = roomMessages.filter(m => m.senderScore && m.senderScore > 0);
+    if (scoreMsgs.length === 0) {
+      return `🏆 **Room peak cognitive telemetry index:**
+No verified WMI score logs found in the active chat stream. Complete the cognitive assessment to log your ranking.`;
+    }
+
+    const sorted = [...scoreMsgs].sort((a, b) => b.senderScore - a.senderScore);
+    const top = sorted[0];
+    
+    return `🏆 **Room peak cognitive telemetry index:**
+The highest verified cognitive capacity logged in this chat stream is **WMI ${top.senderScore}** (Rank: **${top.senderRank}**) by **${top.senderHandle}**!`;
+  }
+
+  // 5. STANDARD COMMANDS
+  if (lowerCmd === 'status') {
     return `📡 **Active Node telemetry log:**
 - Server Nodes online: Tokyo, Shibuya, Core Cluster.
 - Database latency: \`12.4ms\`
 - active telemetry channels: \`${Math.floor(Math.random()*4)+4}\`
 - active candidate: \`@${(auth.currentUser?.email || 'player').split('@')[0]}\`
 - verified candidate profile composite index: \`${score || 'Not Evaluated'}\``;
-  } else if (cleanCmd === 'tip') {
+  } 
+  
+  if (lowerCmd === 'tip') {
     return tips[Math.floor(Math.random() * tips.length)];
-  } else if (cleanCmd === 'hack') {
+  } 
+  
+  if (lowerCmd === 'hack') {
     return `👾 **Initializing crypto bypass...**
 \`\`\`
 [GATEWAY]: connect.xiberlinc.one -> success
@@ -1377,12 +1454,16 @@ Connection pipeline clear. You are fully synced.`;
   }
 
   // Help command list fallback
-  return `🤖 **XiberBot agent active.** 
+  return `🤖 **XiberBot agent active for ${room.name}.** 
 Unknown command: \`/bot ${command}\`. 
 Available directives:
 - \`/bot status\` : Decrypt grid node statuses.
 - \`/bot tip\` : Request spatial training tip.
-- \`/bot hack\` : Decrypt core terminal cipher log.`;
+- \`/bot hack\` : Decrypt core terminal cipher log.
+- \`/bot remember <note>\` : Store a temporary log note.
+- \`/bot recall\` : Retrieve all stored log notes.
+- \`/bot chatlog\` : Summarize recent room conversation stats.
+- \`/bot best\` : Scan room feed for the highest WMI score.`;
 }
 
 /* ════════════════════════════════════════════════════════════
