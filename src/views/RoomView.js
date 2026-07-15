@@ -11,7 +11,7 @@ import { fetchUserProfile } from '../utils/worldData.js';
 import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { 
   collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp,
-  deleteDoc, doc, getDocs, setDoc
+  deleteDoc, doc, getDocs, setDoc, getDoc
 } from 'firebase/firestore';
 
 // Global variables for audio state across room mounts
@@ -75,11 +75,40 @@ let rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
 
 // Update TURN config — fetches fresh short-lived Metered credentials if available
 async function _fetchTurnCredentials() {
-  // The static list is already comprehensive; this is a no-op unless you set up
-  // a private Metered account. We still log what servers we'll use.
-  console.error('[WebRTC] ICE server list prepared. TURN servers:', 
+  try {
+    // 1. Read custom keys from Firestore to see if user configured a private Metered account
+    const configRef = doc(db, 'system_config', 'webrtc');
+    const configSnap = await getDoc(configRef);
+    
+    if (configSnap.exists()) {
+      const { apiKey, domain } = configSnap.data();
+      if (apiKey && domain) {
+        console.error(`[WebRTC] Found custom Metered credentials in Firestore (Domain: ${domain}). Fetching fresh credentials...`);
+        const resp = await fetch(
+          `https://${domain}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
+        );
+        if (resp.ok) {
+          const servers = await resp.json();
+          if (Array.isArray(servers) && servers.length > 0) {
+            // Keep basic STUN servers, overlay custom TURN servers
+            const baseStunOnly = COMPREHENSIVE_ICE_SERVERS.filter(s => !s.username);
+            rtcConfig = { iceServers: [...baseStunOnly, ...servers] };
+            console.error('[WebRTC] Successfully fetched fresh PRIVATE TURN credentials. Server count:', servers.length);
+            return;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[WebRTC] Error retrieving dynamic TURN configuration:', e.message);
+  }
+
+  // Fallback to static public servers
+  rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
+  console.error('[WebRTC] No private configuration active. Fallback to public TURN servers:', 
     COMPREHENSIVE_ICE_SERVERS.filter(s => String(s.urls).startsWith('turn')).map(s => s.urls));
 }
+
 
 export async function RoomView(params = {}) {
   await authReady;
