@@ -358,7 +358,10 @@ function _initConstellationCanvas(players) {
   });
   ro.observe(container);
 
-  const graph = getSocialGraphData(players);
+  const user = auth.currentUser;
+  const userHandle = user ? '@' + user.email.split('@')[0] : '';
+  const filteredPlayers = players.filter(p => p.handle.toLowerCase() !== userHandle.toLowerCase());
+  const graph = getSocialGraphData(filteredPlayers);
   let mouse = { x: -1000, y: -1000 };
   let hoveredNode = null;
   let draggedNode = null;
