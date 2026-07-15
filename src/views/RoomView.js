@@ -94,7 +94,7 @@ async function _fetchTurnCredentials() {
   }
 
   // 2. Client-side fallback (queries Firestore configuration)
-  let apiKey = 'abac7917a0e93ef84683e971b60ec2af8e73';
+  let apiKey = null;
   let domain = 'xibworld';
 
   try {
@@ -107,10 +107,13 @@ async function _fetchTurnCredentials() {
       console.error(`[WebRTC] Fallback: Using Firestore system_config/webrtc overrides.`);
     }
   } catch (e) {
-    console.error('[WebRTC] Fallback: Custom config fetch error, using defaults:', e.message);
+    console.error('[WebRTC] Fallback: Custom config fetch error:', e.message);
   }
 
   try {
+    if (!apiKey) {
+      throw new Error('No private TURN credentials configured in Firestore.');
+    }
     const resp = await fetch(
       `https://${domain}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
     );

@@ -14,9 +14,13 @@ export default async function handler(req, res) {
   }
 
   // Retrieve credentials securely from Vercel Environment Variables
-  // with fallback defaults for zero-config startup
-  const apiKey = process.env.METERED_API_KEY || 'abac7917a0e93ef84683e971b60ec2af8e73';
+  const apiKey = process.env.METERED_API_KEY;
   const domain = process.env.METERED_DOMAIN || 'xibworld';
+
+  if (!apiKey) {
+    console.error('METERED_API_KEY environment variable is not defined.');
+    return res.status(500).json({ error: 'METERED_API_KEY environment variable is not configured on Vercel.' });
+  }
 
   try {
     const response = await fetch(
