@@ -94,7 +94,7 @@ async function _fetchTurnCredentials() {
   }
 
   // 2. Client-side fallback (queries Firestore configuration)
-  let apiKey = 'i4yL5XoDH7g2C9Jiekj4Fk6WmqHlQvstAdgL1edPIJVky6zi';
+  let apiKey = 'abac7917a0e93ef84683e971b60ec2af8e73';
   let domain = 'xibworld';
 
   try {

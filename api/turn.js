@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   // Retrieve credentials securely from Vercel Environment Variables
   // with fallback defaults for zero-config startup
-  const apiKey = process.env.METERED_API_KEY || 'i4yL5XoDH7g2C9Jiekj4Fk6WmqHlQvstAdgL1edPIJVky6zi';
+  const apiKey = process.env.METERED_API_KEY || 'abac7917a0e93ef84683e971b60ec2af8e73';
   const domain = process.env.METERED_DOMAIN || 'xibworld';
 
   try {
