@@ -75,39 +75,50 @@ let rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
 
 // Update TURN config — fetches fresh short-lived Metered credentials if available
 async function _fetchTurnCredentials() {
+  let apiKey = 'i4yL5XoDH7g2C9Jiekj4Fk6WmqHlQvstAdgL1edPIJVky6zi';
+  let domain = 'xibworld';
+
   try {
-    // 1. Read custom keys from Firestore to see if user configured a private Metered account
+    // 1. Check if user configured a custom override in Firestore system_config/webrtc
     const configRef = doc(db, 'system_config', 'webrtc');
     const configSnap = await getDoc(configRef);
     
     if (configSnap.exists()) {
-      const { apiKey, domain } = configSnap.data();
-      if (apiKey && domain) {
-        console.error(`[WebRTC] Found custom Metered credentials in Firestore (Domain: ${domain}). Fetching fresh credentials...`);
-        const resp = await fetch(
-          `https://${domain}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
-        );
-        if (resp.ok) {
-          const servers = await resp.json();
-          if (Array.isArray(servers) && servers.length > 0) {
-            // Keep basic STUN servers, overlay custom TURN servers
-            const baseStunOnly = COMPREHENSIVE_ICE_SERVERS.filter(s => !s.username);
-            rtcConfig = { iceServers: [...baseStunOnly, ...servers] };
-            console.error('[WebRTC] Successfully fetched fresh PRIVATE TURN credentials. Server count:', servers.length);
-            return;
-          }
-        }
+      const data = configSnap.data();
+      if (data.apiKey) apiKey = data.apiKey;
+      if (data.domain) {
+        // Strip out metered.live suffix if they pasted the whole URL
+        domain = data.domain.replace('.metered.live', '').trim();
       }
+      console.error(`[WebRTC] Using Firestore system_config/webrtc overrides.`);
     }
   } catch (e) {
-    console.error('[WebRTC] Error retrieving dynamic TURN configuration:', e.message);
+    console.error('[WebRTC] Custom config fetch error, using default private key:', e.message);
   }
 
-  // Fallback to static public servers
-  rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
-  console.error('[WebRTC] No private configuration active. Fallback to public TURN servers:', 
-    COMPREHENSIVE_ICE_SERVERS.filter(s => String(s.urls).startsWith('turn')).map(s => s.urls));
+  // 2. Perform the fetch request to Metered using active credentials
+  try {
+    console.error(`[WebRTC] Fetching fresh TURN credentials from Metered (Domain: ${domain})...`);
+    const resp = await fetch(
+      `https://${domain}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
+    );
+    if (resp.ok) {
+      const servers = await resp.json();
+      if (Array.isArray(servers) && servers.length > 0) {
+        // Keep basic STUN servers, overlay private TURN servers
+        const baseStunOnly = COMPREHENSIVE_ICE_SERVERS.filter(s => !s.username);
+        rtcConfig = { iceServers: [...baseStunOnly, ...servers] };
+        console.error('[WebRTC] Successfully fetched fresh PRIVATE TURN credentials. Server count:', servers.length);
+        return;
+      }
+    }
+    throw new Error('Response status ' + resp.status);
+  } catch(e) {
+    console.error('[WebRTC] Metered fetch failed, falling back to public TURN pool:', e.message);
+    rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
+  }
 }
+
 
 
 export async function RoomView(params = {}) {
