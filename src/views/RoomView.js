@@ -73,51 +73,63 @@ const COMPREHENSIVE_ICE_SERVERS = [
 
 let rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
 
-// Update TURN config — fetches fresh short-lived Metered credentials if available
+// Update TURN config — fetches fresh short-lived Metered credentials securely via Serverless Function
 async function _fetchTurnCredentials() {
+  // 1. Attempt secure serverless fetch (hides API Key from network inspectors)
+  try {
+    console.error(`[WebRTC] Fetching fresh TURN credentials securely via /api/turn serverless endpoint...`);
+    const resp = await fetch('/api/turn');
+    if (resp.ok) {
+      const servers = await resp.json();
+      if (Array.isArray(servers) && servers.length > 0) {
+        const baseStunOnly = COMPREHENSIVE_ICE_SERVERS.filter(s => !s.username);
+        rtcConfig = { iceServers: [...baseStunOnly, ...servers] };
+        console.error('[WebRTC] Successfully fetched fresh TURN credentials securely. Server count:', servers.length);
+        return;
+      }
+    }
+    throw new Error('Serverless response: ' + resp.status);
+  } catch(err) {
+    console.error('[WebRTC] Serverless fetch failed, attempting client-side fallback:', err.message);
+  }
+
+  // 2. Client-side fallback (queries Firestore configuration)
   let apiKey = 'i4yL5XoDH7g2C9Jiekj4Fk6WmqHlQvstAdgL1edPIJVky6zi';
   let domain = 'xibworld';
 
   try {
-    // 1. Check if user configured a custom override in Firestore system_config/webrtc
     const configRef = doc(db, 'system_config', 'webrtc');
     const configSnap = await getDoc(configRef);
-    
     if (configSnap.exists()) {
       const data = configSnap.data();
       if (data.apiKey) apiKey = data.apiKey;
-      if (data.domain) {
-        // Strip out metered.live suffix if they pasted the whole URL
-        domain = data.domain.replace('.metered.live', '').trim();
-      }
-      console.error(`[WebRTC] Using Firestore system_config/webrtc overrides.`);
+      if (data.domain) domain = data.domain.replace('.metered.live', '').trim();
+      console.error(`[WebRTC] Fallback: Using Firestore system_config/webrtc overrides.`);
     }
   } catch (e) {
-    console.error('[WebRTC] Custom config fetch error, using default private key:', e.message);
+    console.error('[WebRTC] Fallback: Custom config fetch error, using defaults:', e.message);
   }
 
-  // 2. Perform the fetch request to Metered using active credentials
   try {
-    console.error(`[WebRTC] Fetching fresh TURN credentials from Metered (Domain: ${domain})...`);
     const resp = await fetch(
       `https://${domain}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
     );
     if (resp.ok) {
       const servers = await resp.json();
       if (Array.isArray(servers) && servers.length > 0) {
-        // Keep basic STUN servers, overlay private TURN servers
         const baseStunOnly = COMPREHENSIVE_ICE_SERVERS.filter(s => !s.username);
         rtcConfig = { iceServers: [...baseStunOnly, ...servers] };
-        console.error('[WebRTC] Successfully fetched fresh PRIVATE TURN credentials. Server count:', servers.length);
+        console.error('[WebRTC] Fallback: Successfully fetched credentials from Metered API. Server count:', servers.length);
         return;
       }
     }
-    throw new Error('Response status ' + resp.status);
+    throw new Error('Status ' + resp.status);
   } catch(e) {
-    console.error('[WebRTC] Metered fetch failed, falling back to public TURN pool:', e.message);
+    console.error('[WebRTC] Fallback: Metered API fetch failed, using static public pool:', e.message);
     rtcConfig = { iceServers: COMPREHENSIVE_ICE_SERVERS };
   }
 }
+
 
 
 
