@@ -37,6 +37,19 @@ let voicePresenceUnsub = null;
 let myPresenceDocId = null;
 let chatMessagesUnsub = null;
 
+// Cybernetic Voice DSP engine variables
+let voiceEffectMode = 'normal'; // 'normal', 'cybernetic', 'space', 'android'
+let audioCtxVoice = null;
+let voiceSourceNode = null;
+let voiceEffectNodes = []; 
+let voiceDestinationNode = null;
+
+// Neural Synapse visualizer variables
+let visualizerLoopId = null;
+let matrixRipples = []; 
+let matrixMousePos = { x: null, y: null };
+
+
 // Comprehensive TURN server list covering multiple ports/protocols
 // to handle strict firewalls, symmetric NAT, and carrier-grade NAT
 const COMPREHENSIVE_ICE_SERVERS = [
@@ -263,27 +276,44 @@ export async function RoomView(params = {}) {
             </div>
             
             <!-- Voice action bar (visible when connected) -->
-            <div id="voice-action-bar" style="display:none; align-items:center; justify-content:space-between; border-top:1px solid rgba(255,255,255,0.04); padding-top:8px; margin-top:2px;">
-              <div style="display:flex; gap:12px;">
-                <button id="voice-mute-mic" style="background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px;">🎙️ Mute</button>
-                <button id="voice-mute-audio" style="background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px;">🎧 Deafen</button>
+            <div id="voice-action-bar" style="display:none; flex-direction:column; gap:8px; border-top:1px solid rgba(255,255,255,0.04); padding-top:8px; margin-top:2px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; gap:12px;">
+                  <button id="voice-mute-mic" style="background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px;">🎙️ Mute</button>
+                  <button id="voice-mute-audio" style="background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:12px;">🎧 Deafen</button>
+                </div>
+                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#10b981;">PING: 18ms</span>
               </div>
-              <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#10b981;">PING: 18ms</span>
+              
+              <!-- DYNAMIC CYBERNETIC VOICE MODULATOR CONTROLS -->
+              <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.04);">
+                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.04em;">VOICE MODULATOR:</span>
+                <select id="voice-effect-select" style="background:#000; color:${room.colorHex}; border:1px solid rgba(255,255,255,0.1); border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:9.5px; padding:2px 6px; outline:none; cursor:pointer;">
+                  <option value="normal">NORMAL</option>
+                  <option value="cybernetic">CYBERNETIC</option>
+                  <option value="space">DEEP SPACE</option>
+                  <option value="android">ANDROID</option>
+                </select>
+              </div>
             </div>
           </div>
 
         </div>
 
         <!-- COLUMN 2: CENTER COCKPIT & NEURO GAME DECK -->
-        <main style="flex:1; padding:28px 24px; overflow-y:auto; background:#07070a; display:flex; flex-direction:column; gap:20px;">
+        <main style="flex:1; padding:28px 24px; overflow-y:auto; background:#07070a; display:flex; flex-direction:column; gap:20px; position:relative; overflow-x:hidden;">
           
+          <!-- HOLOGRAPHIC NEURAL MATRIX BACKGROUND CANVAS -->
+          <canvas id="neural-matrix-canvas" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0.18; z-index:1;"></canvas>
+
           <!-- COCKPIT CONTROL CENTRE DYNAMIC WORKSPACE -->
-          <div id="cockpit-workspace" class="wld-fade-up">
+          <div id="cockpit-workspace" class="wld-fade-up" style="position:relative; z-index:2;">
+            <!-- Dynamically populated by room features -->
             <!-- Dynamically populated by room features -->
           </div>
 
           <!-- SYNCHRONIZED Web Audio SOUNDBOARD -->
-          <div class="cockpit-panel-card">
+          <div class="cockpit-panel-card" style="position:relative; z-index:2;">
             <h3 style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:12px;">global telemetry soundboard</h3>
             <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px;">
               <button class="sfx-btn" data-sfx="correct">
@@ -457,11 +487,20 @@ export async function RoomView(params = {}) {
   // Setup soundboard SFX buttons
   _initSoundboardButtons(room, userRank);
 
+  // Initialize background interactive Neural Matrix
+  _initNeuralMatrix(room.colorHex);
+
   // Unmount listener: clean up room presence, voice, and chat when leaving this view
   const handleRoomUnmount = () => {
     if (!window.location.hash.startsWith('#/room')) {
       console.error("[WebRTC] Unmounting RoomView. Executing cleanup routine...");
       
+      // Stop Matrix Visualizer
+      if (visualizerLoopId) {
+        cancelAnimationFrame(visualizerLoopId);
+        visualizerLoopId = null;
+      }
+
       // 1. Unsubscribe from roster presence updates
       if (window._roomPresenceUnsubscribe) {
         window._roomPresenceUnsubscribe();
@@ -597,7 +636,18 @@ function _initVoiceNode(room) {
       }
     });
   });
+
+  const effectSelect = document.getElementById('voice-effect-select');
+  if (effectSelect) {
+    effectSelect.value = voiceEffectMode;
+    effectSelect.addEventListener('change', (e) => {
+      voiceEffectMode = e.target.value;
+      _applyVoiceDSPChain();
+      _spawnMatrixRipple(window.innerWidth / 2, window.innerHeight / 2, 220, room.colorHex);
+    });
+  }
 }
+
 
 /* ════════════════════════════════════════════════════════════
    WebRTC CONNECTION AND SIGNALING IMPLEMENTATION
@@ -608,6 +658,10 @@ async function _connectToVoiceChannel(room) {
 
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    
+    // Initialize Voice DSP Modulator
+    _initVoiceDSP(localStream);
+
     _playNeuroSound('start');
     if (isMicrophoneMuted) {
       localStream.getAudioTracks().forEach(track => track.enabled = false);
@@ -727,14 +781,32 @@ async function _disconnectFromVoiceChannel() {
     localStream = null;
   }
 
+  // Clean up Voice DSP Engine
+  if (audioCtxVoice) {
+    try {
+      if (voiceSourceNode) voiceSourceNode.disconnect();
+      voiceEffectNodes.forEach(node => {
+        try { node.disconnect(); } catch(e){}
+        try { node.stop(); } catch(e){}
+      });
+      voiceEffectNodes = [];
+      audioCtxVoice.close();
+    } catch(e) {}
+    audioCtxVoice = null;
+    voiceSourceNode = null;
+    voiceDestinationNode = null;
+  }
+
   myPeerId = null;
 }
+
 
 function _createPeerConnection(peerId) {
   const pc = new RTCPeerConnection(rtcConfig);
   peerConnections.set(peerId, pc);
 
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  const outboundStream = (voiceDestinationNode) ? voiceDestinationNode.stream : localStream;
+  outboundStream.getTracks().forEach(track => pc.addTrack(track, outboundStream));
 
   pc.ontrack = (event) => {
     console.error(`[WebRTC] Received remote track from ${peerId}:`, event.track.kind);
@@ -955,6 +1027,21 @@ function _initChatTelemetry(room, userScore, userRank) {
   }
 
   chatMessagesUnsub = onSnapshot(q, (snapshot) => {
+    // Dynamically trigger matrix ripples on incoming packages
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const msg = change.doc.data();
+        if (msg.roomId === room.id) {
+          _spawnMatrixRipple(
+            Math.random() * window.innerWidth / 3 + window.innerWidth / 6,
+            Math.random() * window.innerHeight / 3 + window.innerHeight / 6,
+            msg.type === 'reaction' ? 180 : msg.type === 'sfx' ? 240 : 200,
+            room.colorHex
+          );
+        }
+      }
+    });
+
     const allMessages = [];
     snapshot.forEach(doc => {
       allMessages.push({ id: doc.id, ...doc.data() });
@@ -2595,4 +2682,285 @@ function _renderRosterList(peers, room) {
   `;
 
   rosterList.innerHTML = html;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CYBERNETIC VOICE MODULATOR (DSP ENGINE)
+   ════════════════════════════════════════════════════════════ */
+function _initVoiceDSP(stream) {
+  try {
+    audioCtxVoice = new (window.AudioContext || window.webkitAudioContext)();
+    voiceSourceNode = audioCtxVoice.createMediaStreamSource(stream);
+    voiceDestinationNode = audioCtxVoice.createMediaStreamDestination();
+    _applyVoiceDSPChain();
+  } catch(e) {
+    console.error("[WebRTC] Voice DSP initialization failed:", e);
+  }
+}
+
+function _applyVoiceDSPChain() {
+  if (!audioCtxVoice || !voiceSourceNode || !voiceDestinationNode) return;
+  
+  // Clean up any existing effect nodes
+  voiceEffectNodes.forEach(node => {
+    try { node.disconnect(); } catch(e){}
+    try { node.stop(); } catch(e){}
+  });
+  voiceEffectNodes = [];
+  voiceSourceNode.disconnect();
+  
+  if (voiceEffectMode === 'normal') {
+    voiceSourceNode.connect(voiceDestinationNode);
+    console.error("[WebRTC] Voice DSP bypass mode (Normal voice)");
+  } 
+  else if (voiceEffectMode === 'cybernetic') {
+    // Ring Modulation: Multiply input by a carrier wave
+    const ringMod = audioCtxVoice.createGain();
+    const osc = audioCtxVoice.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 65; 
+    osc.start();
+    
+    const filter = audioCtxVoice.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 160;
+    
+    voiceSourceNode.connect(ringMod);
+    osc.connect(ringMod.gain);
+    ringMod.connect(filter);
+    filter.connect(voiceDestinationNode);
+    
+    voiceEffectNodes.push(osc, ringMod, filter);
+    console.error("[WebRTC] Voice DSP Cybernetic mode active");
+  }
+  else if (voiceEffectMode === 'space') {
+    // Echo feedback loop
+    const delay = audioCtxVoice.createDelay();
+    delay.delayTime.value = 0.28;
+    
+    const feedback = audioCtxVoice.createGain();
+    feedback.gain.value = 0.45;
+    
+    const filter = audioCtxVoice.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 220;
+    
+    voiceSourceNode.connect(filter);
+    filter.connect(delay);
+    delay.connect(feedback);
+    feedback.connect(delay);
+    
+    // Mix dry & wet paths
+    const dryGain = audioCtxVoice.createGain();
+    dryGain.gain.value = 0.7;
+    const wetGain = audioCtxVoice.createGain();
+    wetGain.gain.value = 0.5;
+    
+    voiceSourceNode.connect(dryGain);
+    delay.connect(wetGain);
+    
+    dryGain.connect(voiceDestinationNode);
+    wetGain.connect(voiceDestinationNode);
+    
+    voiceEffectNodes.push(delay, feedback, filter, dryGain, wetGain);
+    console.error("[WebRTC] Voice DSP Deep Space mode active");
+  }
+  else if (voiceEffectMode === 'android') {
+    // Wave shaper distortion + peaking bandpass
+    const distortion = audioCtxVoice.createWaveShaper();
+    distortion.curve = _makeDistortionCurve(80);
+    distortion.oversample = '4x';
+    
+    const filter = audioCtxVoice.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1000;
+    filter.Q.value = 3.0;
+    
+    voiceSourceNode.connect(distortion);
+    distortion.connect(filter);
+    filter.connect(voiceDestinationNode);
+    
+    voiceEffectNodes.push(distortion, filter);
+    console.error("[WebRTC] Voice DSP Android mode active");
+  }
+}
+
+function _makeDistortionCurve(amount) {
+  const k = typeof amount === 'number' ? amount : 50;
+  const n_samples = 44100;
+  const curve = new Float32Array(n_samples);
+  const deg = Math.PI / 180;
+  for (let i = 0; i < n_samples; ++i) {
+    const x = (i * 2) / n_samples - 1;
+    curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+  }
+  return curve;
+}
+
+/* ════════════════════════════════════════════════════════════
+   HOLOGRAPHIC NEURAL MATRIX VISUALIZER
+   ════════════════════════════════════════════════════════════ */
+function _initNeuralMatrix(roomHex) {
+  const canvas = document.getElementById('neural-matrix-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  let width = canvas.width = canvas.clientWidth;
+  let height = canvas.height = canvas.clientHeight;
+
+  const handleResize = () => {
+    if (!canvas) return;
+    width = canvas.width = canvas.clientWidth;
+    height = canvas.height = canvas.clientHeight;
+  };
+  window.addEventListener('resize', handleResize);
+
+  // Setup neural particles
+  const particleCount = 75;
+  const particles = [];
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      radius: Math.random() * 2 + 1,
+      origRadius: Math.random() * 2 + 1,
+      glow: Math.random() > 0.6
+    });
+  }
+
+  // Drag warping logic
+  const handleMouseMove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    matrixMousePos.x = e.clientX - rect.left;
+    matrixMousePos.y = e.clientY - rect.top;
+  };
+  const handleMouseLeave = () => {
+    matrixMousePos.x = null;
+    matrixMousePos.y = null;
+  };
+  
+  const mainPanel = canvas.parentElement;
+  if (mainPanel) {
+    mainPanel.addEventListener('mousemove', handleMouseMove);
+    mainPanel.addEventListener('mouseleave', handleMouseLeave);
+  }
+
+  // Constellation loop
+  const draw = () => {
+    if (!document.getElementById('neural-matrix-canvas')) {
+      window.removeEventListener('resize', handleResize);
+      if (mainPanel) {
+        mainPanel.removeEventListener('mousemove', handleMouseMove);
+        mainPanel.removeEventListener('mouseleave', handleMouseLeave);
+      }
+      return;
+    }
+
+    ctx.clearRect(0, 0, width, height);
+    const baseColor = roomHex || '#2563eb';
+    
+    // Draw expansion waves (ripples)
+    matrixRipples.forEach((ripple, rIdx) => {
+      ripple.radius += ripple.speed;
+      ctx.beginPath();
+      ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = ripple.color;
+      ctx.lineWidth = 2 * (1 - ripple.radius / ripple.maxRadius);
+      ctx.stroke();
+
+      if (ripple.radius >= ripple.maxRadius) {
+        matrixRipples.splice(rIdx, 1);
+      }
+    });
+
+    // Capture volume amp if talking
+    let audioAmp = 0;
+    if (analyserNode && isAudioPlaying) {
+      const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+      analyserNode.getByteFrequencyData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+      }
+      audioAmp = sum / dataArray.length;
+    }
+
+    // Process particles
+    particles.forEach(p => {
+      const ampFactor = audioAmp / 128;
+      p.radius = p.origRadius + (p.glow ? ampFactor * 4 : ampFactor * 1.5);
+      
+      // Pull toward cursor
+      if (matrixMousePos.x !== null && matrixMousePos.y !== null) {
+        const dx = matrixMousePos.x - p.x;
+        const dy = matrixMousePos.y - p.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 180) {
+          const force = (180 - dist) / 180 * 0.15;
+          p.x += (dx / dist) * force;
+          p.y += (dy / dist) * force;
+        }
+      }
+
+      p.x += p.vx * (1 + audioAmp * 0.03);
+      p.y += p.vy * (1 + audioAmp * 0.03);
+
+      if (p.x < 0) p.x = width;
+      if (p.x > width) p.x = 0;
+      if (p.y < 0) p.y = height;
+      if (p.y > height) p.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = p.glow ? baseColor : 'rgba(255,255,255,0.4)';
+      if (p.glow && audioAmp > 15) {
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = baseColor;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+      ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+
+    // Connect close nodes
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const pi = particles[i];
+        const pj = particles[j];
+        const dx = pi.x - pj.x;
+        const dy = pi.y - pj.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+
+        const connectionRange = 100 + (audioAmp * 0.25);
+        if (dist < connectionRange) {
+          const alpha = (1 - dist / connectionRange) * 0.14 * (1 + audioAmp * 0.02);
+          ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(pi.x, pi.y);
+          ctx.lineTo(pj.x, pj.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    visualizerLoopId = requestAnimationFrame(draw);
+  };
+
+  draw();
+}
+
+function _spawnMatrixRipple(x, y, maxRadius = 150, color = 'rgba(255, 255, 255, 0.4)') {
+  matrixRipples.push({
+    x: x || Math.random() * window.innerWidth / 2,
+    y: y || Math.random() * window.innerHeight / 2,
+    radius: 0,
+    maxRadius,
+    speed: 3.8,
+    color
+  });
 }
