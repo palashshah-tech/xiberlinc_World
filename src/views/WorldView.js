@@ -1078,7 +1078,48 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
   }
 
   _setupChatrooms(players, userProfile);
+
+  // Global unmount handler for WorldView dashboard
+  const handleWorldUnmount = () => {
+    if (!window.location.hash.startsWith('#/world')) {
+      console.error("[World] Unmounting WorldView. Cleaning up WebGL & canvas loops...");
+      
+      // 1. Clean up constellation canvas loop
+      if (canvasCleanup) {
+        try {
+          canvasCleanup();
+        } catch(e) {}
+        canvasCleanup = null;
+      }
+      
+      // 2. Locate and remove Spline Viewer instances to prevent WebGL leaks
+      document.querySelectorAll('spline-viewer').forEach(el => {
+        try {
+          if (el.shadowRoot) {
+            const innerCanvas = el.shadowRoot.querySelector('canvas');
+            if (innerCanvas) {
+              const gl = innerCanvas.getContext('webgl') || innerCanvas.getContext('webgl2');
+              if (gl) {
+                const extension = gl.getExtension('WEBGL_lose_context');
+                if (extension) extension.loseContext();
+              }
+              innerCanvas.width = 0;
+              innerCanvas.height = 0;
+              innerCanvas.remove();
+            }
+          }
+          el.remove();
+        } catch(e) {
+          console.error("[World] Error cleaning up spline-viewer:", e);
+        }
+      });
+      
+      window.removeEventListener('hashchange', handleWorldUnmount);
+    }
+  };
+  window.addEventListener('hashchange', handleWorldUnmount);
 }
+
 
 /* ════════════════════════════════════════════════════════════
    SUB-RENDERERS (NO WATERMARK EMOJIS)
