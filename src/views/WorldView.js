@@ -333,7 +333,7 @@ async function _fetchWorldData() {
 /* ════════════════════════════════════════════════════════════
    CONSTELLATION CANVAS ALGORITHM
    ════════════════════════════════════════════════════════════ */
-function _initConstellationCanvas(players) {
+function _initConstellationCanvas(players, userProfile) {
   const canvas = document.getElementById('constellation-canvas');
   if (!canvas) return;
 
@@ -673,9 +673,20 @@ function _initConstellationCanvas(players) {
       if (hoveredNode && tooltip) {
         tooltip.style.opacity = '1';
         if (hoveredNode.isUser) {
+          const hasProfile = userProfile && userProfile[0];
+          const scoreVal = hasProfile ? Math.round(userProfile[0].score) : 'Not Evaluated';
+          const reactVal = hasProfile ? `${userProfile[0].reactionMs}ms` : '—';
+          const accVal = hasProfile ? `${Math.round(userProfile[0].accuracy * 100)}%` : '—';
+
           tooltip.innerHTML = `
-            <div style="font-weight:700;color:#d4ff00;margin-bottom:2px;">You</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:9px;">Constellation Core</div>
+            <div style="font-weight:700;color:#d4ff00;margin-bottom:3px;">You</div>
+            <div style="color:rgba(255,255,255,0.5);font-size:9px;margin-bottom:5px;">Constellation Core</div>
+            <div style="display:flex;flex-direction:column;gap:3px;font-size:10px;">
+              <div>WMI Score: <span style="font-weight:600;color:#2563eb;">${scoreVal}</span></div>
+              <div>Accuracy: <span style="font-weight:600;color:#ec4899;">${accVal}</span></div>
+              <div>Reaction: <span style="font-weight:600;color:#7c3aed;">${reactVal}</span></div>
+              <div>Chain Dist: <span style="font-weight:600;color:#06b6d4;">Center</span></div>
+            </div>
           `;
         } else {
           const p = hoveredNode.player;
@@ -1122,7 +1133,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
       containerConst.style.display = 'block';
 
       if (canvasCleanup) canvasCleanup();
-      canvasCleanup = _initConstellationCanvas(players);
+      canvasCleanup = _initConstellationCanvas(players, userProfile);
     });
   }
   document.getElementById('taskbar-goto-home')?.addEventListener('click', () => {
