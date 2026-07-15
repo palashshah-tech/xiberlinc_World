@@ -23,7 +23,8 @@ export default async function handler(req, res) {
       `https://${domain}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
     );
     if (!response.ok) {
-      throw new Error(`Metered API responded with status ${response.status}`);
+      const errData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      return res.status(response.status).json(errData);
     }
     const data = await response.json();
     return res.status(200).json(data);
