@@ -1122,8 +1122,8 @@ function renderRawTab(c) {
   const acc      = trials.length ? (correct / trials.length * 100).toFixed(0) : 0;
   const rtVals   = trials.filter(t => t.isCorrect && t.reactionTimeMs > 0).map(t => t.reactionTimeMs);
   const avgRT    = rtVals.length ? Math.round(rtVals.reduce((a,b)=>a+b,0)/rtVals.length) : 0;
-  const fastRT   = rtVals.length ? Math.min(...rtVals) : 0;
-  const slowRT   = rtVals.length ? Math.max(...rtVals) : 0;
+  const fastRT   = rtVals.length ? Number(Math.min(...rtVals).toFixed(2)) : 0;
+  const slowRT   = rtVals.length ? Number(Math.max(...rtVals).toFixed(2)) : 0;
   let maxStreak  = 0, streak = 0;
   trials.forEach(t => { if (t.isCorrect) { streak++; maxStreak = Math.max(maxStreak, streak); } else streak = 0; });
 
