@@ -9,7 +9,7 @@ import {
   fetchTopPlayers, buildLeaderboard, fetchLiveStats, fetchUserProfile,
   fetchCustomRooms, fetchUserConnections, respondToConnectionRequest,
   sendConnectionRequest, fetchIncomingRequests, searchCandidatesByHandle,
-  createCustomRoom, deleteCustomRoom
+  createCustomRoom, deleteCustomRoom, fetchIgnoreEmails
 } from '../utils/worldData.js';
 import { signInWithGoogle, auth, db } from '../utils/firebase.js';
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
@@ -327,16 +327,17 @@ async function _fetchWorldData() {
     const user = auth.currentUser;
     const email = user && !user.isAnonymous ? user.email : null;
 
-    const [players, stats, userProfile, customRooms, connections, incomingRequests] = await Promise.all([
-      fetchTopPlayers(20),
+    const [players, stats, userProfile, customRooms, connections, incomingRequests, ignoreEmails] = await Promise.all([
+      fetchTopPlayers(100),
       fetchLiveStats(),
       email ? fetchUserProfile(email) : Promise.resolve([]),
       email ? fetchCustomRooms() : Promise.resolve([]),
       email ? fetchUserConnections() : Promise.resolve([]),
-      email ? fetchIncomingRequests() : Promise.resolve([])
+      email ? fetchIncomingRequests() : Promise.resolve([]),
+      email ? fetchIgnoreEmails() : Promise.resolve([])
     ]);
     const leaderboard = buildLeaderboard(players);
-    return { players, stats, leaderboard, userProfile, customRooms, connections, incomingRequests };
+    return { players, stats, leaderboard, userProfile, customRooms, connections, incomingRequests, ignoreEmails };
   } catch (e) {
     console.error('[World] Data fetch failed:', e);
     return { 
@@ -346,7 +347,8 @@ async function _fetchWorldData() {
       userProfile: [], 
       customRooms: [], 
       connections: [], 
-      incomingRequests: [] 
+      incomingRequests: [],
+      ignoreEmails: []
     };
   }
 }
@@ -746,18 +748,16 @@ function _initConstellationCanvas(players, userProfile) {
 /* ════════════════════════════════════════════════════════════
    DASHBOARD RENDER
    ════════════════════════════════════════════════════════════ */
-function _renderDashboard({ players, stats, leaderboard, userProfile, customRooms = [], connections = [], incomingRequests = [] }) {
+function _renderDashboard({ players, stats, leaderboard, userProfile, customRooms = [], connections = [], incomingRequests = [], ignoreEmails = [] }) {
   const dash = document.getElementById('world-dashboard');
   if (!dash) return;
 
   const stars   = players.filter(p => p.tier === 'star' || p.tier === 'rising').slice(0, 6);
   const hasData = players.length > 0;
 
-  const myEmail = auth.currentUser?.email;
-  const connectedEmails = connections.map(c => c.email);
-  const pendingEmails = incomingRequests.map(r => r.senderEmail);
+  const normalizedIgnoreEmails = ignoreEmails.map(e => e.toLowerCase().trim());
   const recommendedPlayers = players.filter(p => {
-    return p.email !== myEmail && !connectedEmails.includes(p.email) && !pendingEmails.includes(p.email);
+    return p.email && !normalizedIgnoreEmails.includes(p.email.toLowerCase().trim());
   }).slice(0, 4);
 
   dash.style.display = 'block';

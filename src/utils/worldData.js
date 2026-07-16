@@ -65,6 +65,7 @@ function mapCandidate(doc, index) {
 
   return {
     id,
+    email: d.email || '',
     name,
     handle,
     avatar,
@@ -376,6 +377,44 @@ export async function fetchUserConnections() {
     console.error("Failed to fetch connections:", e);
     return [];
   }
+}
+
+// Fetch all emails (accepted connections or pending requests) to ignore in recommendations
+export async function fetchIgnoreEmails() {
+  await authReady;
+  const user = auth.currentUser;
+  if (!user || !user.email) return [];
+
+  const emails = new Set();
+  emails.add(user.email.toLowerCase());
+
+  const qSender = query(
+    collection(db, 'connection_requests'),
+    where('senderEmail', '==', user.email)
+  );
+  const qReceiver = query(
+    collection(db, 'connection_requests'),
+    where('receiverEmail', '==', user.email)
+  );
+
+  try {
+    const [snap1, snap2] = await Promise.all([getDocs(qSender), getDocs(qReceiver)]);
+    snap1.forEach(doc => {
+      const data = doc.data();
+      if (data.status === 'pending' || data.status === 'accepted') {
+        if (data.receiverEmail) emails.add(data.receiverEmail.toLowerCase());
+      }
+    });
+    snap2.forEach(doc => {
+      const data = doc.data();
+      if (data.status === 'pending' || data.status === 'accepted') {
+        if (data.senderEmail) emails.add(data.senderEmail.toLowerCase());
+      }
+    });
+  } catch (e) {
+    console.error("Failed to fetch ignore emails:", e);
+  }
+  return Array.from(emails);
 }
 
 /* ════════════════════════════════════════════════════════════
