@@ -755,9 +755,21 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
   const stars   = players.filter(p => p.tier === 'star' || p.tier === 'rising').slice(0, 6);
   const hasData = players.length > 0;
 
-  const normalizedIgnoreEmails = ignoreEmails.map(e => e.toLowerCase().trim());
+  const ignoreSet = new Set((ignoreEmails || []).map(e => e.toLowerCase().trim()));
+  const curUserEmail = auth.currentUser?.email;
+  if (curUserEmail) {
+    ignoreSet.add(curUserEmail.toLowerCase().trim());
+  }
+  connections.forEach(c => {
+    if (c.email) ignoreSet.add(c.email.toLowerCase().trim());
+  });
+  incomingRequests.forEach(r => {
+    if (r.senderEmail) ignoreSet.add(r.senderEmail.toLowerCase().trim());
+  });
+
   const recommendedPlayers = players.filter(p => {
-    return p.email && !normalizedIgnoreEmails.includes(p.email.toLowerCase().trim());
+    if (!p.email) return false;
+    return !ignoreSet.has(p.email.toLowerCase().trim());
   }).slice(0, 4);
 
   dash.style.display = 'block';
@@ -973,7 +985,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
                     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(124,58,237,0.025);border:1px solid rgba(124,58,237,0.12);border-radius:8px;">
                       <div>
                         <div style="font-size:12px;font-weight:600;color:#fff;">${r.name}</div>
-                        <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.handle || r.email.split('@')[0]} · WMI: ${Math.round(r.score)}</div>
+                        <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.handle || r.email.split('@')[0]} · WMI: ${r.wmi}</div>
                       </div>
                       <button class="conn-send-invite-btn" data-email="${r.email}" data-handle="${r.handle || r.email.split('@')[0]}" data-name="${r.name}" data-uid="${r.uid || ''}" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='#6d28d9'" onmouseleave="this.style.background='#7c3aed'">Connect</button>
                     </div>
