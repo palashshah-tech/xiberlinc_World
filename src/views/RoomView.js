@@ -181,9 +181,10 @@ export async function RoomView(params = {}) {
   const userScore = userProfile && userProfile[0] ? Math.round(userProfile[0].score) : null;
   const userRank = userProfile && userProfile[0] ? getRankFromScore(userProfile[0].score).rank : 'Guest';
 
-  const myRoomPresenceId = auth.currentUser.uid + '_' + roomId;
+  const myRoomPresenceId = (auth.currentUser?.uid || 'test_uid') + '_' + roomId;
 
   const registerRoomPresence = async (activityStatus = 'Active in cockpit') => {
+    if (!auth.currentUser) return;
     try {
       await setDoc(doc(db, 'room_presence', myRoomPresenceId), {
         roomId,
@@ -311,25 +312,22 @@ export async function RoomView(params = {}) {
 
     @media (max-width: 768px) {
       #wld-chat-column {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: 290px !important;
-        z-index: 100;
-        background: #09090c;
-        border-right: 1px solid rgba(255,255,255,0.08);
-        box-shadow: 10px 0 35px rgba(0,0,0,0.85);
-        transform: translateX(-100%);
+        display: none;
+        width: 100% !important;
+        border-right: none;
+        background: #07070a;
       }
       #wld-chat-column.active {
-        transform: translateX(0);
+        display: flex;
       }
       .mobile-only-btn {
         display: inline-block !important;
       }
       #wld-main-column {
         padding: 16px 12px;
+      }
+      #wld-main-column.inactive {
+        display: none !important;
       }
     }
   `);
@@ -362,10 +360,6 @@ export async function RoomView(params = {}) {
         </div>
         
         <div style="display:flex; align-items:center; gap:12px;">
-          <!-- Collapsible Chat Toggle for Mobile -->
-          <button id="chat-sidebar-toggle" class="mobile-only-btn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#fff; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';">
-            💬 CHAT
-          </button>
           <!-- Collapsible Member Toggle -->
           <button id="member-sidebar-toggle" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#fff; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';">
             👥 ROSTER
@@ -380,6 +374,13 @@ export async function RoomView(params = {}) {
           }
         </div>
       </header>
+
+      <!-- TABS SECTION -->
+      <div style="background:rgba(8,8,12,0.9); border-bottom:1px solid rgba(255,255,255,0.06); padding:10px 24px; display:flex; gap:12px; position:relative; z-index:10; flex-shrink:0;">
+        <button id="tab-room-cockpit" style="background:transparent; border:none; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; border-bottom:2px solid ${room.colorHex}; transition:color 0.2s;">NEURO COCKPIT</button>
+        <button id="tab-room-whiteboard" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; transition:color 0.2s;">COLLABORATIVE WHITEBOARD</button>
+        <button id="tab-room-chat" class="mobile-only-btn" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; transition:color 0.2s;">LIVE CHAT</button>
+      </div>
 
       <!-- THREE-COLUMN DISCORD IRL LAYOUT CONTAINER -->
       <div id="wld-cockpit-layout">
@@ -472,11 +473,7 @@ export async function RoomView(params = {}) {
           <!-- HOLOGRAPHIC NEURAL MATRIX BACKGROUND CANVAS -->
           <canvas id="neural-matrix-canvas" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0.18; z-index:1;"></canvas>
 
-          <!-- Tab selector for Cockpit vs Whiteboard -->
-          <div style="display:flex; gap:16px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px; position:relative; z-index:2; text-align:left;">
-            <button id="tab-room-cockpit" style="background:transparent; border:none; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:4px 8px; border-bottom:2px solid ${room.colorHex}; transition:color 0.2s;">NEURO COCKPIT</button>
-            <button id="tab-room-whiteboard" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:4px 8px; transition:color 0.2s;">COLLABORATIVE WHITEBOARD</button>
-          </div>
+
 
           <!-- COCKPIT CONTROL CENTRE DYNAMIC WORKSPACE -->
           <div id="cockpit-workspace" class="wld-fade-up" style="position:relative; z-index:2;">
@@ -626,32 +623,15 @@ export async function RoomView(params = {}) {
         sidebar.style.width = isCollapsed ? '240px' : '0px';
       } else {
         sidebar.classList.toggle('active');
-        document.getElementById('wld-chat-column')?.classList.remove('active');
       }
     });
   }
 
-  // Collapsible Mobile Chat Toggle
-  const chatToggle = document.getElementById('chat-sidebar-toggle');
-  const chatColumn = document.getElementById('wld-chat-column');
-  if (chatToggle && chatColumn) {
-    chatToggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      chatColumn.classList.toggle('active');
-      sidebar?.classList.remove('active');
-    });
-  }
-
-  // Close drawers when clicking anywhere else on the screen on mobile/tablet
+  // Close roster drawer when clicking anywhere else on the screen on mobile/tablet
   document.addEventListener('click', (e) => {
     if (window.innerWidth < 992) {
       if (sidebar && !sidebar.contains(e.target) && e.target !== toggleBtn) {
         sidebar.classList.remove('active');
-      }
-    }
-    if (window.innerWidth < 768) {
-      if (chatColumn && !chatColumn.contains(e.target) && e.target !== chatToggle) {
-        chatColumn.classList.remove('active');
       }
     }
   });
@@ -719,39 +699,57 @@ export async function RoomView(params = {}) {
   let whiteboardCleanup = null;
   const tabCockpit = document.getElementById('tab-room-cockpit');
   const tabWhiteboard = document.getElementById('tab-room-whiteboard');
+  const tabChat = document.getElementById('tab-room-chat');
   const cockpitWorkspace = document.getElementById('cockpit-workspace');
   const whiteboardWorkspace = document.getElementById('whiteboard-workspace');
+  const mainColumn = document.getElementById('wld-main-column');
+  const chatColumn = document.getElementById('wld-chat-column');
 
-  if (tabCockpit && tabWhiteboard && cockpitWorkspace && whiteboardWorkspace) {
-    tabCockpit.addEventListener('click', () => {
-      tabCockpit.style.color = '#fff';
-      tabCockpit.style.borderBottom = `2px solid ${room.colorHex}`;
-      tabWhiteboard.style.color = 'rgba(255,255,255,0.5)';
-      tabWhiteboard.style.borderBottom = 'none';
+  function switchTab(activeTabId) {
+    // Reset all tabs
+    [tabCockpit, tabWhiteboard, tabChat].forEach(tab => {
+      if (tab) {
+        tab.style.color = 'rgba(255,255,255,0.5)';
+        tab.style.borderBottom = 'none';
+      }
+    });
 
-      cockpitWorkspace.style.display = 'block';
-      whiteboardWorkspace.style.display = 'none';
+    // Set active tab styling
+    const activeTab = document.getElementById(activeTabId);
+    if (activeTab) {
+      activeTab.style.color = '#fff';
+      activeTab.style.borderBottom = `2px solid ${room.colorHex}`;
+    }
 
+    // Hide/show workspaces
+    if (activeTabId === 'tab-room-cockpit') {
+      if (mainColumn) mainColumn.classList.remove('inactive');
+      if (chatColumn) chatColumn.classList.remove('active');
+      if (cockpitWorkspace) cockpitWorkspace.style.display = 'block';
+      if (whiteboardWorkspace) whiteboardWorkspace.style.display = 'none';
+      
       if (whiteboardCleanup) {
         whiteboardCleanup();
         whiteboardCleanup = null;
       }
-    });
-
-    tabWhiteboard.addEventListener('click', () => {
-      tabWhiteboard.style.color = '#fff';
-      tabWhiteboard.style.borderBottom = `2px solid ${room.colorHex}`;
-      tabCockpit.style.color = 'rgba(255,255,255,0.5)';
-      tabCockpit.style.borderBottom = 'none';
-
-      cockpitWorkspace.style.display = 'none';
-      whiteboardWorkspace.style.display = 'flex';
+    } else if (activeTabId === 'tab-room-whiteboard') {
+      if (mainColumn) mainColumn.classList.remove('inactive');
+      if (chatColumn) chatColumn.classList.remove('active');
+      if (cockpitWorkspace) cockpitWorkspace.style.display = 'none';
+      if (whiteboardWorkspace) whiteboardWorkspace.style.display = 'flex';
 
       if (!whiteboardCleanup) {
         whiteboardCleanup = _initWhiteboardCanvas(room.id, room.colorHex);
       }
-    });
+    } else if (activeTabId === 'tab-room-chat') {
+      if (mainColumn) mainColumn.classList.add('inactive');
+      if (chatColumn) chatColumn.classList.add('active');
+    }
   }
+
+  if (tabCockpit) tabCockpit.addEventListener('click', () => switchTab('tab-room-cockpit'));
+  if (tabWhiteboard) tabWhiteboard.addEventListener('click', () => switchTab('tab-room-whiteboard'));
+  if (tabChat) tabChat.addEventListener('click', () => switchTab('tab-room-chat'));
 
   // Setup soundboard SFX buttons
   _initSoundboardButtons(room, userRank);
