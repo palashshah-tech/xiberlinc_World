@@ -3254,40 +3254,63 @@ function _initWhiteboardCanvas(roomId, colorHex) {
     });
   }
 
+  function _getCoordinates(e, rect) {
+    let clientX = 0;
+    let clientY = 0;
+
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+    } else {
+      clientX = e.clientX || 0;
+      clientY = e.clientY || 0;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
   function drawLocal(e) {
     if (!isDrawing) return;
+    if (width <= 0 || height <= 0) return;
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const coords = _getCoordinates(e, rect);
 
-    ctx.lineTo(x, y);
+    ctx.lineTo(coords.x, coords.y);
     ctx.strokeStyle = brushColorInput.value;
     ctx.lineWidth = brushWidthInput.value;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.stroke();
 
-    currentStrokePoints.push({
-      x: x / width,
-      y: y / height
-    });
+    const normX = coords.x / width;
+    const normY = coords.y / height;
+    if (isFinite(normX) && isFinite(normY)) {
+      currentStrokePoints.push({ x: normX, y: normY });
+    }
   }
 
   function startDrawing(e) {
+    if (width <= 0 || height <= 0) return;
     isDrawing = true;
     currentStrokePoints = [];
     
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const coords = _getCoordinates(e, rect);
 
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(coords.x, coords.y);
 
-    currentStrokePoints.push({
-      x: x / width,
-      y: y / height
-    });
+    const normX = coords.x / width;
+    const normY = coords.y / height;
+    if (isFinite(normX) && isFinite(normY)) {
+      currentStrokePoints.push({ x: normX, y: normY });
+    }
   }
 
   async function stopDrawing() {
@@ -3302,8 +3325,8 @@ function _initWhiteboardCanvas(roomId, colorHex) {
         points: currentStrokePoints
       };
       await saveWhiteboardStroke(roomId, stroke);
-    } catch (e) {
-      console.error("Failed to sync whiteboard stroke:", e);
+    } catch (err) {
+      console.error("Failed to sync whiteboard stroke:", err);
     }
   }
 
@@ -3333,14 +3356,19 @@ function _initWhiteboardCanvas(roomId, colorHex) {
 
   const q = query(
     collection(db, 'whiteboard_strokes'),
-    where('roomId', '==', roomId),
-    orderBy('createdAt', 'asc')
+    where('roomId', '==', roomId)
   );
 
   whiteboardUnsub = onSnapshot(q, (snapshot) => {
     currentRoomStrokes = [];
     snapshot.forEach(doc => {
       currentRoomStrokes.push(doc.data());
+    });
+    // Sort in memory by createdAt ascending
+    currentRoomStrokes.sort((a, b) => {
+      const t1 = a.createdAt?.seconds || 0;
+      const t2 = b.createdAt?.seconds || 0;
+      return t1 - t2;
     });
     _redrawCanvas();
   });
