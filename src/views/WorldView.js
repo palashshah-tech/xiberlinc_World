@@ -9,7 +9,7 @@ import {
   fetchTopPlayers, buildLeaderboard, fetchLiveStats, fetchUserProfile,
   fetchCustomRooms, fetchUserConnections, respondToConnectionRequest,
   sendConnectionRequest, fetchIncomingRequests, searchCandidatesByHandle,
-  createCustomRoom
+  createCustomRoom, deleteCustomRoom
 } from '../utils/worldData.js';
 import { signInWithGoogle, auth, db } from '../utils/firebase.js';
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
@@ -753,6 +753,13 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
   const stars   = players.filter(p => p.tier === 'star' || p.tier === 'rising').slice(0, 6);
   const hasData = players.length > 0;
 
+  const myEmail = auth.currentUser?.email;
+  const connectedEmails = connections.map(c => c.email);
+  const pendingEmails = incomingRequests.map(r => r.senderEmail);
+  const recommendedPlayers = players.filter(p => {
+    return p.email !== myEmail && !connectedEmails.includes(p.email) && !pendingEmails.includes(p.email);
+  }).slice(0, 4);
+
   dash.style.display = 'block';
   dash.innerHTML = `
     <div style="min-height:100vh;background:#000000;font-family:'Space Grotesk',sans-serif;color:#ffffff;padding-bottom:60px;">
@@ -956,14 +963,22 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
 
             <!-- Tab 3: Connections panel -->
             <div id="profile-container-connections" style="display:none;text-align:left;">
-              <!-- Add new connection search field -->
-              <div style="margin-bottom:24px;background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:16px;">
-                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,0.45);letter-spacing:0.08em;margin-bottom:10px;">Find Elite Players to Connect</h4>
-                <div style="display:flex;gap:8px;">
-                  <input type="text" id="connection-search-input" placeholder="Search handle, name, or email..." style="flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:12px;outline:none;transition:border-color 0.2s;" />
-                  <button id="connection-search-btn" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background 0.2s;">Search</button>
+              <!-- Recommended Connections -->
+              <div style="margin-bottom:24px;">
+                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:#7c3aed;letter-spacing:0.08em;margin-bottom:10px;">Recommended Connections</h4>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${recommendedPlayers.length === 0 ? `
+                    <div style="font-size:11px;color:rgba(255,255,255,0.3);padding:6px 0;">No new profile recommendations at this time.</div>
+                  ` : recommendedPlayers.map(r => `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(124,58,237,0.025);border:1px solid rgba(124,58,237,0.12);border-radius:8px;">
+                      <div>
+                        <div style="font-size:12px;font-weight:600;color:#fff;">${r.name}</div>
+                        <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.handle || r.email.split('@')[0]} · WMI: ${Math.round(r.score)}</div>
+                      </div>
+                      <button class="conn-send-invite-btn" data-email="${r.email}" data-handle="${r.handle || r.email.split('@')[0]}" data-name="${r.name}" data-uid="${r.uid || ''}" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='#6d28d9'" onmouseleave="this.style.background='#7c3aed'">Connect</button>
+                    </div>
+                  `).join('')}
                 </div>
-                <div id="connection-search-results" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;"></div>
               </div>
 
               <!-- Pending Requests -->
@@ -1282,59 +1297,28 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
     });
   }
 
-  // Connections Search event listener binding
-  const connSearchInput = document.getElementById('connection-search-input');
-  const connSearchBtn = document.getElementById('connection-search-btn');
-  const connSearchResults = document.getElementById('connection-search-results');
-
-  if (connSearchBtn && connSearchInput && connSearchResults) {
-    const handleSearch = async () => {
-      const qText = connSearchInput.value.trim();
-      if (!qText) return;
-      connSearchResults.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.3);padding:6px 0;">Searching candidate archives...</div>';
-      const results = await searchCandidatesByHandle(qText);
-      if (results.length === 0) {
-        connSearchResults.innerHTML = '<div style="font-size:11px;color:#ec4899;padding:6px 0;">No profile matching handle found.</div>';
-        return;
+  // Connections Recommended list event listener binding
+  document.querySelectorAll('.conn-send-invite-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const rec = {
+        uid: btn.getAttribute('data-uid'),
+        email: btn.getAttribute('data-email'),
+        name: btn.getAttribute('data-name'),
+        handle: btn.getAttribute('data-handle')
+      };
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      try {
+        await sendConnectionRequest(rec);
+        btn.textContent = 'Sent';
+        btn.style.background = '#2563eb';
+      } catch(err) {
+        alert(err.message);
+        btn.disabled = false;
+        btn.textContent = 'Connect';
       }
-      connSearchResults.innerHTML = results.map(r => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.03);border-radius:6px;margin-bottom:4px;">
-          <div>
-            <div style="font-size:12px;font-weight:600;color:#fff;">${r.name}</div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.handle} (${r.rank})</div>
-          </div>
-          <button class="conn-send-invite-btn" data-email="${r.email}" data-handle="${r.handle}" data-name="${r.name}" data-uid="${r.uid}" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:600;cursor:pointer;transition:background 0.15s;">Connect</button>
-        </div>
-      `).join('');
-
-      connSearchResults.querySelectorAll('.conn-send-invite-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const rec = {
-            uid: btn.getAttribute('data-uid'),
-            email: btn.getAttribute('data-email'),
-            name: btn.getAttribute('data-name'),
-            handle: btn.getAttribute('data-handle')
-          };
-          btn.disabled = true;
-          btn.textContent = 'Sending...';
-          try {
-            await sendConnectionRequest(rec);
-            btn.textContent = 'Sent';
-            btn.style.background = '#2563eb';
-          } catch(e) {
-            alert(e.message);
-            btn.disabled = false;
-            btn.textContent = 'Connect';
-          }
-        });
-      });
-    };
-
-    connSearchBtn.addEventListener('click', handleSearch);
-    connSearchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleSearch();
     });
-  }
+  });
 
   // Bind pending request buttons (Accept / Decline)
   document.querySelectorAll('.conn-accept-btn').forEach(btn => {
@@ -1464,12 +1448,13 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
   // Setup Chatrooms (Dedicated Screen Router version)
   function _setupChatrooms(players, userProfile) {
     const enterBtns = document.querySelectorAll('.enter-room-btn');
+    const deleteBtns = document.querySelectorAll('.delete-room-btn');
     
     enterBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const roomId = btn.getAttribute('data-room-id');
-        const room = NEURO_ROOMS.find(r => r.id === roomId);
+        const room = NEURO_ROOMS.find(r => r.id === roomId) || customRooms.find(r => r.id === roomId);
         if (room) {
           const userScore = userProfile && userProfile[0] ? Math.round(userProfile[0].score) : null;
           const isEligible = !room.locked || (userScore && userScore >= 100);
@@ -1478,6 +1463,24 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
             _showAccessDeniedModal(room, userScore);
           } else {
             navigate('room', { roomId: room.id });
+          }
+        }
+      });
+    });
+
+    deleteBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const roomId = btn.getAttribute('data-room-id');
+        if (confirm("Are you sure you want to delete this custom neuro channel? This cannot be undone.")) {
+          btn.disabled = true;
+          try {
+            await deleteCustomRoom(roomId);
+            const updatedData = await _fetchWorldData();
+            _renderDashboard(updatedData);
+          } catch(err) {
+            alert("Error deleting room: " + err.message);
+            btn.disabled = false;
           }
         }
       });
@@ -1708,12 +1711,19 @@ function _roomCard(room) {
   const tags = room.tags || ['custom', 'private'];
   const locked = room.locked !== undefined ? room.locked : false;
 
+  const isCreator = room.isCustom && auth.currentUser && (room.creatorUid === auth.currentUser.uid || room.creatorEmail === auth.currentUser.email);
+
   return `
     <div class="wld-room-card wld-reveal" style="
       background:#0c0c0e;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:20px;
       cursor:pointer;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);position:relative;overflow:hidden;
     ">
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${room.colorHex};opacity:0.6;"></div>
+      ${isCreator ? `
+        <button class="delete-room-btn" data-room-id="${room.id}" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:rgba(255,255,255,0.3);font-size:11px;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'" title="Delete Channel">
+          ❌
+        </button>
+      ` : ''}
       <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
         <div style="width:40px;height:40px;border-radius:10px;background:${room.colorHex}10;border:1px solid ${room.colorHex}22;display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:700;color:${room.colorHex};flex-shrink:0;text-transform:uppercase;">${room.name.slice(0,2)}</div>
         <div>

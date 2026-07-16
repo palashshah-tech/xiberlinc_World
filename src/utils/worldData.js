@@ -497,3 +497,15 @@ export async function clearWhiteboard(roomId) {
   }
 }
 
+// Delete custom user-created room from Firestore
+export async function deleteCustomRoom(roomId) {
+  await authReady;
+  try {
+    await deleteDoc(doc(db, 'custom_rooms', roomId));
+    await clearWhiteboard(roomId);
+  } catch (e) {
+    console.error("Failed to delete custom room:", e);
+    throw e;
+  }
+}
+
