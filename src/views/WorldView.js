@@ -5,7 +5,12 @@
 import { render } from '../utils/dom.js';
 import { injectStyle, navigate } from '../router.js';
 import { Storage } from '../utils/storage.js';
-import { fetchTopPlayers, buildLeaderboard, fetchLiveStats, fetchUserProfile } from '../utils/worldData.js';
+import {
+  fetchTopPlayers, buildLeaderboard, fetchLiveStats, fetchUserProfile,
+  fetchCustomRooms, fetchUserConnections, respondToConnectionRequest,
+  sendConnectionRequest, fetchIncomingRequests, searchCandidatesByHandle,
+  createCustomRoom
+} from '../utils/worldData.js';
 import { signInWithGoogle, auth, db } from '../utils/firebase.js';
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
@@ -317,16 +322,27 @@ async function _fetchWorldData() {
     const user = auth.currentUser;
     const email = user && !user.isAnonymous ? user.email : null;
 
-    const [players, stats, userProfile] = await Promise.all([
+    const [players, stats, userProfile, customRooms, connections, incomingRequests] = await Promise.all([
       fetchTopPlayers(20),
       fetchLiveStats(),
-      email ? fetchUserProfile(email) : Promise.resolve([])
+      email ? fetchUserProfile(email) : Promise.resolve([]),
+      email ? fetchCustomRooms() : Promise.resolve([]),
+      email ? fetchUserConnections() : Promise.resolve([]),
+      email ? fetchIncomingRequests() : Promise.resolve([])
     ]);
     const leaderboard = buildLeaderboard(players);
-    return { players, stats, leaderboard, userProfile };
+    return { players, stats, leaderboard, userProfile, customRooms, connections, incomingRequests };
   } catch (e) {
     console.error('[World] Data fetch failed:', e);
-    return { players: [], stats: { playersOnline: 0, starsLive: 0, activeRooms: 6, totalPlayers: 0, countriesRepresented: 0 }, leaderboard: { region: [], country: [], global: [] }, userProfile: [] };
+    return { 
+      players: [], 
+      stats: { playersOnline: 0, starsLive: 0, activeRooms: 6, totalPlayers: 0, countriesRepresented: 0 }, 
+      leaderboard: { region: [], country: [], global: [] }, 
+      userProfile: [], 
+      customRooms: [], 
+      connections: [], 
+      incomingRequests: [] 
+    };
   }
 }
 
@@ -725,7 +741,7 @@ function _initConstellationCanvas(players, userProfile) {
 /* ════════════════════════════════════════════════════════════
    DASHBOARD RENDER
    ════════════════════════════════════════════════════════════ */
-function _renderDashboard({ players, stats, leaderboard, userProfile }) {
+function _renderDashboard({ players, stats, leaderboard, userProfile, customRooms = [], connections = [], incomingRequests = [] }) {
   const dash = document.getElementById('world-dashboard');
   if (!dash) return;
 
@@ -883,6 +899,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
             <div style="display:flex;gap:16px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:10px;">
               <button id="tab-profile-stats" style="background:transparent;border:none;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer;padding:4px 8px;border-bottom:2px solid #7c3aed;transition:color 0.2s;">GLANCE STATS</button>
               <button id="tab-profile-constellation" style="background:transparent;border:none;color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer;padding:4px 8px;transition:color 0.2s;">CONSTELLATION GRAPH</button>
+              <button id="tab-profile-connections" style="background:transparent;border:none;color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer;padding:4px 8px;transition:color 0.2s;">CONNECTIONS ${incomingRequests.length ? `<span style="background:#ec4899;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;">${incomingRequests.length}</span>` : ''}</button>
             </div>
 
             <!-- Tab 1: Glance Stats & History -->
@@ -931,6 +948,65 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
               <canvas id="constellation-canvas" style="width:100%;height:100%;display:block;"></canvas>
               <div id="constellation-tooltip" style="position:absolute;pointer-events:none;background:rgba(8,8,12,0.92);border:1px solid rgba(124,58,237,0.35);border-radius:8px;padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;color:#fff;opacity:0;transition:opacity 0.12s;z-index:100;backdrop-filter:blur(12px);box-shadow:0 12px 36px rgba(0,0,0,0.6);text-align:left;"></div>
             </div>
+
+            <!-- Tab 3: Connections panel -->
+            <div id="profile-container-connections" style="display:none;text-align:left;">
+              <!-- Add new connection search field -->
+              <div style="margin-bottom:24px;background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.04);border-radius:12px;padding:16px;">
+                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,0.45);letter-spacing:0.08em;margin-bottom:10px;">Find Elite Players to Connect</h4>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="connection-search-input" placeholder="Search handle, name, or email..." style="flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 12px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:12px;outline:none;transition:border-color 0.2s;" />
+                  <button id="connection-search-btn" style="background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background 0.2s;">Search</button>
+                </div>
+                <div id="connection-search-results" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;"></div>
+              </div>
+
+              <!-- Pending Requests -->
+              ${incomingRequests.length > 0 ? `
+                <div style="margin-bottom:24px;">
+                  <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:#ec4899;letter-spacing:0.08em;margin-bottom:10px;">Pending Connection Requests</h4>
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    ${incomingRequests.map(r => `
+                      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(236,72,153,0.02);border:1px solid rgba(236,72,153,0.12);border-radius:8px;">
+                        <div>
+                          <div style="font-size:12px;font-weight:600;color:#fff;">${r.senderName}</div>
+                          <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.senderHandle}</div>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                          <button class="conn-accept-btn" data-id="${r.id}" style="background:#2563eb;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;transition:background 0.15s;">Accept</button>
+                          <button class="conn-decline-btn" data-id="${r.id}" style="background:transparent;color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:4px 10px;font-size:10px;cursor:pointer;transition:all 0.15s;">Decline</button>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Connected Friends List -->
+              <div>
+                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,0.35);letter-spacing:0.08em;margin-bottom:10px;">My Connections (${connections.length})</h4>
+                ${connections.length === 0 ? `
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:rgba(255,255,255,0.35);padding:10px 0;text-align:center;">
+                    No connection links established yet. Use the search bar above to invite other players.
+                  </div>
+                ` : `
+                  <div style="display:grid;grid-template-columns:1fr;gap:6px;max-height:220px;overflow-y:auto;">
+                    ${connections.map(c => `
+                      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02);border-radius:8px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div style="width:24px;height:24px;border-radius:50%;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${(c.name[0]||'P').toUpperCase()}</div>
+                          <div>
+                            <div style="font-size:12px;font-weight:600;color:#fff;">${c.name}</div>
+                            <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${c.handle}</div>
+                          </div>
+                        </div>
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#2563eb;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.18);border-radius:4px;padding:1px 6px;">CONNECTED</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+              </div>
+            </div>
           </div>
         `}
       </section>
@@ -964,11 +1040,15 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
       <section id="wld-sec-3" style="padding:60px 24px;max-width:1240px;margin:0 auto;">
         <div class="wld-reveal" style="margin-bottom:40px;">
           <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.2em;color:#06b6d4;margin-bottom:10px;">Community</div>
-          <h2 style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;text-transform:uppercase;margin-bottom:10px;">Neuro Rooms<span style="color:#06b6d4;font-style:normal;">.</span></h2>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+            <h2 style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;text-transform:uppercase;margin:0;">Neuro Rooms<span style="color:#06b6d4;font-style:normal;">.</span></h2>
+            <button id="create-custom-channel-btn" style="background:transparent;border:1px solid rgba(6,182,212,0.45);color:#06b6d4;border-radius:8px;padding:8px 16px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='rgba(6,182,212,0.08)';this.style.borderColor='#06b6d4'" onmouseleave="this.style.background='transparent';this.style.borderColor='rgba(6,182,212,0.45)'">Create Custom Channel</button>
+          </div>
           <p style="max-width:500px;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.6;">Real-time social spaces where players connect, decompress, and build mental resilience together.</p>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
           ${NEURO_ROOMS.map(r => _roomCard(r)).join('')}
+          ${customRooms.map(r => _roomCard(r)).join('')}
         </div>
       </section>
 
@@ -996,6 +1076,39 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
         </div>
       </footer>
 
+    </div>
+
+    <!-- Custom Room Modal -->
+    <div id="custom-room-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:#09090b;border:1px solid rgba(255,255,255,0.06);border-radius:18px;width:90%;max-width:440px;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.8);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;color:#fff;margin:0;text-transform:uppercase;">Create Custom Channel</h3>
+          <button id="custom-room-close" style="background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;line-height:1;" onmouseenter="this.style.color='#fff'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">&times;</button>
+        </div>
+        
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-size:9.5px;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Channel Name</label>
+            <input type="text" id="custom-room-name-input" placeholder="e.g. Brainstorming Arena" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;" />
+          </div>
+          
+          <div>
+            <label style="display:block;font-size:9.5px;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Invite Connections</label>
+            <div id="custom-room-invites-list" style="max-height:160px;overflow-y:auto;border:1px solid rgba(255,255,255,0.04);border-radius:8px;background:rgba(0,0,0,0.2);padding:10px;display:flex;flex-direction:column;gap:8px;">
+              ${connections.length === 0 ? `
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:12px 0;">No active connections. Add players in your Personal Terminal to invite them.</div>
+              ` : connections.map(c => `
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.75);">
+                  <input type="checkbox" class="room-invite-checkbox" value="${c.email}" style="accent-color:#7c3aed;" />
+                  <span>${c.name} (${c.handle})</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+          
+          <button id="custom-room-submit" style="width:100%;background:#06b6d4;color:#000;border:none;border-radius:8px;padding:12px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#0891b2'" onmouseleave="this.style.background='#06b6d4'">Create Channel</button>
+        </div>
+      </div>
     </div>
   `;
 
@@ -1102,20 +1215,26 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
   // Tab toggling logic for personal terminal
   const tabStats = document.getElementById('tab-profile-stats');
   const tabConst = document.getElementById('tab-profile-constellation');
+  const tabConn = document.getElementById('tab-profile-connections');
+  
   const containerStats = document.getElementById('profile-container-stats');
   const containerConst = document.getElementById('profile-container-constellation');
+  const containerConn = document.getElementById('profile-container-connections');
 
   let canvasCleanup = null;
 
-  if (tabStats && tabConst && containerStats && containerConst) {
+  if (tabStats && tabConst && tabConn && containerStats && containerConst && containerConn) {
     tabStats.addEventListener('click', () => {
       tabStats.style.color = '#fff';
       tabStats.style.borderBottom = '2px solid #7c3aed';
       tabConst.style.color = 'rgba(255,255,255,0.5)';
       tabConst.style.borderBottom = 'none';
+      tabConn.style.color = 'rgba(255,255,255,0.5)';
+      tabConn.style.borderBottom = 'none';
 
       containerStats.style.display = 'block';
       containerConst.style.display = 'none';
+      containerConn.style.display = 'none';
 
       if (canvasCleanup) {
         canvasCleanup();
@@ -1128,12 +1247,167 @@ function _renderDashboard({ players, stats, leaderboard, userProfile }) {
       tabConst.style.borderBottom = '2px solid #7c3aed';
       tabStats.style.color = 'rgba(255,255,255,0.5)';
       tabStats.style.borderBottom = 'none';
+      tabConn.style.color = 'rgba(255,255,255,0.5)';
+      tabConn.style.borderBottom = 'none';
 
       containerStats.style.display = 'none';
       containerConst.style.display = 'block';
+      containerConn.style.display = 'none';
 
       if (canvasCleanup) canvasCleanup();
       canvasCleanup = _initConstellationCanvas(players, userProfile);
+    });
+
+    tabConn.addEventListener('click', () => {
+      tabConn.style.color = '#fff';
+      tabConn.style.borderBottom = '2px solid #7c3aed';
+      tabStats.style.color = 'rgba(255,255,255,0.5)';
+      tabStats.style.borderBottom = 'none';
+      tabConst.style.color = 'rgba(255,255,255,0.5)';
+      tabConst.style.borderBottom = 'none';
+
+      containerStats.style.display = 'none';
+      containerConst.style.display = 'none';
+      containerConn.style.display = 'block';
+
+      if (canvasCleanup) {
+        canvasCleanup();
+        canvasCleanup = null;
+      }
+    });
+  }
+
+  // Connections Search event listener binding
+  const connSearchInput = document.getElementById('connection-search-input');
+  const connSearchBtn = document.getElementById('connection-search-btn');
+  const connSearchResults = document.getElementById('connection-search-results');
+
+  if (connSearchBtn && connSearchInput && connSearchResults) {
+    const handleSearch = async () => {
+      const qText = connSearchInput.value.trim();
+      if (!qText) return;
+      connSearchResults.innerHTML = '<div style="font-size:11px;color:rgba(255,255,255,0.3);padding:6px 0;">Searching candidate archives...</div>';
+      const results = await searchCandidatesByHandle(qText);
+      if (results.length === 0) {
+        connSearchResults.innerHTML = '<div style="font-size:11px;color:#ec4899;padding:6px 0;">No profile matching handle found.</div>';
+        return;
+      }
+      connSearchResults.innerHTML = results.map(r => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.03);border-radius:6px;margin-bottom:4px;">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#fff;">${r.name}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.handle} (${r.rank})</div>
+          </div>
+          <button class="conn-send-invite-btn" data-email="${r.email}" data-handle="${r.handle}" data-name="${r.name}" data-uid="${r.uid}" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:600;cursor:pointer;transition:background 0.15s;">Connect</button>
+        </div>
+      `).join('');
+
+      connSearchResults.querySelectorAll('.conn-send-invite-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const rec = {
+            uid: btn.getAttribute('data-uid'),
+            email: btn.getAttribute('data-email'),
+            name: btn.getAttribute('data-name'),
+            handle: btn.getAttribute('data-handle')
+          };
+          btn.disabled = true;
+          btn.textContent = 'Sending...';
+          try {
+            await sendConnectionRequest(rec);
+            btn.textContent = 'Sent';
+            btn.style.background = '#2563eb';
+          } catch(e) {
+            alert(e.message);
+            btn.disabled = false;
+            btn.textContent = 'Connect';
+          }
+        });
+      });
+    };
+
+    connSearchBtn.addEventListener('click', handleSearch);
+    connSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSearch();
+    });
+  }
+
+  // Bind pending request buttons (Accept / Decline)
+  document.querySelectorAll('.conn-accept-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const rId = btn.getAttribute('data-id');
+      btn.disabled = true;
+      btn.textContent = 'Accepting...';
+      try {
+        await respondToConnectionRequest(rId, 'accepted');
+        const updatedData = await _fetchWorldData();
+        _renderDashboard(updatedData);
+      } catch(e) {
+        alert(e.message);
+        btn.disabled = false;
+        btn.textContent = 'Accept';
+      }
+    });
+  });
+
+  document.querySelectorAll('.conn-decline-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const rId = btn.getAttribute('data-id');
+      btn.disabled = true;
+      btn.textContent = 'Declining...';
+      try {
+        await respondToConnectionRequest(rId, 'declined');
+        const updatedData = await _fetchWorldData();
+        _renderDashboard(updatedData);
+      } catch(e) {
+        alert(e.message);
+        btn.disabled = false;
+        btn.textContent = 'Decline';
+      }
+    });
+  });
+
+  // Custom Channel modal triggers
+  const createChannelBtn = document.getElementById('create-custom-channel-btn');
+  const customModal = document.getElementById('custom-room-modal');
+  const customClose = document.getElementById('custom-room-close');
+  const customSubmit = document.getElementById('custom-room-submit');
+  const customNameInput = document.getElementById('custom-room-name-input');
+
+  if (createChannelBtn && customModal && customClose) {
+    createChannelBtn.addEventListener('click', () => {
+      customModal.style.display = 'flex';
+      customNameInput.value = '';
+      customModal.querySelectorAll('.room-invite-checkbox').forEach(cb => cb.checked = false);
+    });
+
+    customClose.addEventListener('click', () => {
+      customModal.style.display = 'none';
+    });
+
+    customSubmit?.addEventListener('click', async () => {
+      const roomName = customNameInput.value.trim();
+      if (!roomName) {
+        alert("Please enter a channel name.");
+        return;
+      }
+      
+      const invitees = [];
+      customModal.querySelectorAll('.room-invite-checkbox:checked').forEach(cb => {
+        invitees.push(cb.value);
+      });
+
+      customSubmit.disabled = true;
+      customSubmit.textContent = 'Creating Channel...';
+      try {
+        await createCustomRoom(roomName, invitees);
+        customModal.style.display = 'none';
+        const freshData = await _fetchWorldData();
+        _renderDashboard(freshData);
+      } catch(e) {
+        alert("Failed to create room: " + e.message);
+        customSubmit.disabled = false;
+        customSubmit.textContent = 'Create Channel';
+      }
     });
   }
   document.getElementById('taskbar-goto-home')?.addEventListener('click', () => {
@@ -1425,6 +1699,10 @@ function _leaderboardHtml(rows) {
 }
 
 function _roomCard(room) {
+  const online = room.online !== undefined ? room.online : 0;
+  const tags = room.tags || ['custom', 'private'];
+  const locked = room.locked !== undefined ? room.locked : false;
+
   return `
     <div class="wld-room-card wld-reveal" style="
       background:#0c0c0e;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:20px;
@@ -1439,16 +1717,17 @@ function _roomCard(room) {
             <div style="width:5px;height:5px;border-radius:50%;background:${room.colorHex};position:relative;">
               <div style="position:absolute;inset:-3px;border-radius:50%;border:1px solid ${room.colorHex};animation:wld-pulse-ring 1.5s ease-out infinite;"></div>
             </div>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:${room.colorHex};">${room.online.toLocaleString()} online</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:${room.colorHex};">${online.toLocaleString()} active</span>
+            ${room.isCustom ? `<span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,0.3);margin-left:4px;">by ${room.creatorHandle}</span>` : ''}
           </div>
         </div>
       </div>
       <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px;line-height:1.5;min-height:3em;">${room.description}</p>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;">
-        ${room.tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:${room.colorHex};background:${room.colorHex}0d;border:1px solid ${room.colorHex}18;border-radius:4px;padding:2px 6px;">#${t}</span>`).join('')}
+        ${tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:${room.colorHex};background:${room.colorHex}0d;border:1px solid ${room.colorHex}18;border-radius:4px;padding:2px 6px;">#${t}</span>`).join('')}
       </div>
-      <button class="enter-room-btn" data-room-id="${room.id}" style="width:100%;padding:10px;border-radius:8px;border:1px solid ${room.locked?'rgba(236,72,153,0.22)':`${room.colorHex}33`};background:${room.locked?'rgba(236,72,153,0.05)':`${room.colorHex}0c`};color:${room.locked?'#ec4899':room.colorHex};font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;">
-        ${room.locked ? 'Locked — ' + room.lockRank + ' required' : 'Enter Room'}
+      <button class="enter-room-btn" data-room-id="${room.id}" style="width:100%;padding:10px;border-radius:8px;border:1px solid ${locked?'rgba(236,72,153,0.22)':`${room.colorHex}33`};background:${locked?'rgba(236,72,153,0.05)':`${room.colorHex}0c`};color:${locked?'#ec4899':room.colorHex};font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;">
+        ${locked ? 'Locked — ' + room.lockRank + ' required' : 'Enter Room'}
       </button>
     </div>
   `;

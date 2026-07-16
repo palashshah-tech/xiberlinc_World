@@ -7,7 +7,7 @@
 import { render } from '../utils/dom.js';
 import { navigate, injectStyle } from '../router.js';
 import { auth, db, authReady } from '../utils/firebase.js';
-import { fetchUserProfile } from '../utils/worldData.js';
+import { fetchUserProfile, saveWhiteboardStroke, clearWhiteboard } from '../utils/worldData.js';
 import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { 
   collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp,
@@ -148,7 +148,28 @@ export async function RoomView(params = {}) {
   }
 
   const roomId = params.roomId || 'room_1';
-  const room = NEURO_ROOMS.find(r => r.id === roomId) || NEURO_ROOMS[0];
+  let room = NEURO_ROOMS.find(r => r.id === roomId);
+  if (!room) {
+    try {
+      const roomSnap = await getDoc(doc(db, 'custom_rooms', roomId));
+      if (roomSnap.exists()) {
+        const rData = roomSnap.data();
+        room = {
+          id: roomId,
+          name: rData.name,
+          colorHex: rData.colorHex || '#a78bfa',
+          description: rData.description || `Private channel. Created by ${rData.creatorHandle}.`,
+          icon: rData.icon || 'terminal',
+          isCustom: true
+        };
+      }
+    } catch(e) {
+      console.error("Failed to fetch custom room config:", e);
+    }
+  }
+  if (!room) {
+    room = NEURO_ROOMS[0];
+  }
 
   // Fetch user profile scores for badging
   let userProfile = [];
@@ -364,10 +385,44 @@ export async function RoomView(params = {}) {
           <!-- HOLOGRAPHIC NEURAL MATRIX BACKGROUND CANVAS -->
           <canvas id="neural-matrix-canvas" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0.18; z-index:1;"></canvas>
 
+          <!-- Tab selector for Cockpit vs Whiteboard -->
+          <div style="display:flex; gap:16px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px; position:relative; z-index:2; text-align:left;">
+            <button id="tab-room-cockpit" style="background:transparent; border:none; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:4px 8px; border-bottom:2px solid ${room.colorHex}; transition:color 0.2s;">NEURO COCKPIT</button>
+            <button id="tab-room-whiteboard" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:4px 8px; transition:color 0.2s;">COLLABORATIVE WHITEBOARD</button>
+          </div>
+
           <!-- COCKPIT CONTROL CENTRE DYNAMIC WORKSPACE -->
           <div id="cockpit-workspace" class="wld-fade-up" style="position:relative; z-index:2;">
             <!-- Dynamically populated by room features -->
-            <!-- Dynamically populated by room features -->
+          </div>
+
+          <!-- COLLABORATIVE WHITEBOARD CONTAINER -->
+          <div id="whiteboard-workspace" class="wld-fade-up" style="display:none; position:relative; z-index:2; background:#0c0c0e; border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:20px; flex-direction:column; gap:16px;">
+            <!-- Whiteboard controls -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid rgba(255,255,255,0.04); padding-bottom:12px;">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <label style="font-family:'Space Grotesk',sans-serif; font-size:10px; text-transform:uppercase; color:rgba(255,255,255,0.4); letter-spacing:0.04em;">Brush:</label>
+                  <input type="color" id="whiteboard-color" value="${room.colorHex}" style="background:transparent; border:none; width:26px; height:26px; cursor:pointer; padding:0;" />
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <label style="font-family:'Space Grotesk',sans-serif; font-size:10px; text-transform:uppercase; color:rgba(255,255,255,0.4); letter-spacing:0.04em;">Width:</label>
+                  <input type="range" id="whiteboard-width" min="1" max="15" value="3" style="width:70px; accent-color:${room.colorHex}; cursor:pointer;" />
+                </div>
+              </div>
+              
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button id="whiteboard-clear-btn" style="background:rgba(236,72,153,0.1); color:#ec4899; border:1px solid rgba(236,72,153,0.25); border-radius:6px; padding:6px 12px; font-family:'Space Grotesk',sans-serif; font-size:10.5px; font-weight:600; cursor:pointer; transition:all 0.15s;" onmouseenter="this.style.background='rgba(236,72,153,0.2)'" onmouseleave="this.style.background='rgba(236,72,153,0.1)'">Clear Canvas</button>
+              </div>
+            </div>
+            
+            <!-- Canvas container wrapper -->
+            <div style="position:relative; width:100%; aspect-ratio:1.6; background:#050507; border:1px solid rgba(255,255,255,0.03); border-radius:12px; overflow:hidden;">
+              <canvas id="whiteboard-canvas" style="position:absolute; inset:0; width:100%; height:100%; display:block; cursor:crosshair;"></canvas>
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:10px; color:rgba(255,255,255,0.35); text-align:left;">
+              Draw here to collaborate! Changes sync in real-time to all connected users inside the channel.
+            </div>
           </div>
 
           <!-- SYNCHRONIZED Web Audio SOUNDBOARD -->
@@ -542,6 +597,44 @@ export async function RoomView(params = {}) {
   // Setup Cockpit Activities
   _initCockpitActivity(room);
 
+  // Setup Whiteboard and Tab Switching
+  let whiteboardCleanup = null;
+  const tabCockpit = document.getElementById('tab-room-cockpit');
+  const tabWhiteboard = document.getElementById('tab-room-whiteboard');
+  const cockpitWorkspace = document.getElementById('cockpit-workspace');
+  const whiteboardWorkspace = document.getElementById('whiteboard-workspace');
+
+  if (tabCockpit && tabWhiteboard && cockpitWorkspace && whiteboardWorkspace) {
+    tabCockpit.addEventListener('click', () => {
+      tabCockpit.style.color = '#fff';
+      tabCockpit.style.borderBottom = `2px solid ${room.colorHex}`;
+      tabWhiteboard.style.color = 'rgba(255,255,255,0.5)';
+      tabWhiteboard.style.borderBottom = 'none';
+
+      cockpitWorkspace.style.display = 'block';
+      whiteboardWorkspace.style.display = 'none';
+
+      if (whiteboardCleanup) {
+        whiteboardCleanup();
+        whiteboardCleanup = null;
+      }
+    });
+
+    tabWhiteboard.addEventListener('click', () => {
+      tabWhiteboard.style.color = '#fff';
+      tabWhiteboard.style.borderBottom = `2px solid ${room.colorHex}`;
+      tabCockpit.style.color = 'rgba(255,255,255,0.5)';
+      tabCockpit.style.borderBottom = 'none';
+
+      cockpitWorkspace.style.display = 'none';
+      whiteboardWorkspace.style.display = 'flex';
+
+      if (!whiteboardCleanup) {
+        whiteboardCleanup = _initWhiteboardCanvas(room.id, room.colorHex);
+      }
+    });
+  }
+
   // Setup soundboard SFX buttons
   _initSoundboardButtons(room, userRank);
 
@@ -569,6 +662,12 @@ export async function RoomView(params = {}) {
       if (chatMessagesUnsub) {
         chatMessagesUnsub();
         chatMessagesUnsub = null;
+      }
+
+      // 2b. Clear whiteboard sync listeners
+      if (whiteboardCleanup) {
+        whiteboardCleanup();
+        whiteboardCleanup = null;
       }
       
       // 3. Delete room presence database entry
@@ -3100,3 +3199,158 @@ function _spawnMatrixRipple(x, y, maxRadius = 150, color = 'rgba(255, 255, 255, 
     color
   });
 }
+
+/* ── COLLABORATIVE WHITEBOARD DRAWING ENGINE ── */
+function _initWhiteboardCanvas(roomId, colorHex) {
+  const canvas = document.getElementById('whiteboard-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const brushColorInput = document.getElementById('whiteboard-color');
+  const brushWidthInput = document.getElementById('whiteboard-width');
+  const clearBtn = document.getElementById('whiteboard-clear-btn');
+
+  let isDrawing = false;
+  let currentStrokePoints = [];
+  let whiteboardUnsub = null;
+  let currentRoomStrokes = [];
+
+  const container = canvas.parentElement;
+  let width = container.clientWidth;
+  let height = container.clientHeight;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const resizeObserver = new ResizeObserver(() => {
+    width = container.clientWidth;
+    height = container.clientHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+    _redrawCanvas();
+  });
+  resizeObserver.observe(container);
+
+  function _redrawCanvas() {
+    ctx.clearRect(0, 0, width, height);
+    currentRoomStrokes.forEach(stroke => {
+      if (!stroke.points || stroke.points.length === 0) return;
+      ctx.beginPath();
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.lineWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const p0 = stroke.points[0];
+      ctx.moveTo(p0.x * width, p0.y * height);
+      for (let i = 1; i < stroke.points.length; i++) {
+        const p = stroke.points[i];
+        ctx.lineTo(p.x * width, p.y * height);
+      }
+      ctx.stroke();
+    });
+  }
+
+  function drawLocal(e) {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = brushColorInput.value;
+    ctx.lineWidth = brushWidthInput.value;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    currentStrokePoints.push({
+      x: x / width,
+      y: y / height
+    });
+  }
+
+  function startDrawing(e) {
+    isDrawing = true;
+    currentStrokePoints = [];
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+
+    currentStrokePoints.push({
+      x: x / width,
+      y: y / height
+    });
+  }
+
+  async function stopDrawing() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    if (currentStrokePoints.length < 2) return;
+
+    try {
+      const stroke = {
+        color: brushColorInput.value,
+        lineWidth: Number(brushWidthInput.value),
+        points: currentStrokePoints
+      };
+      await saveWhiteboardStroke(roomId, stroke);
+    } catch (e) {
+      console.error("Failed to sync whiteboard stroke:", e);
+    }
+  }
+
+  canvas.addEventListener('mousedown', startDrawing);
+  canvas.addEventListener('mousemove', drawLocal);
+  canvas.addEventListener('mouseup', stopDrawing);
+  canvas.addEventListener('mouseleave', stopDrawing);
+
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    startDrawing(e);
+  });
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    drawLocal(e);
+  });
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    stopDrawing();
+  });
+
+  clearBtn?.addEventListener('click', async () => {
+    if (confirm("Are you sure you want to clear the whiteboard? This clears it for EVERYONE in the channel.")) {
+      await clearWhiteboard(roomId);
+    }
+  });
+
+  const q = query(
+    collection(db, 'whiteboard_strokes'),
+    where('roomId', '==', roomId),
+    orderBy('createdAt', 'asc')
+  );
+
+  whiteboardUnsub = onSnapshot(q, (snapshot) => {
+    currentRoomStrokes = [];
+    snapshot.forEach(doc => {
+      currentRoomStrokes.push(doc.data());
+    });
+    _redrawCanvas();
+  });
+
+  return () => {
+    if (whiteboardUnsub) {
+      whiteboardUnsub();
+      whiteboardUnsub = null;
+    }
+    resizeObserver.disconnect();
+  };
+}
+
