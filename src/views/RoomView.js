@@ -249,6 +249,89 @@ export async function RoomView(params = {}) {
     #wld-chat-messages::-webkit-scrollbar { width: 6px; }
     #wld-chat-messages::-webkit-scrollbar-track { background: transparent; }
     #wld-chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 99px; }
+
+    /* Responsive Layout Classes */
+    #wld-cockpit-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+    #wld-chat-column {
+      width: 340px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      background: rgba(8,8,11,0.45);
+      flex-shrink: 0;
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), width 0.28s;
+    }
+    #wld-main-column {
+      flex: 1;
+      padding: 28px 24px;
+      overflow-y: auto;
+      background: #07070a;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    #member-sidebar {
+      width: 240px;
+      border-left: 1px solid rgba(255,255,255,0.06);
+      background: rgba(8,8,11,0.5);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), width 0.28s;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .mobile-only-btn {
+      display: none !important;
+    }
+
+    @media (max-width: 991px) {
+      #member-sidebar {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        z-index: 100;
+        background: #09090c;
+        border-left: 1px solid rgba(255,255,255,0.08);
+        box-shadow: -10px 0 35px rgba(0,0,0,0.85);
+        transform: translateX(100%);
+      }
+      #member-sidebar.active {
+        transform: translateX(0);
+        width: 240px !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      #wld-chat-column {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 290px !important;
+        z-index: 100;
+        background: #09090c;
+        border-right: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 10px 0 35px rgba(0,0,0,0.85);
+        transform: translateX(-100%);
+      }
+      #wld-chat-column.active {
+        transform: translateX(0);
+      }
+      .mobile-only-btn {
+        display: inline-block !important;
+      }
+      #wld-main-column {
+        padding: 16px 12px;
+      }
+    }
   `);
 
   // Render the full screen layouts (Three-Column splitscreen)
@@ -278,7 +361,11 @@ export async function RoomView(params = {}) {
           </div>
         </div>
         
-        <div style="display:flex; align-items:center; gap:16px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <!-- Collapsible Chat Toggle for Mobile -->
+          <button id="chat-sidebar-toggle" class="mobile-only-btn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#fff; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';">
+            💬 CHAT
+          </button>
           <!-- Collapsible Member Toggle -->
           <button id="member-sidebar-toggle" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#fff; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';">
             👥 ROSTER
@@ -295,10 +382,10 @@ export async function RoomView(params = {}) {
       </header>
 
       <!-- THREE-COLUMN DISCORD IRL LAYOUT CONTAINER -->
-      <div style="flex:1; display:flex; overflow:hidden;">
+      <div id="wld-cockpit-layout">
         
         <!-- COLUMN 1: LIVE CHAT STREAM -->
-        <div style="width:380px; border-right:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; background:rgba(8,8,11,0.45); flex-shrink:0;">
+        <div id="wld-chat-column">
           
           <!-- Active Logs Header -->
           <div id="wld-chat-users" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.04); background:rgba(5,5,8,0.3); display:flex; align-items:center; gap:8px; overflow-x:auto; flex-shrink:0;">
@@ -380,7 +467,7 @@ export async function RoomView(params = {}) {
         </div>
 
         <!-- COLUMN 2: CENTER COCKPIT & NEURO GAME DECK -->
-        <main style="flex:1; padding:28px 24px; overflow-y:auto; background:#07070a; display:flex; flex-direction:column; gap:20px; position:relative; overflow-x:hidden;">
+        <main id="wld-main-column">
           
           <!-- HOLOGRAPHIC NEURAL MATRIX BACKGROUND CANVAS -->
           <canvas id="neural-matrix-canvas" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:0.18; z-index:1;"></canvas>
@@ -532,11 +619,42 @@ export async function RoomView(params = {}) {
   const sidebar = document.getElementById('member-sidebar');
   const toggleBtn = document.getElementById('member-sidebar-toggle');
   if (toggleBtn && sidebar) {
-    toggleBtn.addEventListener('click', () => {
-      const isCollapsed = sidebar.style.width === '0px';
-      sidebar.style.width = isCollapsed ? '240px' : '0px';
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.innerWidth >= 992) {
+        const isCollapsed = sidebar.style.width === '0px';
+        sidebar.style.width = isCollapsed ? '240px' : '0px';
+      } else {
+        sidebar.classList.toggle('active');
+        document.getElementById('wld-chat-column')?.classList.remove('active');
+      }
     });
   }
+
+  // Collapsible Mobile Chat Toggle
+  const chatToggle = document.getElementById('chat-sidebar-toggle');
+  const chatColumn = document.getElementById('wld-chat-column');
+  if (chatToggle && chatColumn) {
+    chatToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      chatColumn.classList.toggle('active');
+      sidebar?.classList.remove('active');
+    });
+  }
+
+  // Close drawers when clicking anywhere else on the screen on mobile/tablet
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth < 992) {
+      if (sidebar && !sidebar.contains(e.target) && e.target !== toggleBtn) {
+        sidebar.classList.remove('active');
+      }
+    }
+    if (window.innerWidth < 768) {
+      if (chatColumn && !chatColumn.contains(e.target) && e.target !== chatToggle) {
+        chatColumn.classList.remove('active');
+      }
+    }
+  });
 
   // Handle tab closing / browser exit safely
   const handleUnload = () => {
