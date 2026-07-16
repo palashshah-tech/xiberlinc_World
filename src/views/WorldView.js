@@ -76,15 +76,8 @@ export function WorldView() {
         position:absolute;inset:0;z-index:9000;
         overflow:hidden;background:#000000;display:none;
       ">
-        <!-- Spline -->
-        <div style="position:absolute;inset:0;">
-          <spline-viewer
-            id="spline-el"
-            url="/master.splinecode"
-            loading-anim-type="none"
-            style="width:100%;height:100%;opacity:0;transition:opacity 2.5s ease;"
-          ></spline-viewer>
-        </div>
+        <!-- Spline Container -->
+        <div id="spline-container" style="position:absolute;inset:0;"></div>
 
         <!-- Content (Apple-like static title with clean fade-in) -->
         <div id="loader-ui" style="
@@ -271,6 +264,18 @@ async function _cycleLoaderText(loaderText) {
 }
 
 async function _runLoader() {
+  const container = document.getElementById('spline-container');
+  if (container) {
+    container.innerHTML = `
+      <spline-viewer
+        id="spline-el"
+        url="/master.splinecode"
+        loading-anim-type="none"
+        style="width:100%;height:100%;opacity:0;transition:opacity 2.5s ease;"
+      ></spline-viewer>
+    `;
+  }
+
   const spline     = document.getElementById('spline-el');
   const loaderText = document.getElementById('loader-text');
 
