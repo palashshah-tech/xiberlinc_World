@@ -1582,7 +1582,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
           if (el.shadowRoot) {
             const innerCanvas = el.shadowRoot.querySelector('canvas');
             if (innerCanvas) {
-              const gl = innerCanvas.getContext('webgl') || innerCanvas.getContext('webgl2');
+              const gl = innerCanvas.getContext('webgl2') || innerCanvas.getContext('webgl');
               if (gl) {
                 const extension = gl.getExtension('WEBGL_lose_context');
                 if (extension) extension.loseContext();
