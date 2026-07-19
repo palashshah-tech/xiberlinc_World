@@ -11,7 +11,7 @@ import {
   sendConnectionRequest, fetchIncomingRequests, searchCandidatesByHandle,
   createCustomRoom, deleteCustomRoom, fetchIgnoreEmails
 } from '../utils/worldData.js';
-import { signInWithGoogle, auth, db } from '../utils/firebase.js';
+import { signInWithGoogle, auth, db, signOut } from '../utils/firebase.js';
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
@@ -69,6 +69,8 @@ export function WorldView() {
           </svg>
           Sign in with Google
         </button>
+        <!-- Error message display -->
+        <div id="auth-error-msg" style="display:none; margin-top:20px; font-family:'Space Grotesk',sans-serif; font-size:12px; color:#ef4444; max-width:320px; line-height:1.5; font-weight:500;"></div>
       </div>
 
       <!-- ── LOADER SCREEN ── -->
@@ -176,12 +178,14 @@ export function WorldView() {
 function _initAuth() {
   const authGate = document.getElementById('world-auth-gate');
   const loginBtn = document.getElementById('google-login-btn');
+  const errMsg = document.getElementById('auth-error-msg');
 
   // Verify current auth user
   const user = auth.currentUser;
   const isGoogle = user && !user.isAnonymous;
+  const isAuthorizedEmail = user && user.email && user.email.toLowerCase().endsWith('@xiberlinc.one');
 
-  if (isGoogle) {
+  if (isGoogle && isAuthorizedEmail) {
     // Already authenticated with Google, go straight to loader or dashboard if loaded
     if (authGate) authGate.style.display = 'none';
     if (window.xiberlinc_world_loaded) {
@@ -194,9 +198,25 @@ function _initAuth() {
       _startLoader();
     }
   } else {
+    // If user exists but has unauthorized email domain, terminate session automatically
+    if (user && !isAuthorizedEmail) {
+      signOut(auth).then(() => {
+        console.warn("Unauthorized domain session terminated on page load.");
+        if (errMsg) {
+          errMsg.textContent = "Access Denied: Only @xiberlinc.one email addresses are authorized to enter Xiberlinc World.";
+          errMsg.style.display = 'block';
+        }
+      });
+    }
+
     // Show Google Auth Gate
     if (loginBtn) {
-      loginBtn.addEventListener('click', async () => {
+      // Clear any previous click listeners to prevent duplicates
+      const newLoginBtn = loginBtn.cloneNode(true);
+      loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+      
+      newLoginBtn.addEventListener('click', async () => {
+        if (errMsg) errMsg.style.display = 'none';
         const res = await signInWithGoogle();
         if (res.ok) {
           // Slide auth gate away
@@ -207,6 +227,11 @@ function _initAuth() {
               authGate.style.display = 'none';
               _startLoader();
             }, 800);
+          }
+        } else {
+          if (errMsg) {
+            errMsg.textContent = res.error?.message || "Sign-In failed. Please try again.";
+            errMsg.style.display = 'block';
           }
         }
       });

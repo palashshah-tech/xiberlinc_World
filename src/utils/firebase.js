@@ -19,6 +19,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export { signOut };
 
 export const authReady = new Promise((resolve) => {
   const unsub = onAuthStateChanged(auth, (user) => {
@@ -31,7 +32,13 @@ export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   try {
     const result = await signInWithPopup(auth, provider);
-    return { ok: true, user: result.user };
+    const user = result.user;
+    if (user && user.email && user.email.toLowerCase().endsWith('@xiberlinc.one')) {
+      return { ok: true, user };
+    } else {
+      await signOut(auth);
+      return { ok: false, error: new Error("Access Denied: Only @xiberlinc.one email addresses are authorized to enter Xiberlinc World.") };
+    }
   } catch (error) {
     console.error("Google Sign-In failed:", error);
     return { ok: false, error };
