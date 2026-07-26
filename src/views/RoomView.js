@@ -337,36 +337,64 @@ export async function RoomView(params = {}) {
   render(`
     <div style="position:fixed; inset:0; z-index:9000; background:#050508; color:#fff; display:flex; flex-direction:column; font-family:'Space Grotesk',sans-serif; overflow:hidden;">
       
+      <!-- KINETIC TICKER STRIP -->
+      <div class="news-bar" style="background:#09090d; border-bottom:1px solid rgba(255,255,255,0.06); padding:8px 0; overflow:hidden; position:relative; flex-shrink:0;">
+        <div class="news-bar-inner" style="display:flex; align-items:center; gap:2.5rem; animation:news-scroll 25s linear infinite; white-space:nowrap;">
+          <span class="news-label" style="font-family:'Montserrat',sans-serif; font-size:0.75rem; font-weight:900; color:${room.colorHex}; letter-spacing:0.15em; border-right:1px solid rgba(255,255,255,0.1); padding-right:1.5rem;">
+            XIBERLINC // SPATIAL ROOM
+          </span>
+          <div class="news-item" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:0.8rem;">
+            <span style="color:${room.colorHex}; font-weight:700;">[LIVE]</span> VOICE TELEMETRY PIPE ACTIVE &bull; NOISE-CANCELLED MULTIPLAYER STREAM &bull; COGNITIVE SYNC: 99.4% &bull; HYPER-THREADED DATA NODES
+          </div>
+          <div class="news-item" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:0.8rem;">
+            <span style="color:${room.colorHex}; font-weight:700;">[LIVE]</span> COLLABORATIVE WHITEBOARD READY &bull; ENCRYPTED WEBSOCKET PIPELINE &bull; XIBERBOT REAL-TIME TELEMETRY ENGINE
+          </div>
+        </div>
+      </div>
+
       <!-- TOP NAV COCKPIT HEADER -->
-      <header style="padding:16px 28px; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(8,8,12,0.8); backdrop-filter:blur(20px); display:flex; align-items:center; justify-content:space-between; z-index:100;">
-        <div style="display:flex; align-items:center; gap:14px;">
-          <button id="room-back-btn" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';">
+      <header style="padding:14px 28px; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(8,8,12,0.85); backdrop-filter:blur(20px); display:flex; align-items:center; justify-content:space-between; z-index:100;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <button id="room-back-btn" class="magnetic-btn" data-cursor="EXIT" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; color:#fff; cursor:pointer; transition:all 0.2s;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="19" y1="12" x2="5" y2="12"></line>
               <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
           </button>
-          <div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:1.3rem;">${room.vibe}</span>
-              <span style="font-family:'Instrument Serif',serif; font-style:italic; font-size:1.6rem; text-transform:uppercase; color:#fff; letter-spacing:0.02em;">${room.name}</span>
+          
+          <!-- Pixel Box Emblem & Room Title -->
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="
+              width:38px; height:38px; border-radius:10px; background:${room.colorHex}18;
+              border:1px solid ${room.colorHex}44; display:grid; grid-template-columns:repeat(3,1fr);
+              grid-template-rows:repeat(3,1fr); gap:2px; padding:6px; flex-shrink:0;
+            ">
+              <span style="background:${room.colorHex}; border-radius:1px;"></span>
+              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
+              <span style="background:${room.colorHex}; border-radius:1px;"></span>
+              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
+              <span style="background:${room.colorHex}; border-radius:1px;"></span>
+              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
+              <span style="background:${room.colorHex}; border-radius:1px;"></span>
+              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
+              <span style="background:${room.colorHex}; border-radius:1px;"></span>
             </div>
-            <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
-              <div style="width:6px; height:6px; border-radius:50%; background:${room.colorHex}; position:relative;">
-                <div style="position:absolute; inset:-3px; border-radius:50%; border:1px solid ${room.colorHex}; animation:wld-pulse-ring 1.5s ease-out infinite;"></div>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; letter-spacing:0.18em; color:${room.colorHex}; text-transform:uppercase;">空間 · SPATIAL COCKPIT</span>
               </div>
-              <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.06em;">COGNITIVE STATE training grounds · ${room.online} active channels</span>
+              <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.25rem; color:#fff; letter-spacing:-0.01em;">${room.name}</div>
             </div>
           </div>
         </div>
         
-        <div style="display:flex; align-items:center; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
           <!-- Collapsible Member Toggle -->
-          <button id="member-sidebar-toggle" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 12px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#fff; cursor:pointer; transition:all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.08)';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';">
+          <button id="member-sidebar-toggle" class="magnetic-btn" data-cursor="ROSTER" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 16px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:800; color:#fff; cursor:pointer; text-transform:uppercase; letter-spacing:0.1em; transition:all 0.2s;">
             👥 ROSTER
           </button>
           <div style="text-align:right;">
-            <div style="font-size:10px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.3); text-transform:uppercase;">Identity Node</div>
+            <div style="font-size:9.5px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.08em;">Identity Node</div>
             <div style="font-size:12.5px; font-weight:700; color:${room.colorHex};">@${(auth.currentUser?.email || 'player').split('@')[0]}</div>
           </div>
           ${auth.currentUser?.photoURL 

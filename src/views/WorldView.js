@@ -1091,8 +1091,8 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
           Real-time collaborative audio & telemetry environments for peer synchronization.
         </p>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:24px;">
-          ${NEURO_ROOMS.map(r => _roomCard(r)).join('')}
-          ${customRooms.map(r => _roomCard(r)).join('')}
+          ${NEURO_ROOMS.map((r, i) => _roomCard(r, i)).join('')}
+          ${customRooms.map((r, i) => _roomCard(r, NEURO_ROOMS.length + i)).join('')}
         </div>
       </section>
 
@@ -1727,40 +1727,91 @@ function _leaderboardHtml(rows) {
   `;
 }
 
-function _roomCard(room) {
+function _roomCard(room, index = 0) {
   const online = room.online !== undefined ? room.online : 0;
   const tags = room.tags || ['custom', 'private'];
   const locked = room.locked !== undefined ? room.locked : false;
-
   const isCreator = room.isCustom && auth.currentUser && (room.creatorUid === auth.currentUser.uid || room.creatorEmail === auth.currentUser.email);
+  const roomNum = (index + 1).toString().padStart(2, '0');
 
   return `
-    <div class="wld-room-card wld-reveal editorial-card-glass" data-cursor="JOIN" style="
-      border-radius:18px;padding:24px;position:relative;overflow:hidden;
+    <div class="wld-room-card wld-reveal editorial-card-glass" data-cursor="ENTER ROOM" style="
+      border-radius:18px;padding:28px;position:relative;overflow:hidden;
+      transition:all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     ">
-      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${room.colorHex};opacity:0.8;"></div>
+      <!-- Background Big Room Number -->
+      <div style="
+        font-family:'Montserrat',sans-serif;font-size:4.2rem;font-weight:900;
+        color:rgba(255,255,255,0.04);position:absolute;top:0.4rem;right:1.2rem;
+        line-height:1;pointer-events:none;letter-spacing:-0.04em;
+      ">${roomNum}</div>
+
+      <!-- Accent Bar -->
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${room.colorHex};opacity:0.85;"></div>
+
       ${isCreator ? `
-        <button class="delete-room-btn" data-room-id="${room.id}" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:rgba(255,255,255,0.3);font-size:11px;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'" title="Delete Channel">
+        <button class="delete-room-btn" data-room-id="${room.id}" style="position:absolute;top:16px;right:16px;background:transparent;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'" title="Delete Channel">
           ❌
         </button>
       ` : ''}
-      <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:${room.colorHex}12;border:1px solid ${room.colorHex}33;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:${room.colorHex};flex-shrink:0;text-transform:uppercase;">${room.name.slice(0,2)}</div>
+
+      <!-- Top Header Row with Pixel Box & Japanese Tag -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+        <div style="
+          width:38px;height:38px;border-radius:10px;background:${room.colorHex}18;
+          border:1px solid ${room.colorHex}44;display:grid;grid-template-columns:repeat(3,1fr);
+          grid-template-rows:repeat(3,1fr);gap:2px;padding:6px;flex-shrink:0;
+        ">
+          <span style="background:${room.colorHex};border-radius:1px;"></span>
+          <span style="background:rgba(255,255,255,0.2);border-radius:1px;"></span>
+          <span style="background:${room.colorHex};border-radius:1px;"></span>
+          <span style="background:rgba(255,255,255,0.2);border-radius:1px;"></span>
+          <span style="background:${room.colorHex};border-radius:1px;"></span>
+          <span style="background:rgba(255,255,255,0.2);border-radius:1px;"></span>
+          <span style="background:${room.colorHex};border-radius:1px;"></span>
+          <span style="background:rgba(255,255,255,0.2);border-radius:1px;"></span>
+          <span style="background:${room.colorHex};border-radius:1px;"></span>
+        </div>
         <div>
-          <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:1.05rem;color:#fff;margin-bottom:4px;">${room.name}</div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div class="live-dot" style="background:${room.colorHex};"></div>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:${room.colorHex};">${online.toLocaleString()} active nodes</span>
-          </div>
+          <div style="font-family:'M PLUS 1p','Space Grotesk',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.18em;color:${room.colorHex};text-transform:uppercase;">神経空間 · NEURAL SPACE</div>
+          <div style="font-family:'Montserrat','Outfit',sans-serif;font-weight:800;font-size:1.15rem;color:#ffffff;letter-spacing:-0.01em;">${room.name}</div>
         </div>
       </div>
-      <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px;line-height:1.6;min-height:3em;">${room.description}</p>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;">
-        ${tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:${room.colorHex};background:${room.colorHex}0d;border:1px solid ${room.colorHex}22;border-radius:4px;padding:3px 8px;">#${t}</span>`).join('')}
+
+      <!-- Description -->
+      <p style="font-family:'Raleway','Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:20px;line-height:1.65;min-height:3em;">${room.description}</p>
+
+      <!-- Tags & Active Nodes -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:22px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:${room.colorHex};background:${room.colorHex}0f;border:1px solid ${room.colorHex}25;border-radius:100px;padding:3px 10px;letter-spacing:0.05em;">#${t}</span>`).join('')}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="live-dot" style="background:${room.colorHex};"></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:${room.colorHex};font-weight:700;">${online.toLocaleString()} NODES</span>
+        </div>
       </div>
-      <button class="enter-room-btn magnetic-btn" data-cursor="ENTER" data-room-id="${room.id}" style="width:100%;padding:12px;border-radius:10px;border:1px solid ${locked?'rgba(236,72,153,0.3)':`${room.colorHex}44`};background:${locked?'rgba(236,72,153,0.08)':`${room.colorHex}14`};color:${locked?'#ec4899':room.colorHex};font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">
-        ${locked ? 'Locked — ' + room.lockRank + ' required' : 'Enter Spatial Room'}
-      </button>
+
+      <!-- Action Row with Arrow Circle Button -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <button class="enter-room-btn magnetic-btn" data-cursor="ENTER" data-room-id="${room.id}" style="
+          flex:1;padding:12px 18px;border-radius:10px;
+          border:1px solid ${locked?'rgba(236,72,153,0.3)':`${room.colorHex}44`};
+          background:${locked?'rgba(236,72,153,0.08)':`${room.colorHex}14`};
+          color:${locked?'#ec4899':room.colorHex};font-family:'Montserrat',sans-serif;
+          font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;
+        ">
+          ${locked ? 'LOCKED — RANK ' + room.lockRank : 'ENTER NEURO ROOM'}
+        </button>
+
+        <div class="arrow-link enter-room-btn" data-room-id="${room.id}" style="
+          width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;
+          justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.3s ease;
+        " onmouseenter="this.style.background='#ffffff';this.querySelector('svg').style.stroke='${room.colorHex}'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.querySelector('svg').style.stroke='#ffffff'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </div>
     </div>
   `;
 }
