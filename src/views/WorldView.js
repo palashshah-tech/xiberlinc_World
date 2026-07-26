@@ -12,6 +12,7 @@ import {
   createCustomRoom, deleteCustomRoom, fetchIgnoreEmails
 } from '../utils/worldData.js';
 import { signInWithGoogle, auth, db, signOut } from '../utils/firebase.js';
+import { splitTextReveal, maskedReveal, staggerCards3D, bindMagneticElements, refreshMotion } from '../engine/motionEngine.js';
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
@@ -1460,18 +1461,16 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
     navigate('');
   });
 
-  // Scroll Reveal Observer
-  const revealElements = document.querySelectorAll('.wld-reveal');
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        obs.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-
-  revealElements.forEach(el => obs.observe(el));
+  // Trigger Awwwards Cinematic Animations
+  setTimeout(() => {
+    splitTextReveal('#world-dashboard h1, #world-dashboard h2');
+    maskedReveal('#world-dashboard .editorial-card-glass', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 60 });
+    staggerCards3D('.wld-star-card');
+    staggerCards3D('.wld-room-card');
+    staggerCards3D('.wld-event-card');
+    bindMagneticElements();
+    refreshMotion();
+  }, 120);
 
   // Hide watermark and transition dashboard Spline opacity
   const dashSpline = document.getElementById('dashboard-spline-el');

@@ -9,6 +9,7 @@ import { injectStyle, navigate } from '../router.js';
 import { t } from '../utils/i18n.js';
 import { endSession } from '../utils/access.js';
 import { generateSvgLineChart } from '../utils/charts.js';
+import { splitTextReveal, maskedReveal, staggerCards3D, bindMagneticElements } from '../engine/motionEngine.js';
 
 export function CompleteView() {
   const session = Storage.getCurrentSession();
@@ -457,4 +458,11 @@ export function CompleteView() {
       .cv-sparkline { height: 100px; }
     }
   `);
+
+  setTimeout(() => {
+    splitTextReveal('.cv-heading, .cv-message');
+    maskedReveal('.cv-card, .cv-receipt, .cv-raw-card', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 40 });
+    staggerCards3D('.cv-raw-card');
+    bindMagneticElements();
+  }, 100);
 }

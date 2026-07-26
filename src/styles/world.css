@@ -406,3 +406,106 @@ p { color: var(--text-secondary); line-height: 1.6; }
   border: 1px solid var(--neuro-teal);
   animation: pulse-ring 1.5s ease-out infinite;
 }
+
+/* ============================================================
+   Awwwards Cinematic Motion & Architectural Layout Extensions
+   ============================================================ */
+
+/* Lenis Scroll Container */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Custom Cursor Rules */
+* {
+  cursor: default;
+}
+
+a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
+  cursor: pointer;
+}
+
+/* SplitType & Mask Reveal Container Utilities */
+.clip-text-container {
+  overflow: hidden !important;
+  display: block !important;
+  margin: 0;
+  padding: 0;
+}
+
+.split-line-wrapper {
+  display: block;
+  transform-origin: left top;
+  will-change: transform, opacity;
+}
+
+.editorial-mask-box {
+  clip-path: inset(100% 0% 0% 0%);
+  will-change: clip-path, transform;
+}
+
+/* Architectural Grid & Ambient Line Backdrops */
+.bg-guidelines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(circle at 50% 30%, black 0%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, black 0%, transparent 80%);
+}
+
+/* Glass Surface Interactive Cards */
+.editorial-card-glass {
+  background: rgba(12, 12, 16, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 18px;
+  transition: border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, border-color, box-shadow;
+  position: relative;
+  overflow: hidden;
+}
+
+.editorial-card-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.editorial-card-glass:hover::before {
+  opacity: 1;
+}
+
+.editorial-card-glass:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(124, 58, 237, 0.15);
+}
+
+/* Magnetic Physics Container */
+.magnetic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+}
+

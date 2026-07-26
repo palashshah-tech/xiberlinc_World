@@ -13,7 +13,16 @@
     <!-- Preload Spline viewer -->
     <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
   </head>
-  <body style="margin: 0; background: #000000; color: #ffffff;">
+  <body style="margin: 0; background: #000000; color: #ffffff; overflow-x: hidden;">
+    <!-- Custom Cursor -->
+    <div id="custom-cursor-ring" style="position:fixed;top:0;left:0;width:34px;height:34px;margin-top:-17px;margin-left:-17px;border:1px solid rgba(255,255,255,0.3);border-radius:50%;pointer-events:none;z-index:99999;mix-blend-mode:difference;transition:border-color 0.2s, background-color 0.2s;display:flex;align-items:center;justify-content:center;">
+      <span id="custom-cursor-label" style="font-family:'JetBrains Mono',monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:0.12em;color:#fff;opacity:0;transform:scale(0.8);white-space:nowrap;pointer-events:none;padding:0 4px;"></span>
+    </div>
+    <div id="custom-cursor-dot" style="position:fixed;top:0;left:0;width:6px;height:6px;margin-top:-3px;margin-left:-3px;background:#ffffff;border-radius:50%;pointer-events:none;z-index:100000;mix-blend-mode:difference;"></div>
+
+    <!-- Ambient Grid & Noise Layer Overlay -->
+    <div id="noise-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.035;background-image:url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');"></div>
+
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

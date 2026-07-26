@@ -7,6 +7,7 @@ import { navigate, injectStyle } from '../router.js';
 import { t } from '../utils/i18n.js';
 import { Storage } from '../utils/storage.js';
 import { computeVWMScores } from '../scoring/ScoringEngine.js';
+import { splitTextReveal, maskedReveal, bindMagneticElements } from '../engine/motionEngine.js';
 
 const getNextInfo = () => ({
   'vwm-distractor': {
@@ -219,4 +220,10 @@ export function TransitionView(params = {}) {
   document.getElementById('btn-continue').addEventListener('click', () => {
     navigate('instructions', { task: next });
   });
+
+  setTimeout(() => {
+    splitTextReveal('.trv-title, .trv-sub');
+    maskedReveal('.trv-card, .trv-prev-stats', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 30 });
+    bindMagneticElements();
+  }, 80);
 }

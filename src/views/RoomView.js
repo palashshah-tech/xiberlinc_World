@@ -9,6 +9,7 @@ import { navigate, injectStyle } from '../router.js';
 import { auth, db, authReady } from '../utils/firebase.js';
 import { fetchUserProfile, saveWhiteboardStroke, clearWhiteboard } from '../utils/worldData.js';
 import { NEURO_ROOMS } from '../utils/worldStatic.js';
+import { splitTextReveal, maskedReveal, bindMagneticElements, refreshMotion } from '../engine/motionEngine.js';
 import { 
   collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp,
   deleteDoc, doc, getDocs, setDoc, getDoc
@@ -756,6 +757,14 @@ export async function RoomView(params = {}) {
 
   // Initialize background interactive Neural Matrix
   _initNeuralMatrix(room.colorHex);
+
+  // Trigger Awwwards Motion Engine for Room Cockpit
+  setTimeout(() => {
+    splitTextReveal('header span, .cockpit-panel-card h3');
+    maskedReveal('.cockpit-panel-card, #whiteboard-workspace', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 40 });
+    bindMagneticElements();
+    refreshMotion();
+  }, 100);
 
   // Unmount listener: clean up room presence, voice, and chat when leaving this view
   const handleRoomUnmount = () => {

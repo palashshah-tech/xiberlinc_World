@@ -5,6 +5,7 @@
 import { render } from '../utils/dom.js';
 import { navigate, injectStyle } from '../router.js';
 import { t } from '../utils/i18n.js';
+import { splitTextReveal, maskedReveal, bindMagneticElements } from '../engine/motionEngine.js';
 
 const getTaskInfo = () => ({
   'vwm-pure': {
@@ -1216,5 +1217,11 @@ export function InstructionsView(params = {}) {
   document.getElementById('btn-start').addEventListener('click', () => {
     navigate(NEXT_ROUTE[taskKey] || 'task/vwm-pure');
   });
+
+  setTimeout(() => {
+    splitTextReveal('.iv-hero-title, .iv-sec-title, h1, h2');
+    maskedReveal('.hud-card, .sf-container', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 40 });
+    bindMagneticElements();
+  }, 80);
 }
 
