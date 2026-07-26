@@ -10,6 +10,7 @@ import { auth, db, authReady } from '../utils/firebase.js';
 import { fetchUserProfile, saveWhiteboardStroke, clearWhiteboard } from '../utils/worldData.js';
 import { NEURO_ROOMS } from '../utils/worldStatic.js';
 import { splitTextReveal, maskedReveal, bindMagneticElements, refreshMotion } from '../engine/motionEngine.js';
+import { getLang, setLang, t } from '../utils/i18n.js';
 import { 
   collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp,
   deleteDoc, doc, getDocs, setDoc, getDoc
@@ -374,7 +375,7 @@ export async function RoomView(params = {}) {
             </div>
             <div>
               <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; letter-spacing:0.18em; color:${room.colorHex}; text-transform:uppercase;">空間 · SPATIAL COCKPIT</span>
+                <span style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; letter-spacing:0.18em; color:${room.colorHex}; text-transform:uppercase;">${t('room_spatial_cockpit')}</span>
               </div>
               <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.25rem; color:#fff; letter-spacing:-0.01em;">${room.name}</div>
             </div>
@@ -384,7 +385,7 @@ export async function RoomView(params = {}) {
         <div style="display:flex; align-items:center; gap:14px;">
           <!-- Collapsible Member Toggle -->
           <button id="member-sidebar-toggle" class="magnetic-btn" data-cursor="ROSTER" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 16px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:800; color:#fff; cursor:pointer; text-transform:uppercase; letter-spacing:0.1em; transition:all 0.2s;">
-            👥 ROSTER
+            👥 ${t('room_roster')}
           </button>
           <div style="text-align:right;">
             <div style="font-size:9.5px; font-family:'JetBrains Mono',monospace; color:rgba(255,255,255,0.35); text-transform:uppercase; letter-spacing:0.08em;">Identity Node</div>
@@ -399,9 +400,9 @@ export async function RoomView(params = {}) {
 
       <!-- TABS SECTION -->
       <div style="background:rgba(8,8,12,0.9); border-bottom:1px solid rgba(255,255,255,0.06); padding:10px 24px; display:flex; gap:12px; position:relative; z-index:10; flex-shrink:0;">
-        <button id="tab-room-cockpit" style="background:transparent; border:none; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; border-bottom:2px solid ${room.colorHex}; transition:color 0.2s;">NEURO COCKPIT</button>
-        <button id="tab-room-whiteboard" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; transition:color 0.2s;">COLLABORATIVE WHITEBOARD</button>
-        <button id="tab-room-chat" class="mobile-only-btn" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; transition:color 0.2s;">LIVE CHAT</button>
+        <button id="tab-room-cockpit" style="background:transparent; border:none; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; border-bottom:2px solid ${room.colorHex}; transition:color 0.2s;">${t('room_tab_cockpit')}</button>
+        <button id="tab-room-whiteboard" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; transition:color 0.2s;">${t('room_tab_board')}</button>
+        <button id="tab-room-chat" class="mobile-only-btn" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; cursor:pointer; padding:6px 12px; transition:color 0.2s;">${t('room_tab_chat')}</button>
       </div>
 
       <!-- THREE-COLUMN DISCORD IRL LAYOUT CONTAINER -->
@@ -412,7 +413,7 @@ export async function RoomView(params = {}) {
           
           <!-- Active Logs Header -->
           <div id="wld-chat-users" style="padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.04); background:rgba(5,5,8,0.3); display:flex; align-items:center; gap:8px; overflow-x:auto; flex-shrink:0;">
-            <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0;">active logs:</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.05em; flex-shrink:0;">${t('room_active_logs')}</span>
           </div>
 
           <!-- Scrolling Message timeline -->
@@ -442,7 +443,7 @@ export async function RoomView(params = {}) {
 
           <!-- Message input console -->
           <div style="padding:12px 20px; border-top:1px solid rgba(255,255,255,0.08); background:rgba(10,10,12,0.9); display:flex; align-items:center; gap:10px; flex-shrink:0;">
-            <input type="text" id="chat-input" placeholder="Type message... (e.g. /bot status)" style="flex:1; background:#000; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px 14px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:12px; outline:none;" />
+            <input type="text" id="chat-input" placeholder="${t('room_type_msg')}" style="flex:1; background:#000; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:10px 14px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:12px; outline:none;" />
             <button id="chat-send-btn" style="background:${room.colorHex}; color:#fff; border:none; border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="22" y1="2" x2="11" y2="13"></line>

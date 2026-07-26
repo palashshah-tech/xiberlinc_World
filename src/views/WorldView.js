@@ -939,10 +939,10 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       <!-- ══════════ CHAPTER 01 — THE PROVING GROUND (HERO) ══════════ -->
       <section id="chapter-01" class="editorial-chapter" style="position:relative;padding:120px 32px 80px;max-width:1380px;margin:0 auto;">
         <div class="bg-guidelines"></div>
-        <div class="editorial-chapter-badge">Chapter 01 · Proving Ground</div>
+        <div class="editorial-chapter-badge">${t('ch1_badge')}</div>
         <h1 class="editorial-hero-title">Connect by xiberlin<span style="color:#e2b857;">c</span>.</h1>
         <p class="editorial-subhead">
-          An architectural cognitive ecosystem. Verify real-time working memory scores, inspect candidate constellations, and engage in high-fidelity spatial telemetry rooms.
+          ${t('ch1_subhead')}
         </p>
 
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:64px;">
@@ -953,18 +953,18 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
             letter-spacing:0.1em;box-shadow:0 14px 40px rgba(255,255,255,0.15);
             transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
           ">
-            Enter Proving Ground Assessment
+            ${t('ch1_cta')}
           </button>
         </div>
 
         <!-- Live Telemetry Bar -->
         <div class="editorial-card-glass" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));padding:24px;gap:16px;max-width:1100px;margin-bottom:40px;">
           ${[
-            {label:'Candidates Registered',value:stats.totalPlayers.toLocaleString()||'—'},
-            {label:'Online Nodes',value:stats.playersOnline.toLocaleString(),live:true},
-            {label:'Active Stars',value:stats.starsLive,live:true},
-            {label:'Telemetry Spaces',value:stats.activeRooms,live:true},
-            {label:'Global Regions',value:stats.countriesRepresented||'—'}
+            {label:t('stat_reg'),value:stats.totalPlayers.toLocaleString()||'—'},
+            {label:t('stat_nodes'),value:stats.playersOnline.toLocaleString(),live:true},
+            {label:t('stat_stars'),value:stats.starsLive,live:true},
+            {label:t('stat_spaces'),value:stats.activeRooms,live:true},
+            {label:t('stat_regions'),value:stats.countriesRepresented||'—'}
           ].map(s => `
             <div style="text-align:left;">
               <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
@@ -999,7 +999,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
                 font-weight: 700; font-size: 12.5px; cursor: pointer; text-transform: uppercase;
                 letter-spacing: 0.08em; transition: all 0.2s;
               ">
-                Play Working Memory Test
+                ${t('ch1_cta')}
               </button>
             </div>
           </div>
@@ -1097,7 +1097,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
                         <div style="font-size:12px;font-weight:600;color:#fff;">${r.name}</div>
                         <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.handle || r.email.split('@')[0]} · WMI: ${r.wmi}</div>
                       </div>
-                      <button class="conn-send-invite-btn magnetic-btn" data-cursor="CONNECT" data-email="${r.email}" data-handle="${r.handle || r.email.split('@')[0]}" data-name="${r.name}" data-uid="${r.uid || ''}" style="background:#e2b857;color:#000;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;">Connect</button>
+                      <button class="conn-send-invite-btn magnetic-btn" data-cursor="CONNECT" data-email="${r.email}" data-handle="${r.handle || r.email.split('@')[0]}" data-name="${r.name}" data-uid="${r.uid || ''}" style="background:#e2b857;color:#000;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;">${t('btn_connect')}</button>
                     </div>
                   `).join('')}
                 </div>
@@ -1155,10 +1155,10 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
 
       <!-- ══════════ CHAPTER 02 — NEURAL CONSTELLATIONS ══════════ -->
       <section id="chapter-02" class="editorial-chapter" style="padding:100px 32px;max-width:1380px;margin:0 auto;border-top:1px solid rgba(255,255,255,0.05);">
-        <div class="editorial-chapter-badge">Chapter 02 · Constellations</div>
-        <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">The Star Network<span style="color:#e2b857;">.</span></h2>
+        <div class="editorial-chapter-badge">${t('ch2_badge')}</div>
+        <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">${t('ch2_title')}<span style="color:#e2b857;">.</span></h2>
         <p class="editorial-subhead" style="margin-bottom:48px;">
-          Verified candidate scores derived from high-stakes cognitive testing. Real players, real latency metrics, synchronized live from the Firestore ledger.
+          ${t('ch2_subhead')}
         </p>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:24px;" id="wld-stars-grid">
           ${stars.length ? stars.map(p => _starCard(p)).join('') : _emptyState('No stars registered yet.')}
@@ -1168,10 +1168,10 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       <!-- ══════════ CHAPTER 03 — GLOBAL RANKINGS ══════════ -->
       <section id="chapter-03" class="editorial-chapter" style="padding:100px 32px;background:rgba(12,12,16,0.5);border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);">
         <div style="max-width:1380px;margin:0 auto;">
-          <div class="editorial-chapter-badge">Chapter 03 · Rankings</div>
-          <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">Leaderboard Ledger<span style="color:#2563eb;">.</span></h2>
+          <div class="editorial-chapter-badge">${t('ch3_badge')}</div>
+          <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">${t('ch3_title')}<span style="color:#2563eb;">.</span></h2>
           <p class="editorial-subhead" style="margin-bottom:48px;">
-            Composite cognitive score distribution across all candidates in the global network.
+            ${t('ch3_subhead')}
           </p>
           ${_leaderboardHtml(leaderboard.global)}
         </div>
@@ -1181,18 +1181,18 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       <section id="chapter-04" class="editorial-chapter" style="padding:100px 32px;max-width:1380px;margin:0 auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:24px;">
           <div>
-            <div class="editorial-chapter-badge">Chapter 04 · Telemetry</div>
-            <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin:0;">Spatial Rooms<span style="color:#06b6d4;">.</span></h2>
+            <div class="editorial-chapter-badge">${t('ch4_badge')}</div>
+            <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin:0;">${t('ch4_title')}<span style="color:#06b6d4;">.</span></h2>
           </div>
           <button id="create-custom-channel-btn" class="magnetic-btn" data-cursor="CREATE" style="
             background:transparent;border:1px solid rgba(255,255,255,0.2);color:#ffffff;
             border-radius:10px;padding:12px 24px;font-family:'Space Grotesk',sans-serif;
             font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
             cursor:pointer;transition:all 0.3s;
-          ">Create Custom Channel</button>
+          ">${t('btn_create_custom')}</button>
         </div>
         <p class="editorial-subhead" style="margin-bottom:48px;">
-          Real-time collaborative audio & telemetry environments for peer synchronization.
+          ${t('ch4_subhead')}
         </p>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:24px;">
           ${NEURO_ROOMS.map((r, i) => _roomCard(r, i)).join('')}
@@ -1203,10 +1203,10 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       <!-- ══════════ CHAPTER 05 — PROVING GROUND ══════════ -->
       <section id="chapter-05" class="editorial-chapter" style="padding:100px 32px;background:rgba(8,8,12,0.8);border-top:1px solid rgba(255,255,255,0.05);">
         <div style="max-width:1380px;margin:0 auto;">
-          <div class="editorial-chapter-badge">Chapter 05 · Tournaments</div>
-          <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">Active Events<span style="color:#ec4899;">.</span></h2>
+          <div class="editorial-chapter-badge">${t('ch5_badge')}</div>
+          <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">${t('ch5_title')}<span style="color:#ec4899;">.</span></h2>
           <p class="editorial-subhead" style="margin-bottom:48px;">
-            Scheduled cognitive competitions and high-frequency working memory trials.
+            ${t('ch5_subhead')}
           </p>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px;">
             ${EVENTS.map(e => _eventCard(e)).join('')}
@@ -1925,7 +1925,7 @@ function _roomCard(room, index = 0) {
           color:${locked?'#ec4899':room.colorHex};font-family:'Montserrat',sans-serif;
           font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;
         ">
-          ${locked ? 'LOCKED — RANK ' + room.lockRank : 'ENTER NEURO ROOM'}
+          ${locked ? t('btn_locked') + room.lockRank : t('btn_enter_room')}
         </button>
 
         <div class="arrow-link enter-room-btn" data-room-id="${room.id}" style="

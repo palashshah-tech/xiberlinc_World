@@ -210,7 +210,56 @@ const DICTIONARY = {
     "ticker_2": "XIBERLINC • COGNITIVE ARCHITECTURE • RECRUITMENT PROVING GROUND • VERIFIED CANDIDATE LEDGER • SPATIAL ROOMS • TELEMETRY ENGINE",
     "ticker_3": "SHAPE THE INVISIBLE FUTURE • 見えない未来を、形にする • WORKING MEMORY CAPACITY • QUANTUM NEURAL PIPELINE • XIBERLINC",
     "ticker_4": "NEURAL NETWORK • REALTIME SYNAPSE LINK • MULTIPLAYER TELEMETRY • RECRUITMENT ECOSYSTEM • XIBERLINC EXPERIENCE",
-    "ticker_5": "XIBERLINC • SIGNAL PROCESSING • NEURAL MAPPING • BIOMETRIC ANALYSIS • DEEP LEARNING • PATTERN RECOGNITION • AXIS TRAJECTORY"
+    "ticker_5": "XIBERLINC • SIGNAL PROCESSING • NEURAL MAPPING • BIOMETRIC ANALYSIS • DEEP LEARNING • PATTERN RECOGNITION • AXIS TRAJECTORY",
+
+    // Dashboard & Chapters
+    "ch1_badge": "Chapter 01 · Proving Ground",
+    "ch1_subhead": "An architectural cognitive ecosystem. Verify real-time working memory scores, inspect candidate constellations, and engage in high-fidelity spatial telemetry rooms.",
+    "ch1_cta": "Enter Proving Ground Assessment",
+    "stat_reg": "Candidates Registered",
+    "stat_nodes": "Online Nodes",
+    "stat_stars": "Active Stars",
+    "stat_spaces": "Telemetry Spaces",
+    "stat_regions": "Global Regions",
+
+    "ch2_badge": "Chapter 02 · Constellations",
+    "ch2_title": "Player Matrix.",
+    "ch2_subhead": "Inspect active candidate constellations, verified rank capabilities, and network connection distance.",
+    "search_placeholder": "Search candidates...",
+    "btn_connect": "Connect",
+
+    "ch3_badge": "Chapter 03 · Rankings",
+    "ch3_title": "Cognitive Ledger.",
+    "ch3_subhead": "Real-time verified candidate performance ledger.",
+    "col_rank": "RANK",
+    "col_candidate": "CANDIDATE",
+    "col_wmi": "WMI SCORE",
+
+    "ch4_badge": "Chapter 04 · Telemetry",
+    "ch4_title": "Spatial Rooms.",
+    "ch4_subhead": "Real-time collaborative audio & telemetry environments for peer synchronization.",
+    "btn_create_custom": "Create Custom Channel",
+    "btn_enter_room": "ENTER NEURO ROOM",
+    "btn_locked": "LOCKED — RANK ",
+
+    "ch5_badge": "Chapter 05 · Assessment",
+    "ch5_title": "Proving Ground.",
+    "ch5_subhead": "Launch cognitive assessment trial.",
+
+    // Room Cockpit
+    "room_spatial_cockpit": "SPATIAL COCKPIT",
+    "room_tab_cockpit": "NEURO COCKPIT",
+    "room_tab_board": "COLLABORATIVE WHITEBOARD",
+    "room_tab_chat": "LIVE CHAT",
+    "room_roster": "ROSTER",
+    "room_active_logs": "active logs:",
+    "room_type_msg": "Type message...",
+    "room_join_voice": "Join Voice",
+    "room_telemetry_voice": "Telemetry Voice",
+    "room_wb_brush": "Brush:",
+    "room_wb_width": "Width:",
+    "room_wb_clear": "Clear Canvas",
+    "room_wb_hint": "Draw here to collaborate! Changes sync in real-time to all connected users inside the channel."
   },
   ja: {
     // World & Auth Gate
@@ -224,6 +273,55 @@ const DICTIONARY = {
     "ticker_3": "見えない未来を、形にする • SHAPE THE INVISIBLE FUTURE • ワーキングメモリ容量 • 量子神経パイプライン • XIBERLINC",
     "ticker_4": "神経ネットワーク • リアルタイムシナプスリンク • マルチプレイヤーテレメトリ • 採用エコシステム • XIBERLINC エクスペリエンス",
     "ticker_5": "XIBERLINC • 信号処理 • 神経マッピング • 生体認証分析 • 深層学習 • パターン認識 • 軸軌道",
+
+    // Dashboard & Chapters (ja)
+    "ch1_badge": "第01章 · 採用検証場",
+    "ch1_subhead": "建築的な認知エコシステム。リアルタイムのワーキングメモリ能力を検証し、候補者の星座を分析、空間テレメトリルームに参加します。",
+    "ch1_cta": "採用検証テストを開始",
+    "stat_reg": "登録候補者数",
+    "stat_nodes": "オンラインノード",
+    "stat_stars": "アクティブスター",
+    "stat_spaces": "テレメトリ空間",
+    "stat_regions": "グローバル地域",
+
+    "ch2_badge": "第02章 · 星座群",
+    "ch2_title": "プレイヤーマトリクス。",
+    "ch2_subhead": "アクティブな候補者星座群、認証されたランク能力、ネットワーク接続距離を検査。",
+    "search_placeholder": "候補者を検索...",
+    "btn_connect": "接続",
+
+    "ch3_badge": "第03章 · 順位表",
+    "ch3_title": "認知台帳。",
+    "ch3_subhead": "リアルタイムで認証された候補者実績台帳。",
+    "col_rank": "順位",
+    "col_candidate": "候補者",
+    "col_wmi": "WMI スコア",
+
+    "ch4_badge": "第04章 · テレメトリ",
+    "ch4_title": "空間ルーム。",
+    "ch4_subhead": "ピア同期のためのリアルタイム協調オーディオ＆テレメトリ環境。",
+    "btn_create_custom": "カスタムチャンネルを作成",
+    "btn_enter_room": "神経空間に入る",
+    "btn_locked": "ロック済み — ランク ",
+
+    "ch5_badge": "第05章 · 認知試験",
+    "ch5_title": "検証場。",
+    "ch5_subhead": "認知評価トライアルを開始。",
+
+    // Room Cockpit (ja)
+    "room_spatial_cockpit": "空間 · コックピット",
+    "room_tab_cockpit": "神経コックピット",
+    "room_tab_board": "協調ホワイトボード",
+    "room_tab_chat": "ライブチャット",
+    "room_roster": "名簿",
+    "room_active_logs": "アクティブログ:",
+    "room_type_msg": "メッセージを入力...",
+    "room_join_voice": "ボイスに参加",
+    "room_telemetry_voice": "テレメトリボイス",
+    "room_wb_brush": "ブラシ:",
+    "room_wb_width": "太さ:",
+    "room_wb_clear": "キャンバスを消去",
+    "room_wb_hint": "ここに描画してコラボレーション！すべての接続ユーザーにリアルタイム同期。",
     // Welcome
     "badge_task": "タスク 01/03",
     "app_title": "注意力とワーキングメモリ",
