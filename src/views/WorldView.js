@@ -29,69 +29,61 @@ export function WorldView() {
   render(`
     <div id="world-root" style="position:relative;width:100%;min-height:100vh;background:#000000;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;">
       
-      <!-- ── KINETIC GOOGLE AUTH GATE SCREEN ── -->
+      <!-- ── GOOGLE AUTH GATE SCREEN ── -->
       <div id="world-auth-gate" style="
         position:fixed;inset:0;z-index:9500;
         display:flex;flex-direction:column;align-items:center;justify-content:center;
-        background:#050508;transition:opacity 0.8s ease, transform 0.8s ease;
+        background:#000000;transition:opacity 0.8s ease, transform 0.8s ease;
         padding:24px;text-align:center;overflow:hidden;
       ">
-        <!-- Ambient Kinetic Guideline Backdrop -->
-        <div class="bg-guidelines" style="opacity:0.6;"></div>
+        <!-- Ambient Guideline Backdrop -->
+        <div class="bg-guidelines" style="opacity:0.5;"></div>
 
-        <!-- Scrolling Ticker Background Engine -->
-        <div class="news-bar" style="position:absolute;top:20px;left:0;right:0;background:transparent;border:none;pointer-events:none;opacity:0.35;">
-          <div class="news-bar-inner" style="display:flex;align-items:center;gap:3rem;animation:news-scroll 30s linear infinite;white-space:nowrap;">
-            <span style="font-family:'Montserrat',sans-serif;font-size:0.8rem;font-weight:900;color:#e2b857;letter-spacing:0.25em;">XIBERLINC // KINETIC PROVING GROUND</span>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:rgba(255,255,255,0.6);">COGNITIVE PROFILE AUTHENTICATION &bull; xiberlinc.one DIRECTORY GATEWAY &bull; HYPER-THREADED SYNC &bull; BIOMETRIC SIGNAL PROCESSING</span>
+        <!-- Scrolling Ticker Background Strip -->
+        <div class="news-bar" style="position:absolute;top:16px;left:0;right:0;background:transparent;border:none;pointer-events:none;opacity:0.25;">
+          <div class="news-bar-inner" style="display:flex;align-items:center;gap:3rem;animation:news-scroll 35s linear infinite;white-space:nowrap;">
+            <span style="font-family:'Montserrat',sans-serif;font-size:0.75rem;font-weight:900;color:#7c3aed;letter-spacing:0.25em;">XIBERLINC // RECRUITMENT EXPERIENCE</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:rgba(255,255,255,0.5);">COGNITIVE PROFILE AUTHENTICATION &bull; xiberlinc.one DIRECTORY GATEWAY &bull; HYPER-THREADED SYNC &bull; BIOMETRIC SIGNAL PROCESSING</span>
           </div>
         </div>
 
-        <div style="position:relative;z-index:10;margin-bottom:44px;max-width:440px;">
-          <!-- Pixel Logo Matrix Emblem -->
-          <div class="pixel-logo" style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:24px;">
-            <div style="display:flex;gap:4px;">
-              <div style="width:8px;height:8px;border-radius:1px;background:#e2b857;"></div>
-              <div style="width:8px;height:8px;border-radius:1px;background:#2563eb;"></div>
-              <div style="width:8px;height:8px;border-radius:1px;background:#ec4899;"></div>
-              <div style="width:8px;height:8px;border-radius:1px;background:#e2b857;"></div>
-            </div>
-            <div style="display:flex;gap:4px;">
-              <div style="width:8px;height:8px;border-radius:1px;background:#2563eb;"></div>
-              <div style="width:8px;height:8px;border-radius:1px;background:#ffffff;"></div>
-              <div style="width:8px;height:8px;border-radius:1px;background:#ffffff;"></div>
-              <div style="width:8px;height:8px;border-radius:1px;background:#2563eb;"></div>
-            </div>
+        <div style="position:relative;z-index:10;margin-bottom:36px;max-width:380px;">
+          <!-- Official Xiberlinc Logo Frame -->
+          <div style="
+            width:64px;height:64px;border-radius:16px;background:#000000;
+            border:1.5px solid rgba(255,255,255,0.15);display:flex;align-items:center;
+            justify-content:center;overflow:hidden;padding:10px;margin:0 auto 24px;
+            box-shadow:0 12px 32px rgba(0,0,0,0.8), 0 0 24px rgba(124,58,237,0.25);
+          ">
+            <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.4);" alt="Xiberlinc Logo" />
           </div>
 
-          <div style="font-family:'M PLUS 1p','JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:0.3em;color:#e2b857;text-transform:uppercase;margin-bottom:12px;">見えない未来を、形にする。</div>
-
-          <h1 class="glitch-text" data-text="Connect by xiberlinc." style="
+          <h1 style="
             font-family:'Instrument Serif', serif;
             font-style:italic;
-            font-size:clamp(2.4rem, 6.5vw, 4rem);
+            font-size:clamp(2.4rem, 6vw, 3.8rem);
             font-weight:400;
             text-transform:uppercase;
             letter-spacing:0.02em;
             color:#ffffff;
-            margin:0 0 16px 0;
+            margin:0 0 12px 0;
             line-height:1.05;
-          ">Connect by xiberlin<span style="color:#e2b857;">c</span><span style="color:#2563eb;font-style:normal;">.</span></h1>
+          ">Connect by xiberlin<span style="color:#ec4899;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
 
-          <p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.55);line-height:1.7;margin:0 auto;max-width:360px;">
-            The kinetic cognitive architecture. Authenticate with your <code style="color:#e2b857;font-family:'JetBrains Mono',monospace;background:rgba(226,184,87,0.1);padding:2px 6px;border-radius:4px;">xiberlinc.one</code> credentials to access real-time neural rooms.
+          <p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.65;margin:0 auto;max-width:320px;">
+            Welcome to the Xiberlinc Experience. Authenticate with your <code style="color:#7c3aed;font-family:'JetBrains Mono',monospace;background:rgba(124,58,237,0.12);padding:2px 6px;border-radius:4px;">xiberlinc.one</code> credentials to enter.
           </p>
         </div>
 
-        <button id="google-login-btn" class="magnetic-btn" data-cursor="AUTHENTICATE" style="
+        <button id="google-login-btn" class="magnetic-btn" data-cursor="SIGN IN" style="
           position:relative;z-index:10;
-          display:inline-flex;align-items:center;gap:14px;
-          background:#ffffff;color:#050507;border:none;border-radius:14px;
-          padding:16px 36px;font-family:'Space Grotesk',sans-serif;font-weight:700;
-          font-size:14px;cursor:pointer;box-shadow:0 14px 40px rgba(255,255,255,0.18);
-          transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
-          text-transform:uppercase;letter-spacing:0.08em;
-        " onmouseenter="this.style.transform='scale(1.03)';this.style.boxShadow='0 20px 50px rgba(255,255,255,0.3)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 14px 40px rgba(255,255,255,0.18)'">
+          display:inline-flex;align-items:center;gap:12px;
+          background:#ffffff;color:#000000;border:none;border-radius:12px;
+          padding:15px 32px;font-family:'Space Grotesk',sans-serif;font-weight:700;
+          font-size:13.5px;cursor:pointer;box-shadow:0 12px 30px rgba(255,255,255,0.12);
+          transition:all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          text-transform:uppercase;letter-spacing:0.06em;
+        " onmouseenter="this.style.transform='scale(1.02)';this.style.boxShadow='0 18px 45px rgba(255,255,255,0.22)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 12px 30px rgba(255,255,255,0.12)'">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -101,9 +93,9 @@ export function WorldView() {
           Sign in with Google
         </button>
 
-        <!-- Domain Lock Badge -->
-        <div style="position:relative;z-index:10;margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.12em;display:flex;align-items:center;gap:6px;">
-          <span style="width:6px;height:6px;border-radius:50%;background:#e2b857;display:inline-block;"></span>
+        <!-- Domain Lock Tag -->
+        <div style="position:relative;z-index:10;margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.12em;display:flex;align-items:center;gap:6px;">
+          <span style="width:5px;height:5px;border-radius:50%;background:#7c3aed;display:inline-block;"></span>
           Restricted to @xiberlinc.one accounts
         </div>
 

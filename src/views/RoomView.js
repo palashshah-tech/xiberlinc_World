@@ -362,22 +362,15 @@ export async function RoomView(params = {}) {
             </svg>
           </button>
           
-          <!-- Pixel Box Emblem & Room Title -->
+          <!-- Official Xiberlinc Logo & Room Title -->
           <div style="display:flex; align-items:center; gap:14px;">
             <div style="
-              width:38px; height:38px; border-radius:10px; background:${room.colorHex}18;
-              border:1px solid ${room.colorHex}44; display:grid; grid-template-columns:repeat(3,1fr);
-              grid-template-rows:repeat(3,1fr); gap:2px; padding:6px; flex-shrink:0;
+              width:38px; height:38px; border-radius:10px; background:#000000;
+              border:1px solid ${room.colorHex}55; display:flex; align-items:center;
+              justify-content:center; padding:5px; flex-shrink:0; overflow:hidden;
+              box-shadow:0 0 16px ${room.colorHex}22;
             ">
-              <span style="background:${room.colorHex}; border-radius:1px;"></span>
-              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
-              <span style="background:${room.colorHex}; border-radius:1px;"></span>
-              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
-              <span style="background:${room.colorHex}; border-radius:1px;"></span>
-              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
-              <span style="background:${room.colorHex}; border-radius:1px;"></span>
-              <span style="background:rgba(255,255,255,0.2); border-radius:1px;"></span>
-              <span style="background:${room.colorHex}; border-radius:1px;"></span>
+              <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.3);" alt="Xiberlinc Logo" />
             </div>
             <div>
               <div style="display:flex; align-items:center; gap:8px;">
