@@ -456,6 +456,17 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   will-change: clip-path, transform;
 }
 
+/* Ensure smooth native & Lenis document scrolling */
+#world-root, #world-dashboard {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fallback visibility rules */
+.wld-reveal, .editorial-card-glass, .wld-star-card, .wld-room-card, .wld-event-card {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Architectural Grid & Ambient Line Backdrops */
 .bg-guidelines {
   position: absolute;

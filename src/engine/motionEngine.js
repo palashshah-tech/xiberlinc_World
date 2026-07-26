@@ -20,12 +20,27 @@ let mouseX = 0;
 let mouseY = 0;
 
 /**
+ * Helper to resolve the current active scroll container
+ */
+export function getActiveScroller() {
+  const dash = document.getElementById('world-dashboard');
+  if (dash && dash.style.display !== 'none') {
+    return dash;
+  }
+  return window;
+}
+
+/**
  * Initialize Lenis Smooth Inertial Scrolling & sync with GSAP Ticker
  */
-export function initLenisSmoothScroll() {
-  if (lenisInstance) return lenisInstance;
+export function initLenisSmoothScroll(customWrapper = null) {
+  if (lenisInstance) {
+    try { lenisInstance.destroy(); } catch (e) {}
+    lenisInstance = null;
+  }
 
-  lenisInstance = new Lenis({
+  const scroller = customWrapper || getActiveScroller();
+  const lenisConfig = {
     duration: 1.2,
     easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     orientation: 'vertical',
@@ -33,12 +48,18 @@ export function initLenisSmoothScroll() {
     smoothWheel: true,
     wheelMultiplier: 1.0,
     touchMultiplier: 1.5,
-  });
+  };
 
+  if (scroller && scroller !== window) {
+    lenisConfig.wrapper = scroller;
+    lenisConfig.content = scroller;
+  }
+
+  lenisInstance = new Lenis(lenisConfig);
   lenisInstance.on('scroll', ScrollTrigger.update);
 
   gsap.ticker.add((time) => {
-    lenisInstance.raf(time * 1000);
+    lenisInstance?.raf(time * 1000);
   });
 
   gsap.ticker.lagSmoothing(0);
@@ -160,40 +181,49 @@ export function bindMagneticElements() {
 export function splitTextReveal(target, options = {}) {
   const elements = typeof target === 'string' ? document.querySelectorAll(target) : [target];
   const results = [];
+  const scroller = options.scroller || getActiveScroller();
 
   elements.forEach((el) => {
     if (!el) return;
-    const split = new SplitType(el, { types: 'lines,words', lineClass: 'split-line-wrapper' });
+    try {
+      const split = new SplitType(el, { types: 'lines,words', lineClass: 'split-line-wrapper' });
 
-    // Wrap each line in a clip-mask container if not already
-    split.lines.forEach((line) => {
-      const parent = line.parentElement;
-      if (!parent || !parent.classList.contains('clip-text-container')) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'clip-text-container';
-        wrapper.style.overflow = 'hidden';
-        wrapper.style.display = 'block';
-        line.parentNode.insertBefore(wrapper, line);
-        wrapper.appendChild(line);
+      // Wrap each line in a clip-mask container if not already
+      if (split.lines) {
+        split.lines.forEach((line) => {
+          const parent = line.parentElement;
+          if (!parent || !parent.classList.contains('clip-text-container')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'clip-text-container';
+            wrapper.style.overflow = 'hidden';
+            wrapper.style.display = 'block';
+            line.parentNode.insertBefore(wrapper, line);
+            wrapper.appendChild(line);
+          }
+        });
       }
-    });
 
-    const tween = gsap.from(split.words || split.lines, {
-      yPercent: 120,
-      rotateX: -15,
-      opacity: 0,
-      stagger: options.stagger || 0.035,
-      duration: options.duration || 1.1,
-      ease: options.ease || 'power4.out',
-      scrollTrigger: options.scrollTrigger !== false ? {
-        trigger: el,
-        start: options.start || 'top 88%',
-        toggleActions: 'play none none none',
-        ...options.scrollTrigger
-      } : null
-    });
+      const tween = gsap.from(split.words || split.lines || el, {
+        yPercent: 120,
+        rotateX: -15,
+        opacity: 0,
+        stagger: options.stagger || 0.035,
+        duration: options.duration || 1.1,
+        ease: options.ease || 'power4.out',
+        scrollTrigger: options.scrollTrigger !== false ? {
+          trigger: el,
+          scroller: scroller,
+          start: options.start || 'top 95%',
+          toggleActions: 'play none none none',
+          ...options.scrollTrigger
+        } : null
+      });
 
-    results.push({ split, tween });
+      results.push({ split, tween });
+    } catch(e) {
+      console.warn("splitTextReveal fallback on element:", el, e);
+      gsap.to(el, { opacity: 1, y: 0, duration: 0.5 });
+    }
   });
 
   return results;
@@ -204,14 +234,15 @@ export function splitTextReveal(target, options = {}) {
  */
 export function maskedReveal(target, options = {}) {
   const elements = typeof target === 'string' ? document.querySelectorAll(target) : [target];
+  const scroller = options.scroller || getActiveScroller();
 
   elements.forEach((el) => {
     if (!el) return;
 
-    gsap.fromTo(el,
+    const anim = gsap.fromTo(el,
       {
         clipPath: options.clipFrom || 'inset(100% 0% 0% 0%)',
-        y: options.yFrom !== undefined ? options.yFrom : 50,
+        y: options.yFrom !== undefined ? options.yFrom : 40,
         scale: options.scaleFrom || 0.96,
         opacity: 0
       },
@@ -220,17 +251,25 @@ export function maskedReveal(target, options = {}) {
         y: 0,
         scale: 1,
         opacity: 1,
-        duration: options.duration || 1.25,
+        duration: options.duration || 1.2,
         ease: options.ease || 'expo.out',
-        stagger: options.stagger || 0.1,
+        stagger: options.stagger || 0.08,
         scrollTrigger: options.scrollTrigger !== false ? {
           trigger: el,
-          start: options.start || 'top 85%',
+          scroller: scroller,
+          start: options.start || 'top 95%',
           toggleActions: 'play none none none',
           ...options.scrollTrigger
         } : null
       }
     );
+
+    // Guaranteed safety fallback: reveal elements after 1.8s if ScrollTrigger hasn't fired
+    setTimeout(() => {
+      if (getComputedStyle(el).opacity === '0' || getComputedStyle(el).clipPath.includes('100%')) {
+        gsap.to(el, { clipPath: 'inset(0% 0% 0% 0%)', opacity: 1, y: 0, scale: 1, duration: 0.4 });
+      }
+    }, 1800);
   });
 }
 
@@ -241,6 +280,7 @@ export function imageParallaxReveal(containerTarget, imgTarget) {
   const containers = typeof containerTarget === 'string'
     ? document.querySelectorAll(containerTarget)
     : [containerTarget];
+  const scroller = getActiveScroller();
 
   containers.forEach((container) => {
     if (!container) return;
@@ -255,7 +295,8 @@ export function imageParallaxReveal(containerTarget, imgTarget) {
         ease: 'expo.out',
         scrollTrigger: {
           trigger: container,
-          start: 'top 85%',
+          scroller: scroller,
+          start: 'top 90%',
         }
       }
     );
@@ -270,6 +311,7 @@ export function imageParallaxReveal(containerTarget, imgTarget) {
           ease: 'none',
           scrollTrigger: {
             trigger: container,
+            scroller: scroller,
             start: 'top bottom',
             end: 'bottom top',
             scrub: true
@@ -286,14 +328,15 @@ export function imageParallaxReveal(containerTarget, imgTarget) {
 export function staggerCards3D(targets, options = {}) {
   const elements = typeof targets === 'string' ? document.querySelectorAll(targets) : targets;
   if (!elements || !elements.length) return;
+  const scroller = options.scroller || getActiveScroller();
 
   gsap.fromTo(elements,
     {
       opacity: 0,
-      y: options.y || 70,
-      rotateY: options.rotateY || -12,
-      rotateX: options.rotateX || 8,
-      scale: options.scale || 0.92,
+      y: options.y || 50,
+      rotateY: options.rotateY || -8,
+      rotateX: options.rotateX || 6,
+      scale: options.scale || 0.94,
       transformPerspective: 1200
     },
     {
@@ -302,17 +345,27 @@ export function staggerCards3D(targets, options = {}) {
       rotateY: 0,
       rotateX: 0,
       scale: 1,
-      duration: options.duration || 1.1,
+      duration: options.duration || 1.0,
       ease: options.ease || 'power4.out',
-      stagger: options.stagger || 0.08,
+      stagger: options.stagger || 0.06,
       scrollTrigger: options.scrollTrigger !== false ? {
         trigger: elements[0].parentElement || elements[0],
-        start: options.start || 'top 85%',
+        scroller: scroller,
+        start: options.start || 'top 95%',
         toggleActions: 'play none none none',
         ...options.scrollTrigger
       } : null
     }
   );
+
+  // Safety fallback: reveal after 1.8s
+  setTimeout(() => {
+    elements.forEach((el) => {
+      if (getComputedStyle(el).opacity === '0') {
+        gsap.to(el, { opacity: 1, y: 0, rotateY: 0, rotateX: 0, scale: 1, duration: 0.4 });
+      }
+    });
+  }, 1800);
 }
 
 /**
@@ -322,9 +375,11 @@ export function pinnedSectionTimeline(sectionTarget, buildTimelineCallback, scro
   const section = typeof sectionTarget === 'string' ? document.querySelector(sectionTarget) : sectionTarget;
   if (!section) return;
 
+  const scroller = scrollOptions.scroller || getActiveScroller();
   const tl = gsap.timeline({
     scrollTrigger: {
       trigger: section,
+      scroller: scroller,
       pin: true,
       scrub: scrollOptions.scrub !== undefined ? scrollOptions.scrub : 1,
       start: scrollOptions.start || 'top top',
@@ -348,6 +403,8 @@ export function backgroundClipReveal(target, options = {}) {
   const el = typeof target === 'string' ? document.querySelector(target) : target;
   if (!el) return;
 
+  const scroller = options.scroller || getActiveScroller();
+
   gsap.fromTo(el,
     { clipPath: 'polygon(0 0, 0 0, 0 100%, 0 100%)', opacity: 0 },
     {
@@ -357,7 +414,8 @@ export function backgroundClipReveal(target, options = {}) {
       ease: 'expo.inOut',
       scrollTrigger: options.scrollTrigger !== false ? {
         trigger: el,
-        start: 'top 80%',
+        scroller: scroller,
+        start: 'top 85%',
         ...options.scrollTrigger
       } : null
     }
