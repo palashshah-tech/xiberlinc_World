@@ -538,30 +538,40 @@ export async function RoomView(params = {}) {
             </div>
           </div>
 
-          <!-- SYNCHRONIZED Web Audio SOUNDBOARD -->
-          <div class="cockpit-panel-card" style="position:relative; z-index:2;">
-            <h3 style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:${room.colorHex}; letter-spacing:0.12em; margin-bottom:12px;">global telemetry soundboard</h3>
-            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:10px;">
-              <button class="sfx-btn" data-sfx="correct">
-                <span>🔊</span>
-                <span>Neuro Resonance</span>
-              </button>
-              <button class="sfx-btn" data-sfx="incorrect">
-                <span>🚨</span>
-                <span>Security Alert</span>
-              </button>
-              <button class="sfx-btn" data-sfx="start">
-                <span>📡</span>
-                <span>Quantum Ping</span>
-              </button>
-              <button class="sfx-btn" data-sfx="complete">
-                <span>🧬</span>
-                <span>Cognitive Synapse</span>
-              </button>
-              <button class="sfx-btn" data-sfx="flow">
-                <span>🎐</span>
-                <span>Flow Drone</span>
-              </button>
+          <!-- SYNCHRONIZED Web Audio SOUNDBOARD DECK -->
+          <div class="cockpit-panel-card editorial-card-glass" style="position:relative; z-index:2; padding:24px; border-radius:18px; margin-top:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+              <div>
+                <div style="font-family:'M PLUS 1p','JetBrains Mono',monospace; font-size:9px; font-weight:700; color:${room.colorHex}; letter-spacing:0.18em; text-transform:uppercase;">音響デッキ · AUDIO TRANSMITTER</div>
+                <h3 style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.1rem; color:#ffffff; margin:2px 0 0;">Global Telemetry Soundboard</h3>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div class="live-dot" style="background:${room.colorHex};"></div>
+                <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:${room.colorHex}; font-weight:700;">DSP LINK ACTIVE</span>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px;">
+              ${[
+                {sfx:'correct',icon:'🔊',label:'Neuro Resonance',code:'SFX-01'},
+                {sfx:'incorrect',icon:'🚨',label:'Security Alert',code:'SFX-02'},
+                {sfx:'start',icon:'📡',label:'Quantum Ping',code:'SFX-03'},
+                {sfx:'complete',icon:'🧬',label:'Cognitive Synapse',code:'SFX-04'},
+                {sfx:'flow',icon:'🎐',label:'Flow Drone',code:'SFX-05'}
+              ].map(item => `
+                <button class="sfx-btn magnetic-btn" data-cursor="SFX" data-sfx="${item.sfx}" style="
+                  display:flex; flex-direction:column; align-items:flex-start; gap:8px;
+                  padding:14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+                  border-radius:12px; cursor:pointer; text-align:left; transition:all 0.25s cubic-bezier(0.16,1,0.3,1);
+                  position:relative; overflow:hidden;
+                " onmouseenter="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='${room.colorHex}'" onmouseleave="this.style.background='rgba(255,255,255,0.02)';this.style.borderColor='rgba(255,255,255,0.06)'">
+                  <div style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.3); text-transform:uppercase;">${item.code}</div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.2rem;">${item.icon}</span>
+                    <span style="font-family:'Montserrat','Space Grotesk',sans-serif; font-size:11px; font-weight:700; color:#fff;">${item.label}</span>
+                  </div>
+                </button>
+              `).join('')}
             </div>
           </div>
 
