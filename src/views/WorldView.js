@@ -161,7 +161,7 @@ export function WorldView() {
             justify-content:center;
             gap:10px;
           ">
-            transcending your experience
+            ${t('loader_msg0')}
             <span style="display:inline-flex; gap:5px; align-items:center; height:1em; margin-bottom:-4px;">
               <span style="width:6px; height:6px; background:#2563eb; border-radius:50%; display:inline-block; animation:wld-bounce 1.4s infinite ease-in-out both; animation-delay:-0.32s;"></span>
               <span style="width:6px; height:6px; background:#7c3aed; border-radius:50%; display:inline-block; animation:wld-bounce 1.4s infinite ease-in-out both; animation-delay:-0.16s;"></span>
@@ -183,21 +183,21 @@ export function WorldView() {
         display:flex;align-items:center;justify-content:center;
       ">
         <div style="display:flex;flex-direction:column;gap:24px;text-align:center;max-width:320px;width:100%;padding:24px;">
-          <h3 style="font-family:'Instrument Serif',serif;font-style:italic;font-size:1.8rem;color:#7c3aed;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Control Panel</h3>
+          <h3 style="font-family:'Instrument Serif',serif;font-style:italic;font-size:1.8rem;color:#7c3aed;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">${t('tb_panel')}</h3>
           
-          <button id="taskbar-play-vwm" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:14px;color:#fff;cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;padding:8px 0;">Play Working Memory</button>
-          <button id="taskbar-goto-home" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:14px;color:#fff;cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;padding:8px 0;">World Hub</button>
-          
-          <div style="width:40px;height:1px;background:rgba(255,255,255,0.08);margin:8px auto;"></div>
-          
-          <button id="taskbar-sec-1" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">Stars Grid</button>
-          <button id="taskbar-sec-2" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">Leaderboard</button>
-          <button id="taskbar-sec-3" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">Neuro Rooms</button>
-          <button id="taskbar-sec-4" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">Events List</button>
+          <button id="taskbar-play-vwm" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:14px;color:#fff;cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;padding:8px 0;">${t('tb_play')}</button>
+          <button id="taskbar-goto-home" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:14px;color:#fff;cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;padding:8px 0;">${t('tb_hub')}</button>
           
           <div style="width:40px;height:1px;background:rgba(255,255,255,0.08);margin:8px auto;"></div>
           
-          <button id="taskbar-logout" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:12px;color:#ec4899;cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;margin-top:16px;">Sign Out</button>
+          <button id="taskbar-sec-1" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">${t('tb_stars')}</button>
+          <button id="taskbar-sec-2" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">${t('tb_leaderboard')}</button>
+          <button id="taskbar-sec-3" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">${t('tb_rooms')}</button>
+          <button id="taskbar-sec-4" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;">${t('tb_events')}</button>
+          
+          <div style="width:40px;height:1px;background:rgba(255,255,255,0.08);margin:8px auto;"></div>
+          
+          <button id="taskbar-logout" style="background:transparent;border:none;font-family:'Space Grotesk',sans-serif;font-size:12px;color:#ec4899;cursor:pointer;text-transform:uppercase;letter-spacing:0.15em;margin-top:16px;">${t('tb_signout')}</button>
         </div>
       </div>
 
@@ -358,10 +358,10 @@ async function _cycleLoaderText(loaderText) {
   if (!loaderText) return;
 
   const messages = [
-    "transcending your experience",
-    "setting up your interface",
-    "connecting the dots",
-    "almost there"
+    t('loader_msg0'),
+    t('loader_msg1'),
+    t('loader_msg2'),
+    t('loader_msg3')
   ];
 
   const dotsHtml = `
@@ -1230,21 +1230,21 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
     <div id="custom-room-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:9999;align-items:center;justify-content:center;">
       <div style="background:#09090b;border:1px solid rgba(255,255,255,0.06);border-radius:18px;width:90%;max-width:440px;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,0.8);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-          <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;color:#fff;margin:0;text-transform:uppercase;">Create Custom Channel</h3>
+          <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;color:#fff;margin:0;text-transform:uppercase;">${t('modal_create_title')}</h3>
           <button id="custom-room-close" style="background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;line-height:1;" onmouseenter="this.style.color='#fff'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">&times;</button>
         </div>
         
         <div style="display:flex;flex-direction:column;gap:16px;">
           <div>
-            <label style="display:block;font-size:9.5px;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Channel Name</label>
+            <label style="display:block;font-size:9.5px;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">${t('modal_name_label')}</label>
             <input type="text" id="custom-room-name-input" placeholder="e.g. Brainstorming Arena" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;" />
           </div>
           
           <div>
-            <label style="display:block;font-size:9.5px;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Invite Connections</label>
+            <label style="display:block;font-size:9.5px;font-family:'Space Grotesk',sans-serif;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">${t('modal_invite_label')}</label>
             <div id="custom-room-invites-list" style="max-height:160px;overflow-y:auto;border:1px solid rgba(255,255,255,0.04);border-radius:8px;background:rgba(0,0,0,0.2);padding:10px;display:flex;flex-direction:column;gap:8px;">
               ${connections.length === 0 ? `
-                <div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:12px 0;">No active connections. Add players in your Personal Terminal to invite them.</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.3);text-align:center;padding:12px 0;">${t('modal_no_conns')}</div>
               ` : connections.map(c => `
                 <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.75);">
                   <input type="checkbox" class="room-invite-checkbox" value="${c.email}" style="accent-color:#7c3aed;" />
@@ -1254,7 +1254,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
             </div>
           </div>
           
-          <button id="custom-room-submit" style="width:100%;background:#06b6d4;color:#000;border:none;border-radius:8px;padding:12px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#0891b2'" onmouseleave="this.style.background='#06b6d4'">Create Channel</button>
+          <button id="custom-room-submit" style="width:100%;background:#06b6d4;color:#000;border:none;border-radius:8px;padding:12px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;cursor:pointer;transition:background 0.2s;" onmouseenter="this.style.background='#0891b2'" onmouseleave="this.style.background='#06b6d4'">${t('modal_btn_create')}</button>
         </div>
       </div>
     </div>

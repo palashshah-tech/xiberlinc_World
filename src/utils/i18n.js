@@ -246,6 +246,27 @@ const DICTIONARY = {
     "ch5_title": "Proving Ground.",
     "ch5_subhead": "Launch cognitive assessment trial.",
 
+    // Intro Loader & Overlay
+    "loader_msg0": "transcending your experience",
+    "loader_msg1": "setting up your interface",
+    "loader_msg2": "connecting the dots",
+    "loader_msg3": "almost there",
+
+    "tb_panel": "Control Panel",
+    "tb_play": "Play Working Memory",
+    "tb_hub": "World Hub",
+    "tb_stars": "Stars Grid",
+    "tb_leaderboard": "Leaderboard",
+    "tb_rooms": "Neuro Rooms",
+    "tb_events": "Events List",
+    "tb_signout": "Sign Out",
+
+    "modal_create_title": "Create Custom Channel",
+    "modal_name_label": "Channel Name",
+    "modal_invite_label": "Invite Connections",
+    "modal_no_conns": "No active connections. Add players in your Personal Terminal to invite them.",
+    "modal_btn_create": "Create Channel",
+
     // Room Cockpit
     "room_spatial_cockpit": "SPATIAL COCKPIT",
     "room_tab_cockpit": "NEURO COCKPIT",
@@ -262,6 +283,26 @@ const DICTIONARY = {
     "room_wb_hint": "Draw here to collaborate! Changes sync in real-time to all connected users inside the channel."
   },
   ja: {
+    // Intro Loader & Overlay
+    "loader_msg0": "エクスペリエンスを超越する",
+    "loader_msg1": "インターフェースをセットアップ中",
+    "loader_msg2": "ドットを接続中",
+    "loader_msg3": "まもなく完了",
+
+    "tb_panel": "コントロールパネル",
+    "tb_play": "ワーキングメモリテストを受ける",
+    "tb_hub": "ワールドハブ",
+    "tb_stars": "スターグリッド",
+    "tb_leaderboard": "順位表",
+    "tb_rooms": "神経空間ルーム",
+    "tb_events": "イベント一覧",
+    "tb_signout": "サインアウト",
+
+    "modal_create_title": "カスタムテレメトリチャンネルの作成",
+    "modal_name_label": "チャンネル名",
+    "modal_invite_label": "接続ノードを招待",
+    "modal_no_conns": "アクティブな接続がありません。個人端末でプレイヤーを追加してください。",
+    "modal_btn_create": "チャンネルを作成",
     // World & Auth Gate
     "auth_title_prefix": "に接続する",
     "auth_subhead": "Xiberlinc エクスペリエンスへようこそ。xiberlinc.one 認証情報でログインしてください。",
