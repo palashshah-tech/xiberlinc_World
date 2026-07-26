@@ -41,23 +41,23 @@ export function WorldView() {
 
         <!-- Full-Screen Ambient Kinetic Background Ticker -->
         <div class="kinetic-ticker" id="auth-kinetic-ticker">
-          <div class="kinetic-ticker-row" style="top:4%;animation:news-scroll 45s linear infinite;">
-            XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY
+          <div class="kinetic-ticker-row" style="top:4%;animation:news-scroll 18s linear infinite;">
+            XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY &bull; XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY
           </div>
-          <div class="kinetic-ticker-row" style="top:20%;animation:news-scroll 55s linear infinite reverse;">
-            FREQUENCY DOMAIN &bull; TEMPORAL ANALYSIS &bull; MOBILITY BUSINESS &bull; BRAND INNOVATION &bull; FUTURE MOBILITY &bull; CREATIVE TECH &bull; DIGITAL TRANSFORMATION
+          <div class="kinetic-ticker-row" style="top:20%;animation:news-scroll 22s linear infinite reverse;">
+            FREQUENCY DOMAIN &bull; TEMPORAL ANALYSIS &bull; MOBILITY BUSINESS &bull; BRAND INNOVATION &bull; FUTURE MOBILITY &bull; CREATIVE TECH &bull; DIGITAL TRANSFORMATION &bull; FREQUENCY DOMAIN &bull; TEMPORAL ANALYSIS &bull; MOBILITY BUSINESS &bull; BRAND INNOVATION &bull; FUTURE MOBILITY &bull; CREATIVE TECH &bull; DIGITAL TRANSFORMATION
           </div>
-          <div class="kinetic-ticker-row" style="top:36%;animation:news-scroll 40s linear infinite;">
-            XIBERLINC &bull; COGNITIVE ARCHITECTURE &bull; RECRUITMENT PROVING GROUND &bull; VERIFIED CANDIDATE LEDGER &bull; SPATIAL ROOMS &bull; TELEMETRY ENGINE
+          <div class="kinetic-ticker-row" style="top:36%;animation:news-scroll 16s linear infinite;">
+            XIBERLINC &bull; COGNITIVE ARCHITECTURE &bull; RECRUITMENT PROVING GROUND &bull; VERIFIED CANDIDATE LEDGER &bull; SPATIAL ROOMS &bull; TELEMETRY ENGINE &bull; XIBERLINC &bull; COGNITIVE ARCHITECTURE &bull; RECRUITMENT PROVING GROUND &bull; VERIFIED CANDIDATE LEDGER &bull; SPATIAL ROOMS &bull; TELEMETRY ENGINE
           </div>
-          <div class="kinetic-ticker-row" style="top:52%;animation:news-scroll 50s linear infinite reverse;">
-            SHAPE THE INVISIBLE FUTURE &bull; 見えない未来を、形にする &bull; WORKING MEMORY CAPACITY &bull; QUANTUM NEURAL PIPELINE &bull; XIBERLINC
+          <div class="kinetic-ticker-row" style="top:52%;animation:news-scroll 24s linear infinite reverse;">
+            SHAPE THE INVISIBLE FUTURE &bull; 見えない未来を、形にする &bull; WORKING MEMORY CAPACITY &bull; QUANTUM NEURAL PIPELINE &bull; XIBERLINC &bull; SHAPE THE INVISIBLE FUTURE &bull; 見えない未来を、形にする &bull; WORKING MEMORY CAPACITY &bull; QUANTUM NEURAL PIPELINE &bull; XIBERLINC
           </div>
-          <div class="kinetic-ticker-row" style="top:68%;animation:news-scroll 38s linear infinite;">
-            NEURAL NETWORK &bull; REALTIME SYNAPSE LINK &bull; MULTIPLAYER TELEMETRY &bull; RECRUITMENT ECOSYSTEM &bull; XIBERLINC EXPERIENCE
+          <div class="kinetic-ticker-row" style="top:68%;animation:news-scroll 19s linear infinite;">
+            NEURAL NETWORK &bull; REALTIME SYNAPSE LINK &bull; MULTIPLAYER TELEMETRY &bull; RECRUITMENT ECOSYSTEM &bull; XIBERLINC EXPERIENCE &bull; NEURAL NETWORK &bull; REALTIME SYNAPSE LINK &bull; MULTIPLAYER TELEMETRY &bull; RECRUITMENT ECOSYSTEM &bull; XIBERLINC EXPERIENCE
           </div>
-          <div class="kinetic-ticker-row" style="top:84%;animation:news-scroll 48s linear infinite reverse;">
-            XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY
+          <div class="kinetic-ticker-row" style="top:84%;animation:news-scroll 21s linear infinite reverse;">
+            XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY &bull; XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY
           </div>
         </div>
 

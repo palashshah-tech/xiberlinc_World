@@ -590,3 +590,18 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   will-change: transform;
 }
 
+@keyframes news-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes kinetic-flow-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes kinetic-flow-right {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
