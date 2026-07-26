@@ -567,3 +567,26 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   transform: translateX(4px);
 }
 
+/* Full-Screen Kinetic Background Ticker */
+.kinetic-ticker {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.035;
+}
+
+.kinetic-ticker-row {
+  position: absolute;
+  white-space: nowrap;
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(3.5rem, 11vw, 9rem);
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  will-change: transform;
+}
+

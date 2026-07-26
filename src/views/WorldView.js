@@ -39,11 +39,25 @@ export function WorldView() {
         <!-- Ambient Guideline Backdrop -->
         <div class="bg-guidelines" style="opacity:0.5;"></div>
 
-        <!-- Scrolling Ticker Background Strip -->
-        <div class="news-bar" style="position:absolute;top:16px;left:0;right:0;background:transparent;border:none;pointer-events:none;opacity:0.25;">
-          <div class="news-bar-inner" style="display:flex;align-items:center;gap:3rem;animation:news-scroll 35s linear infinite;white-space:nowrap;">
-            <span style="font-family:'Montserrat',sans-serif;font-size:0.75rem;font-weight:900;color:#7c3aed;letter-spacing:0.25em;">XIBERLINC // RECRUITMENT EXPERIENCE</span>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:rgba(255,255,255,0.5);">COGNITIVE PROFILE AUTHENTICATION &bull; xiberlinc.one DIRECTORY GATEWAY &bull; HYPER-THREADED SYNC &bull; BIOMETRIC SIGNAL PROCESSING</span>
+        <!-- Full-Screen Ambient Kinetic Background Ticker -->
+        <div class="kinetic-ticker" id="auth-kinetic-ticker">
+          <div class="kinetic-ticker-row" style="top:4%;animation:news-scroll 45s linear infinite;">
+            XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY
+          </div>
+          <div class="kinetic-ticker-row" style="top:20%;animation:news-scroll 55s linear infinite reverse;">
+            FREQUENCY DOMAIN &bull; TEMPORAL ANALYSIS &bull; MOBILITY BUSINESS &bull; BRAND INNOVATION &bull; FUTURE MOBILITY &bull; CREATIVE TECH &bull; DIGITAL TRANSFORMATION
+          </div>
+          <div class="kinetic-ticker-row" style="top:36%;animation:news-scroll 40s linear infinite;">
+            XIBERLINC &bull; COGNITIVE ARCHITECTURE &bull; RECRUITMENT PROVING GROUND &bull; VERIFIED CANDIDATE LEDGER &bull; SPATIAL ROOMS &bull; TELEMETRY ENGINE
+          </div>
+          <div class="kinetic-ticker-row" style="top:52%;animation:news-scroll 50s linear infinite reverse;">
+            SHAPE THE INVISIBLE FUTURE &bull; 見えない未来を、形にする &bull; WORKING MEMORY CAPACITY &bull; QUANTUM NEURAL PIPELINE &bull; XIBERLINC
+          </div>
+          <div class="kinetic-ticker-row" style="top:68%;animation:news-scroll 38s linear infinite;">
+            NEURAL NETWORK &bull; REALTIME SYNAPSE LINK &bull; MULTIPLAYER TELEMETRY &bull; RECRUITMENT ECOSYSTEM &bull; XIBERLINC EXPERIENCE
+          </div>
+          <div class="kinetic-ticker-row" style="top:84%;animation:news-scroll 48s linear infinite reverse;">
+            XIBERLINC &bull; SIGNAL PROCESSING &bull; NEURAL MAPPING &bull; BIOMETRIC ANALYSIS &bull; DEEP LEARNING &bull; PATTERN RECOGNITION &bull; AXIS TRAJECTORY
           </div>
         </div>
 
