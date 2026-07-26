@@ -78,7 +78,7 @@ export function WorldView() {
             </span>
             <span class="line" style="display:block; overflow:hidden;">
               <span class="line-inner" style="display:block; transform:translateY(100%); animation:auth-title-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.28s forwards;">
-                <span class="accent glitch-text scramble-text" data-text="xiberlinc." style="color:#7c3aed; position:relative; display:inline-block;">xiberlinc.</span>
+                <span class="accent glitch-text scramble-text" data-text="xiberlinc." style="color:#ffffff; position:relative; display:inline-block;">xiberlin<span style="color:#7c3aed;">c</span>.</span>
               </span>
             </span>
             <span class="line jp" style="font-family:'M PLUS 1p',sans-serif; font-weight:700; font-size:0.45em; display:block; margin-top:0.6rem; color:rgba(255,255,255,0.45); letter-spacing:0.18em; overflow:hidden;">
