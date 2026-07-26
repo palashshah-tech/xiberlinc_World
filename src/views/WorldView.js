@@ -155,8 +155,8 @@ export function WorldView() {
       0%, 80%, 100% { transform: scale(0.6) translateY(0); opacity: 0.4; }
       40% { transform: scale(1.1) translateY(-10px); opacity: 1; }
     }
-    .wld-reveal { opacity:0;transform:translateY(28px);transition:opacity 0.7s cubic-bezier(0.2,0,0,1),transform 0.7s cubic-bezier(0.2,0,0,1); }
-    .wld-reveal.visible { opacity:1;transform:translateY(0); }
+    .wld-reveal { opacity:1; transform:none; }
+    .wld-reveal.visible { opacity:1; transform:none; }
     @media (max-width: 480px) {
       #wld-chat-panel {
         width: 100% !important;
@@ -1461,16 +1461,18 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
     navigate('');
   });
 
-  // Trigger Awwwards Cinematic Animations
+  // Trigger Awwwards Cinematic Animations & reveal all elements
+  document.querySelectorAll('.wld-reveal').forEach(el => el.classList.add('visible'));
+
   setTimeout(() => {
     splitTextReveal('#world-dashboard h1, #world-dashboard h2');
-    maskedReveal('#world-dashboard .editorial-card-glass', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 60 });
+    maskedReveal('#world-dashboard .editorial-card-glass', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 40 });
     staggerCards3D('.wld-star-card');
     staggerCards3D('.wld-room-card');
     staggerCards3D('.wld-event-card');
     bindMagneticElements();
     refreshMotion();
-  }, 120);
+  }, 100);
 
   // Hide watermark and transition dashboard Spline opacity
   const dashSpline = document.getElementById('dashboard-spline-el');
