@@ -72,17 +72,11 @@ export function WorldView() {
             <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;filter:brightness(1.4);" alt="Xiberlinc Logo" />
           </div>
 
-          <h1 style="
-            font-family:'Instrument Serif', serif;
-            font-style:italic;
-            font-size:clamp(2.4rem, 6vw, 3.8rem);
-            font-weight:400;
-            text-transform:uppercase;
-            letter-spacing:0.02em;
-            color:#ffffff;
-            margin:0 0 12px 0;
-            line-height:1.05;
-          ">Connect by xiberlin<span style="color:#ec4899;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
+          <h1 class="hero-title" style="font-family:'Montserrat',sans-serif; font-size:clamp(2.2rem, 5.5vw, 3.8rem); font-weight:900; line-height:1.05; margin:0 0 16px 0; letter-spacing:-0.03em; color:#ffffff;">
+            <span class="line" style="display:block;">Connect by</span>
+            <span class="line" style="display:block;"><span class="accent glitch-text scramble-text" data-text="xiberlinc." style="color:#50A87F; position:relative; display:inline-block;">xiberlinc.</span></span>
+            <span class="line jp" style="font-family:'M PLUS 1p',sans-serif; font-weight:700; font-size:0.45em; display:block; margin-top:0.6rem; color:rgba(255,255,255,0.45); letter-spacing:0.18em;">見えない未来を、形にする。</span>
+          </h1>
 
           <p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.65;margin:0 auto;max-width:320px;">
             Welcome to the Xiberlinc Experience. Authenticate with your <code style="color:#7c3aed;font-family:'JetBrains Mono',monospace;background:rgba(124,58,237,0.12);padding:2px 6px;border-radius:4px;">xiberlinc.one</code> credentials to enter.
@@ -879,14 +873,9 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       <section id="chapter-01" class="editorial-chapter" style="position:relative;padding:120px 32px 80px;max-width:1380px;margin:0 auto;">
         <div class="bg-guidelines"></div>
         <div class="editorial-chapter-badge">Chapter 01 · Proving Ground</div>
-        <h1 class="hero-title" style="font-family:'Montserrat',sans-serif; font-size:clamp(2.8rem, 6.8vw, 5.2rem); font-weight:900; line-height:1.05; margin-bottom:1.5rem; letter-spacing:-0.03em; color:#ffffff;">
-          <span class="line" style="display:block;">Shape the</span>
-          <span class="line" style="display:block;"><span class="accent glitch-text scramble-text" data-text="Invisible Future" style="color:#50A87F; position:relative; display:inline-block;">Invisible Future</span></span>
-          <span class="line jp" style="font-family:'M PLUS 1p',sans-serif; font-weight:700; font-size:0.45em; display:block; margin-top:0.6rem; color:rgba(255,255,255,0.45); letter-spacing:0.18em;">見えない未来を、形にする。</span>
-        </h1>
-        <div class="hero-divider" style="width:80px; height:4px; background:#50A87F; margin:1.5rem 0 2rem; transform-origin:left;"></div>
-        <p class="editorial-subhead" style="font-family:'Raleway','Space Grotesk',sans-serif; font-size:1.05rem; line-height:1.8; color:rgba(255,255,255,0.65); max-width:620px; margin-bottom:2.5rem;">
-          We are a unique entity born from the fusion of creative agency and technology company. Verify real-time working memory scores, inspect candidate constellations, and engage in high-fidelity spatial telemetry rooms.
+        <h1 class="editorial-hero-title">Connect by xiberlin<span style="color:#e2b857;">c</span>.</h1>
+        <p class="editorial-subhead">
+          An architectural cognitive ecosystem. Verify real-time working memory scores, inspect candidate constellations, and engage in high-fidelity spatial telemetry rooms.
         </p>
 
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:64px;">
