@@ -832,71 +832,51 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
         </div>
       </nav>
 
-      <!-- ══════════ HERO SECTION (WITH SPLINE AT TOP) ══════════ -->
-      <section style="position:relative;width:100%;height:42vh;background:#000000;overflow:hidden;margin-top:50px;display:flex;align-items:center;justify-content:center;">
-        <spline-viewer
-          id="dashboard-spline-el"
-          url="/world_homepage.splinecode"
-          loading-anim-type="none"
-          style="width:100%;height:100%;transform:scale(1.48);transform-origin:top center;opacity:0;transition:opacity 1.5s ease;"
-        ></spline-viewer>
-        <!-- Soft gradient mask at the bottom -->
-        <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom, transparent 65%, #000000 100%);"></div>
-      </section>
-
-      <!-- ══════════ INTRO & CONNECT SECTION ══════════ -->
-      <div style="max-width:1240px;margin:0 auto;padding:0 24px;text-align:center;">
-        <h1 style="
-          font-family:'Instrument Serif', serif;
-          font-style:italic;
-          font-weight:400;
-          font-size:clamp(2.4rem,6.8vw,4.5rem);
-          line-height:1.1;
-          margin:0 0 16px;
-          color:#ffffff;
-          text-transform:uppercase;
-          letter-spacing:0.02em;
-        ">Connect by xiberlin<span style="color:#ec4899;">c</span><span style="color:#7c3aed;font-style:normal;">.</span></h1>
-        
-        <p style="font-family:'Space Grotesk',sans-serif;font-size:13.5px;color:rgba(255,255,255,0.45);max-width:540px;margin:0 auto 24px;line-height:1.75;">
-          Explore the live social network of elite players, verify cognitive profiles from the candidates database, and join active neuro rooms.
+      <!-- ══════════ CHAPTER 01 — THE PROVING GROUND (HERO) ══════════ -->
+      <section id="chapter-01" class="editorial-chapter" style="position:relative;padding:120px 32px 80px;max-width:1380px;margin:0 auto;">
+        <div class="bg-guidelines"></div>
+        <div class="editorial-chapter-badge">Chapter 01 · Proving Ground</div>
+        <h1 class="editorial-hero-title">Connect by xiberlin<span style="color:#e2b857;">c</span>.</h1>
+        <p class="editorial-subhead">
+          An architectural cognitive ecosystem. Verify real-time working memory scores, inspect candidate constellations, and engage in high-fidelity spatial telemetry rooms.
         </p>
 
-        <button id="hero-play-btn" style="
-          margin: 0 auto 40px; display: inline-flex; align-items: center; gap: 8px;
-          padding: 13px 26px; border-radius: 10px; border: none;
-          background: #7c3aed; color: #fff; font-family: 'Space Grotesk', sans-serif;
-          font-weight: 600; font-size: 13px; cursor: pointer; text-transform: uppercase;
-          letter-spacing: 0.08em; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 0 10px 24px rgba(124, 58, 237, 0.25);
-        " onmouseenter="this.style.transform='scale(1.02)';this.style.boxShadow='0 14px 32px rgba(124, 58, 237, 0.45)';" onmouseleave="this.style.transform='';this.style.boxShadow='0 10px 24px rgba(124, 58, 237, 0.25)';">
-          Play Working Memory
-        </button>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:64px;">
+          <button id="hero-play-btn" class="magnetic-btn" data-cursor="PLAY" style="
+            padding:18px 36px;border-radius:14px;border:none;
+            background:#ffffff;color:#050507;font-family:'Space Grotesk',sans-serif;
+            font-weight:700;font-size:13px;cursor:pointer;text-transform:uppercase;
+            letter-spacing:0.1em;box-shadow:0 14px 40px rgba(255,255,255,0.15);
+            transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
+          ">
+            Enter Proving Ground Assessment
+          </button>
+        </div>
 
-        <!-- Live stats strip -->
-        <div style="display:flex;border:1px solid rgba(255,255,255,0.06);border-radius:14px;overflow:hidden;background:rgba(20,20,25,0.45);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);max-width:800px;margin:0 auto 64px;">
+        <!-- Live Telemetry Bar -->
+        <div class="editorial-card-glass" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));padding:24px;gap:16px;max-width:1100px;margin-bottom:40px;">
           ${[
-            {label:'Players',value:stats.totalPlayers.toLocaleString() || '—',color:'#2563eb',live:false},
-            {label:'Online Now',value:stats.playersOnline.toLocaleString(),color:'#7c3aed',live:true},
-            {label:'Countries',value:stats.countriesRepresented || '—',color:'#ec4899',live:false},
-            {label:'Active Stars',value:stats.starsLive,color:'#06b6d4',live:true},
-            {label:'Neuro Rooms',value:stats.activeRooms,color:'#7c3aed',live:true},
-          ].map((s,i,arr) => `
-            <div style="flex:1;padding:16px 8px;text-align:center;${i<arr.length-1?'border-right:1px solid rgba(255,255,255,0.05)':''};">
-              <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:3px;">
-                ${s.live ? `<div style="width:5px;height:5px;border-radius:50%;background:${s.color};position:relative;"><div style="position:absolute;inset:-3px;border-radius:50%;border:1px solid ${s.color};animation:wld-pulse-ring 1.5s ease-out infinite;"></div></div>` : ''}
-                <span style="font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:700;color:#fff;">${s.value}</span>
+            {label:'Candidates Registered',value:stats.totalPlayers.toLocaleString()||'—'},
+            {label:'Online Nodes',value:stats.playersOnline.toLocaleString(),live:true},
+            {label:'Active Stars',value:stats.starsLive,live:true},
+            {label:'Telemetry Spaces',value:stats.activeRooms,live:true},
+            {label:'Global Regions',value:stats.countriesRepresented||'—'}
+          ].map(s => `
+            <div style="text-align:left;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                ${s.live ? `<div class="live-dot"></div>` : ''}
+                <span style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:800;color:#ffffff;">${s.value}</span>
               </div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.3);">${s.label}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.18em;color:rgba(255,255,255,0.35);">${s.label}</div>
             </div>
           `).join('')}
         </div>
-      </div>
+      </section>
 
       <!-- ══════════ PERSONAL TERMINAL ══════════ -->
-      <section id="wld-sec-profile" style="padding:40px 24px;max-width:1240px;margin:0 auto;">
+      <section id="wld-sec-profile" style="padding:40px 32px 80px;max-width:1380px;margin:0 auto;">
         ${!userProfile || userProfile.length === 0 ? `
-          <div class="wld-reveal" style="background:#0c0c0e;border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:32px;">
+          <div class="wld-reveal editorial-card-glass" style="padding:40px;">
             <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px;">
               <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:rgba(255,255,255,0.4);">?</div>
               <div style="text-align:left;">
@@ -908,38 +888,38 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
               You have not claimed a profile yet. Completing your first Working Memory assessment will instantly record your composite score, assign your star rank, and build your social graph nodes.
             </div>
             <div style="text-align:left;">
-              <button id="profile-play-btn" style="
+              <button id="profile-play-btn" class="magnetic-btn" data-cursor="START" style="
                 display: inline-flex; align-items: center; gap: 8px;
-                padding: 12px 24px; border-radius: 9px; border: none;
-                background: #7c3aed; color: #fff; font-family: 'Space Grotesk', sans-serif;
-                font-weight: 600; font-size: 12.5px; cursor: pointer; text-transform: uppercase;
-                letter-spacing: 0.06em; transition: all 0.2s;
-              " onmouseenter="this.style.transform='translateY(-1px)'" onmouseleave="this.style.transform=''">
+                padding: 14px 28px; border-radius: 10px; border: none;
+                background: #ffffff; color: #000000; font-family: 'Space Grotesk', sans-serif;
+                font-weight: 700; font-size: 12.5px; cursor: pointer; text-transform: uppercase;
+                letter-spacing: 0.08em; transition: all 0.2s;
+              ">
                 Play Working Memory Test
               </button>
             </div>
           </div>
         ` : `
-          <div class="wld-reveal" style="background:#0c0c0e;border:1px solid rgba(255,255,255,0.06);border-radius:18px;padding:32px;">
+          <div class="wld-reveal editorial-card-glass" style="padding:40px;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:28px;">
               <div style="display:flex;align-items:center;gap:18px;">
                 ${auth.currentUser?.photoURL 
-                  ? `<img src="${auth.currentUser.photoURL}" style="width:54px;height:54px;border-radius:50%;border:2px solid #7c3aed;" />`
-                  : `<div style="width:54px;height:54px;border-radius:50%;background:#7c3aed22;border:2px solid #7c3aed;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:1.3rem;color:#7c3aed;">${(auth.currentUser?.displayName || 'P')[0].toUpperCase()}</div>`
+                  ? `<img src="${auth.currentUser.photoURL}" style="width:54px;height:54px;border-radius:50%;border:2px solid #e2b857;" />`
+                  : `<div style="width:54px;height:54px;border-radius:50%;background:rgba(226,184,87,0.1);border:2px solid #e2b857;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:1.3rem;color:#e2b857;">${(auth.currentUser?.displayName || 'P')[0].toUpperCase()}</div>`
                 }
                 <div style="text-align:left;">
                   <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:1.25rem;color:#fff;margin-bottom:1px;">${auth.currentUser?.displayName || 'Gamer'}</div>
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#7c3aed;">@${(auth.currentUser?.email || '').split('@')[0]}</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#e2b857;">@${(auth.currentUser?.email || '').split('@')[0]}</div>
                 </div>
               </div>
               
               <div>
-                <button id="profile-play-btn-retry" style="
-                  padding: 10px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
-                  background: transparent; color: rgba(255,255,255,0.65); font-family: 'Space Grotesk', sans-serif;
+                <button id="profile-play-btn-retry" class="magnetic-btn" data-cursor="RETRY" style="
+                  padding: 12px 24px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+                  background: transparent; color: #ffffff; font-family: 'Space Grotesk', sans-serif;
                   font-weight: 600; font-size: 12px; cursor: pointer; text-transform: uppercase;
                   letter-spacing: 0.05em; transition: all 0.2s;
-                " onmouseenter="this.style.background='rgba(255,255,255,0.05)';this.style.color='#fff'" onmouseleave="this.style.background='transparent';this.style.color='rgba(255,255,255,0.65)'">
+                ">
                   Retake Assessment
                 </button>
               </div>
@@ -947,7 +927,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
 
             <!-- Personal Tabs -->
             <div style="display:flex;gap:16px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:10px;">
-              <button id="tab-profile-stats" style="background:transparent;border:none;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer;padding:4px 8px;border-bottom:2px solid #7c3aed;transition:color 0.2s;">GLANCE STATS</button>
+              <button id="tab-profile-stats" style="background:transparent;border:none;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer;padding:4px 8px;border-bottom:2px solid #e2b857;transition:color 0.2s;">GLANCE STATS</button>
               <button id="tab-profile-constellation" style="background:transparent;border:none;color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer;padding:4px 8px;transition:color 0.2s;">CONSTELLATION GRAPH</button>
               <button id="tab-profile-connections" style="background:transparent;border:none;color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer;padding:4px 8px;transition:color 0.2s;">CONNECTIONS ${incomingRequests.length ? `<span style="background:#ec4899;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;">${incomingRequests.length}</span>` : ''}</button>
             </div>
@@ -955,36 +935,36 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
             <!-- Tab 1: Glance Stats & History -->
             <div id="profile-container-stats">
               <!-- Stats Glance -->
-              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px;">
                 <div style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.03);border-radius:12px;padding:16px;text-align:left;">
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.22);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Latest Composite WMI</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Latest Composite WMI</div>
                   <div style="font-family:'Outfit',sans-serif;font-size:1.75rem;font-weight:800;color:#2563eb;">${userProfile[0].score}</div>
                 </div>
                 <div style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.03);border-radius:12px;padding:16px;text-align:left;">
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.22);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Mean Reaction Time</div>
-                  <div style="font-family:'Outfit',sans-serif;font-size:1.75rem;font-weight:800;color:#7c3aed;">${userProfile[0].reactionMs}ms</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Mean Reaction Time</div>
+                  <div style="font-family:'Outfit',sans-serif;font-size:1.75rem;font-weight:800;color:#e2b857;">${userProfile[0].reactionMs}ms</div>
                 </div>
                 <div style="background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.03);border-radius:12px;padding:16px;text-align:left;">
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.22);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Accuracy Level</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Accuracy Level</div>
                   <div style="font-family:'Outfit',sans-serif;font-size:1.75rem;font-weight:800;color:#ec4899;">${Math.round(userProfile[0].accuracy * 100)}%</div>
                 </div>
               </div>
 
               <!-- History Logs -->
               <div>
-                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,0.35);letter-spacing:0.12em;margin-bottom:12px;text-align:left;">Cognitive History & Progress Tracker</h4>
+                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,0.4);letter-spacing:0.12em;margin-bottom:12px;text-align:left;">Cognitive History & Progress Tracker</h4>
                 <div style="display:flex;flex-direction:column;gap:8px;">
                   ${userProfile.map((attempt, index) => {
                     const date = new Date(attempt.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                     return `
-                      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02);border-radius:8px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.03);border-radius:10px;">
                         <div style="display:flex;align-items:center;gap:12px;">
-                          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25);">#${userProfile.length - index}</span>
+                          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.35);">#${userProfile.length - index}</span>
                           <span style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:#fff;font-weight:500;">WMI Score: ${attempt.score}</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:16px;">
-                          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,0.3);">${date}</span>
-                          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#7c3aed;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.18);border-radius:4px;padding:2px 7px;">VERIFIED</span>
+                          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,0.4);">${date}</span>
+                          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#e2b857;background:rgba(226,184,87,0.08);border:1px solid rgba(226,184,87,0.2);border-radius:4px;padding:2px 7px;">VERIFIED</span>
                         </div>
                       </div>
                     `;
@@ -996,24 +976,24 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
             <!-- Tab 2: Constellation Graph Canvas -->
             <div id="profile-container-constellation" style="display:none;position:relative;width:100%;height:340px;background:#050507;border-radius:12px;border:1px solid rgba(255,255,255,0.04);overflow:hidden;">
               <canvas id="constellation-canvas" style="width:100%;height:100%;display:block;"></canvas>
-              <div id="constellation-tooltip" style="position:absolute;pointer-events:none;background:rgba(8,8,12,0.92);border:1px solid rgba(124,58,237,0.35);border-radius:8px;padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;color:#fff;opacity:0;transition:opacity 0.12s;z-index:100;backdrop-filter:blur(12px);box-shadow:0 12px 36px rgba(0,0,0,0.6);text-align:left;"></div>
+              <div id="constellation-tooltip" style="position:absolute;pointer-events:none;background:rgba(8,8,12,0.92);border:1px solid rgba(226,184,87,0.35);border-radius:8px;padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-size:11px;color:#fff;opacity:0;transition:opacity 0.12s;z-index:100;backdrop-filter:blur(12px);box-shadow:0 12px 36px rgba(0,0,0,0.6);text-align:left;"></div>
             </div>
 
             <!-- Tab 3: Connections panel -->
             <div id="profile-container-connections" style="display:none;text-align:left;">
               <!-- Recommended Connections -->
               <div style="margin-bottom:24px;">
-                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:#7c3aed;letter-spacing:0.08em;margin-bottom:10px;">Recommended Connections</h4>
+                <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:#e2b857;letter-spacing:0.08em;margin-bottom:10px;">Recommended Connections</h4>
                 <div style="display:flex;flex-direction:column;gap:8px;">
                   ${recommendedPlayers.length === 0 ? `
                     <div style="font-size:11px;color:rgba(255,255,255,0.3);padding:6px 0;">No new profile recommendations at this time.</div>
                   ` : recommendedPlayers.map(r => `
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(124,58,237,0.025);border:1px solid rgba(124,58,237,0.12);border-radius:8px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(226,184,87,0.025);border:1px solid rgba(226,184,87,0.12);border-radius:8px;">
                       <div>
                         <div style="font-size:12px;font-weight:600;color:#fff;">${r.name}</div>
                         <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.handle || r.email.split('@')[0]} · WMI: ${r.wmi}</div>
                       </div>
-                      <button class="conn-send-invite-btn" data-email="${r.email}" data-handle="${r.handle || r.email.split('@')[0]}" data-name="${r.name}" data-uid="${r.uid || ''}" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;transition:background 0.15s;" onmouseenter="this.style.background='#6d28d9'" onmouseleave="this.style.background='#7c3aed'">Connect</button>
+                      <button class="conn-send-invite-btn magnetic-btn" data-cursor="CONNECT" data-email="${r.email}" data-handle="${r.handle || r.email.split('@')[0]}" data-name="${r.name}" data-uid="${r.uid || ''}" style="background:#e2b857;color:#000;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;">Connect</button>
                     </div>
                   `).join('')}
                 </div>
@@ -1031,8 +1011,8 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
                           <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${r.senderHandle}</div>
                         </div>
                         <div style="display:flex;gap:6px;">
-                          <button class="conn-accept-btn" data-id="${r.id}" style="background:#2563eb;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;transition:background 0.15s;">Accept</button>
-                          <button class="conn-decline-btn" data-id="${r.id}" style="background:transparent;color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:4px 10px;font-size:10px;cursor:pointer;transition:all 0.15s;">Decline</button>
+                          <button class="conn-accept-btn magnetic-btn" data-id="${r.id}" style="background:#2563eb;color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;">Accept</button>
+                          <button class="conn-decline-btn magnetic-btn" data-id="${r.id}" style="background:transparent;color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:4px 10px;font-size:10px;cursor:pointer;">Decline</button>
                         </div>
                       </div>
                     `).join('')}
@@ -1045,14 +1025,14 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
                 <h4 style="font-family:'Space Grotesk',sans-serif;font-size:10px;text-transform:uppercase;color:rgba(255,255,255,0.35);letter-spacing:0.08em;margin-bottom:10px;">My Connections (${connections.length})</h4>
                 ${connections.length === 0 ? `
                   <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:rgba(255,255,255,0.35);padding:10px 0;text-align:center;">
-                    No connection links established yet. Use the search bar above to invite other players.
+                    No connection links established yet.
                   </div>
                 ` : `
                   <div style="display:grid;grid-template-columns:1fr;gap:6px;max-height:220px;overflow-y:auto;">
                     ${connections.map(c => `
                       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02);border-radius:8px;">
                         <div style="display:flex;align-items:center;gap:10px;">
-                          <div style="width:24px;height:24px;border-radius:50%;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${(c.name[0]||'P').toUpperCase()}</div>
+                          <div style="width:24px;height:24px;border-radius:50%;background:#e2b857;color:#000;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${(c.name[0]||'P').toUpperCase()}</div>
                           <div>
                             <div style="font-size:12px;font-weight:600;color:#fff;">${c.name}</div>
                             <div style="font-size:10px;color:rgba(255,255,255,0.45);font-family:'JetBrains Mono',monospace;">${c.handle}</div>
@@ -1069,68 +1049,74 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
         `}
       </section>
 
-      <!-- ══════════ STARS SECTION ══════════ -->
-      <section id="wld-sec-1" style="padding:60px 24px;max-width:1240px;margin:0 auto;">
-        <div class="wld-reveal" style="margin-bottom:40px;">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.2em;color:#7c3aed;margin-bottom:10px;">Star System</div>
-          <h2 style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;text-transform:uppercase;margin-bottom:10px;">The Constellations<span style="color:#7c3aed;font-style:normal;">.</span></h2>
-          <p style="max-width:500px;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.6;">Top performers from the cognitive assessment. Real players, real scores — ranked live from the Firestore database.</p>
-          ${!hasData ? '<div style="margin-top:16px;font-family:JetBrains Mono,monospace;font-size:11px;color:#ec4899;">No candidate data yet — be the first to complete the assessment!</div>' : ''}
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;" id="wld-stars-grid">
-          ${stars.length ? stars.map(p => _starCard(p)).join('') : _emptyState('No stars yet — complete the assessment to claim your rank.')}
+      <!-- ══════════ CHAPTER 02 — NEURAL CONSTELLATIONS ══════════ -->
+      <section id="chapter-02" class="editorial-chapter" style="padding:100px 32px;max-width:1380px;margin:0 auto;border-top:1px solid rgba(255,255,255,0.05);">
+        <div class="editorial-chapter-badge">Chapter 02 · Constellations</div>
+        <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">The Star Network<span style="color:#e2b857;">.</span></h2>
+        <p class="editorial-subhead" style="margin-bottom:48px;">
+          Verified candidate scores derived from high-stakes cognitive testing. Real players, real latency metrics, synchronized live from the Firestore ledger.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:24px;" id="wld-stars-grid">
+          ${stars.length ? stars.map(p => _starCard(p)).join('') : _emptyState('No stars registered yet.')}
         </div>
       </section>
 
-      <!-- ══════════ LEADERBOARD ══════════ -->
-      <section id="wld-sec-2" style="padding:60px 24px;background:rgba(37,99,235,0.015);border-top:1px solid rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.02);">
-        <div style="max-width:1240px;margin:0 auto;">
-          <div class="wld-reveal" style="margin-bottom:40px;">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.2em;color:#2563eb;margin-bottom:10px;">Live Rankings</div>
-            <h2 style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;text-transform:uppercase;margin-bottom:10px;">Leaderboard<span style="color:#2563eb;font-style:normal;">.</span></h2>
-            <p style="max-width:500px;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.6;">Real scores from the public-collector database, ordered by composite cognitive score.</p>
-          </div>
+      <!-- ══════════ CHAPTER 03 — GLOBAL RANKINGS ══════════ -->
+      <section id="chapter-03" class="editorial-chapter" style="padding:100px 32px;background:rgba(12,12,16,0.5);border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="max-width:1380px;margin:0 auto;">
+          <div class="editorial-chapter-badge">Chapter 03 · Rankings</div>
+          <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">Leaderboard Ledger<span style="color:#2563eb;">.</span></h2>
+          <p class="editorial-subhead" style="margin-bottom:48px;">
+            Composite cognitive score distribution across all candidates in the global network.
+          </p>
           ${_leaderboardHtml(leaderboard.global)}
         </div>
       </section>
 
-      <!-- ══════════ NEURO ROOMS ══════════ -->
-      <section id="wld-sec-3" style="padding:60px 24px;max-width:1240px;margin:0 auto;">
-        <div class="wld-reveal" style="margin-bottom:40px;">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.2em;color:#06b6d4;margin-bottom:10px;">Community</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
-            <h2 style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;text-transform:uppercase;margin:0;">Neuro Rooms<span style="color:#06b6d4;font-style:normal;">.</span></h2>
-            <button id="create-custom-channel-btn" style="background:transparent;border:1px solid rgba(6,182,212,0.45);color:#06b6d4;border-radius:8px;padding:8px 16px;font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='rgba(6,182,212,0.08)';this.style.borderColor='#06b6d4'" onmouseleave="this.style.background='transparent';this.style.borderColor='rgba(6,182,212,0.45)'">Create Custom Channel</button>
+      <!-- ══════════ CHAPTER 04 — TELEMETRY SPACES ══════════ -->
+      <section id="chapter-04" class="editorial-chapter" style="padding:100px 32px;max-width:1380px;margin:0 auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:24px;">
+          <div>
+            <div class="editorial-chapter-badge">Chapter 04 · Telemetry</div>
+            <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin:0;">Spatial Rooms<span style="color:#06b6d4;">.</span></h2>
           </div>
-          <p style="max-width:500px;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.6;">Real-time social spaces where players connect, decompress, and build mental resilience together.</p>
+          <button id="create-custom-channel-btn" class="magnetic-btn" data-cursor="CREATE" style="
+            background:transparent;border:1px solid rgba(255,255,255,0.2);color:#ffffff;
+            border-radius:10px;padding:12px 24px;font-family:'Space Grotesk',sans-serif;
+            font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+            cursor:pointer;transition:all 0.3s;
+          ">Create Custom Channel</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        <p class="editorial-subhead" style="margin-bottom:48px;">
+          Real-time collaborative audio & telemetry environments for peer synchronization.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:24px;">
           ${NEURO_ROOMS.map(r => _roomCard(r)).join('')}
           ${customRooms.map(r => _roomCard(r)).join('')}
         </div>
       </section>
 
-      <!-- ══════════ EVENTS ══════════ -->
-      <section id="wld-sec-4" style="padding:60px 24px;background:rgba(124,58,237,0.015);border-top:1px solid rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.02);">
-        <div style="max-width:1240px;margin:0 auto;">
-          <div class="wld-reveal" style="margin-bottom:40px;">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.2em;color:#ec4899;margin-bottom:10px;">Compete</div>
-            <h2 style="font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;text-transform:uppercase;margin-bottom:10px;">Tournaments & Events<span style="color:#ec4899;font-style:normal;">.</span></h2>
-            <p style="max-width:500px;color:rgba(255,255,255,0.45);font-size:13px;line-height:1.6;">From local meetups to global championships — the Xiberlin<span style="color:#ec4899;">c</span> World never stops competing.</p>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">
+      <!-- ══════════ CHAPTER 05 — PROVING GROUND ══════════ -->
+      <section id="chapter-05" class="editorial-chapter" style="padding:100px 32px;background:rgba(8,8,12,0.8);border-top:1px solid rgba(255,255,255,0.05);">
+        <div style="max-width:1380px;margin:0 auto;">
+          <div class="editorial-chapter-badge">Chapter 05 · Tournaments</div>
+          <h2 class="editorial-hero-title" style="font-size:clamp(2.5rem,6vw,5rem);margin-bottom:16px;">Active Events<span style="color:#ec4899;">.</span></h2>
+          <p class="editorial-subhead" style="margin-bottom:48px;">
+            Scheduled cognitive competitions and high-frequency working memory trials.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px;">
             ${EVENTS.map(e => _eventCard(e)).join('')}
           </div>
         </div>
       </section>
 
       <!-- FOOTER -->
-      <footer style="padding:48px 24px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;">
-        <div style="width:24px;height:24px;border-radius:5px;background:#000;border:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:3.5px;opacity:0.4;">
+      <footer style="padding:60px 32px 30px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;border-top:1px solid rgba(255,255,255,0.05);">
+        <div style="width:28px;height:28px;border-radius:6px;background:#000;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;opacity:0.6;">
           <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;" />
         </div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:0.18em;color:rgba(255,255,255,0.22);">
-          Xiberlin<span style="color:#ec4899;">c</span> World · Season 1 · public-collector · 7-chain principle
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.25em;color:rgba(255,255,255,0.3);">
+          Xiberlin<span style="color:#e2b857;">c</span> World · Architectural Edition · Season 1
         </div>
       </footer>
 
@@ -1649,50 +1635,49 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
 function _starCard(p) {
   const wmi = p.wmi || 0;
   return `
-    <div class="wld-star-card wld-reveal" style="
-      background:#0c0c0e;border:1px solid rgba(255,255,255,0.06);border-radius:16px;
-      overflow:hidden;cursor:pointer;transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);position:relative;
+    <div class="wld-star-card wld-reveal editorial-card-glass" data-cursor="VIEW" style="
+      border-radius:18px;overflow:hidden;position:relative;
     ">
-      <div style="height:64px;background:linear-gradient(135deg,${p.avatarColor}14 0%,${p.avatarColor}04 100%);border-bottom:1px solid rgba(255,255,255,0.03);position:relative;">
-        <div style="position:absolute;top:10px;right:10px;">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:${p.tier==='star'?'#7c3aed':'#2563eb'};background:${p.tier==='star'?'rgba(124,58,237,0.1)':'rgba(37,99,235,0.1)'};border:1px solid ${p.tier==='star'?'rgba(124,58,237,0.25)':'rgba(37,99,235,0.25)'};border-radius:4px;padding:2px 7px;">${p.tier==='star'?'STAR':'RISING'}</div>
+      <div style="height:64px;background:linear-gradient(135deg,${p.avatarColor}14 0%,${p.avatarColor}04 100%);border-bottom:1px solid rgba(255,255,255,0.04);position:relative;">
+        <div style="position:absolute;top:12px;right:12px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:${p.tier==='star'?'#e2b857':'#2563eb'};background:${p.tier==='star'?'rgba(226,184,87,0.1)':'rgba(37,99,235,0.1)'};border:1px solid ${p.tier==='star'?'rgba(226,184,87,0.25)':'rgba(37,99,235,0.25)'};border-radius:4px;padding:2px 8px;">${p.tier==='star'?'STAR':'RISING'}</div>
         </div>
-        <div style="position:absolute;bottom:-18px;right:14px;font-family:'JetBrains Mono',monospace;font-size:9px;color:${p.avatarColor};background:#0c0c0e;border:1px solid ${p.avatarColor}33;border-radius:5px;padding:2px 7px;">${formatChainDistance(p.chainDistance)}</div>
+        <div style="position:absolute;bottom:-18px;right:14px;font-family:'JetBrains Mono',monospace;font-size:9px;color:${p.avatarColor};background:#09090c;border:1px solid ${p.avatarColor}33;border-radius:5px;padding:2px 8px;">${formatChainDistance(p.chainDistance)}</div>
       </div>
-      <div style="padding:24px 18px 18px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-          <div style="width:40px;height:40px;border-radius:50%;background:${p.avatarColor}14;border:2.2px solid ${p.avatarColor}44;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:1rem;color:${p.avatarColor};flex-shrink:0;position:relative;">
+      <div style="padding:24px 20px 20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:42px;height:42px;border-radius:50%;background:${p.avatarColor}14;border:2px solid ${p.avatarColor}44;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:1.05rem;color:${p.avatarColor};flex-shrink:0;">
             ${p.avatar}
           </div>
           <div>
-            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:#fff;margin-bottom:1px;">${p.name}</div>
+            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:1rem;color:#fff;margin-bottom:1px;">${p.name}</div>
             <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:${p.avatarColor};">${p.handle}</div>
           </div>
         </div>
         
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px;">
           ${[
             {label:'WMI',val:wmi,col:'#2563eb'},
-            {label:'Rxn',val:p.reactionMs+'ms',col:'#7c3aed'},
+            {label:'Rxn',val:p.reactionMs+'ms',col:'#e2b857'},
             {label:'Trust',val:Math.round(p.trustScore*100)+'%',col:'#ec4899'}
           ].map(s=>`
-            <div style="text-align:center;background:rgba(255,255,255,0.015);border-radius:8px;padding:8px 4px;border:1px solid rgba(255,255,255,0.03);">
-              <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.9rem;color:${s.col};">${s.val}</div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.22);margin-top:2px;">${s.label}</div>
+            <div style="text-align:center;background:rgba(255,255,255,0.02);border-radius:8px;padding:10px 4px;border:1px solid rgba(255,255,255,0.03);">
+              <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:0.95rem;color:${s.col};">${s.val}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.3);margin-top:3px;">${s.label}</div>
             </div>
           `).join('')}
         </div>
         
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
           <div>
-            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:#fff;">${p.followers}</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.22);">Followers</div>
+            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:1rem;color:#fff;">${p.followers}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.3);">Followers</div>
           </div>
-          <button class="wld-follow-btn" style="padding:6px 14px;font-size:10.5px;background:${p.avatarColor}10;color:${p.avatarColor};border:1px solid ${p.avatarColor}33;border-radius:6px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;transition:all 0.2s;">Follow</button>
+          <button class="wld-follow-btn magnetic-btn" data-cursor="FOLLOW" style="padding:8px 16px;font-size:10.5px;background:${p.avatarColor}12;color:${p.avatarColor};border:1px solid ${p.avatarColor}33;border-radius:8px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;transition:all 0.2s;">Follow</button>
         </div>
         
-        <div style="display:flex;gap:5px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(255,255,255,0.03);">
-          ${p.tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:4px;padding:2px 6px;">#${t}</span>`).join('')}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:14px;border-top:1px solid rgba(255,255,255,0.04);">
+          ${p.tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:4px;padding:3px 8px;">#${t}</span>`).join('')}
         </div>
       </div>
     </div>
@@ -1703,39 +1688,37 @@ function _leaderboardHtml(rows) {
   if (!rows?.length) return _emptyState('No ranked players yet.');
   const max = rows[0]?.score || 1;
   return `
-    <div class="wld-reveal" style="display:flex;flex-direction:column;gap:8px;">
+    <div class="wld-reveal" style="display:flex;flex-direction:column;gap:10px;">
       ${rows.map((entry, i) => {
-        const rankCol = i===0?'#7c3aed':i===1?'#2563eb':i===2?'#ec4899':'rgba(255,255,255,0.4)';
+        const rankCol = i===0?'#e2b857':i===1?'#2563eb':i===2?'#ec4899':'rgba(255,255,255,0.4)';
         const pct     = (entry.score / max * 100).toFixed(1);
         const p       = entry.player;
         return `
           <div style="
-            display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:14px;
-            padding:12px 18px;
-            background:#0c0c0e;border:1px solid rgba(255,255,255,0.04);border-radius:12px;
-            transition:all 0.2s;animation:wld-fade-up 0.5s cubic-bezier(0.16,1,0.3,1) ${i*50}ms both;
-          " class="wld-lb-row"
-            onmouseenter="this.style.transform='translateX(3px)';this.style.borderColor='rgba(255,255,255,0.1)'"
-            onmouseleave="this.style.transform='';this.style.borderColor='rgba(255,255,255,0.04)'"
+            display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:16px;
+            padding:16px 24px;
+            background:rgba(12,12,16,0.6);border:1px solid rgba(255,255,255,0.05);border-radius:14px;
+            transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+          " class="wld-lb-row editorial-row-card" data-cursor="RANK"
           >
-            <div style="text-align:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:1.1rem;color:${rankCol};">
+            <div style="text-align:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:1.2rem;color:${rankCol};">
               #${entry.rank}
             </div>
             <div>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                <div style="width:28px;height:28px;border-radius:50%;background:${p.avatarColor||'#7c3aed'}14;border:1.2px solid ${p.avatarColor||'#7c3aed'}33;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.8rem;color:${p.avatarColor||'#7c3aed'};flex-shrink:0;">${p.avatar||'?'}</div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                <div style="width:32px;height:32px;border-radius:50%;background:${p.avatarColor||'#e2b857'}14;border:1.5px solid ${p.avatarColor||'#e2b857'}33;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.85rem;color:${p.avatarColor||'#e2b857'};flex-shrink:0;">${p.avatar||'?'}</div>
                 <div>
-                  <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.88rem;color:#fff;">${p.name}</div>
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.25);">${p.handle||''}</div>
+                  <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:#fff;">${p.name}</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,0.35);">${p.handle||''}</div>
                 </div>
               </div>
-              <div style="height:2px;background:rgba(255,255,255,0.04);border-radius:99px;overflow:hidden;">
+              <div style="height:3px;background:rgba(255,255,255,0.04);border-radius:99px;overflow:hidden;">
                 <div style="height:100%;width:${pct}%;background:${rankCol};border-radius:99px;transition:width 1s cubic-bezier(0.16,1,0.3,1);"></div>
               </div>
             </div>
             <div style="text-align:right;">
-              <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.25rem;color:${i<3?rankCol:'#fff'};">${entry.score}</div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.22);text-transform:uppercase;">WMI</div>
+              <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.35rem;color:${i<3?rankCol:'#fff'};">${entry.score}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.3);text-transform:uppercase;">WMI SCORE</div>
             </div>
           </div>
         `;
@@ -1752,35 +1735,31 @@ function _roomCard(room) {
   const isCreator = room.isCustom && auth.currentUser && (room.creatorUid === auth.currentUser.uid || room.creatorEmail === auth.currentUser.email);
 
   return `
-    <div class="wld-room-card wld-reveal" style="
-      background:#0c0c0e;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:20px;
-      cursor:pointer;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);position:relative;overflow:hidden;
+    <div class="wld-room-card wld-reveal editorial-card-glass" data-cursor="JOIN" style="
+      border-radius:18px;padding:24px;position:relative;overflow:hidden;
     ">
-      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${room.colorHex};opacity:0.6;"></div>
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${room.colorHex};opacity:0.8;"></div>
       ${isCreator ? `
         <button class="delete-room-btn" data-room-id="${room.id}" style="position:absolute;top:14px;right:14px;background:transparent;border:none;color:rgba(255,255,255,0.3);font-size:11px;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'" title="Delete Channel">
           ❌
         </button>
       ` : ''}
-      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
-        <div style="width:40px;height:40px;border-radius:10px;background:${room.colorHex}10;border:1px solid ${room.colorHex}22;display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:700;color:${room.colorHex};flex-shrink:0;text-transform:uppercase;">${room.name.slice(0,2)}</div>
+      <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:${room.colorHex}12;border:1px solid ${room.colorHex}33;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:${room.colorHex};flex-shrink:0;text-transform:uppercase;">${room.name.slice(0,2)}</div>
         <div>
-          <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:#fff;margin-bottom:3px;">${room.name}</div>
-          <div style="display:flex;align-items:center;gap:5px;">
-            <div style="width:5px;height:5px;border-radius:50%;background:${room.colorHex};position:relative;">
-              <div style="position:absolute;inset:-3px;border-radius:50%;border:1px solid ${room.colorHex};animation:wld-pulse-ring 1.5s ease-out infinite;"></div>
-            </div>
-            <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:${room.colorHex};">${online.toLocaleString()} active</span>
-            ${room.isCustom ? `<span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,0.3);margin-left:4px;">by ${room.creatorHandle}</span>` : ''}
+          <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:1.05rem;color:#fff;margin-bottom:4px;">${room.name}</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="live-dot" style="background:${room.colorHex};"></div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:${room.colorHex};">${online.toLocaleString()} active nodes</span>
           </div>
         </div>
       </div>
-      <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px;line-height:1.5;min-height:3em;">${room.description}</p>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;">
-        ${tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:${room.colorHex};background:${room.colorHex}0d;border:1px solid ${room.colorHex}18;border-radius:4px;padding:2px 6px;">#${t}</span>`).join('')}
+      <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px;line-height:1.6;min-height:3em;">${room.description}</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;">
+        ${tags.map(t=>`<span style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:${room.colorHex};background:${room.colorHex}0d;border:1px solid ${room.colorHex}22;border-radius:4px;padding:3px 8px;">#${t}</span>`).join('')}
       </div>
-      <button class="enter-room-btn" data-room-id="${room.id}" style="width:100%;padding:10px;border-radius:8px;border:1px solid ${locked?'rgba(236,72,153,0.22)':`${room.colorHex}33`};background:${locked?'rgba(236,72,153,0.05)':`${room.colorHex}0c`};color:${locked?'#ec4899':room.colorHex};font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;">
-        ${locked ? 'Locked — ' + room.lockRank + ' required' : 'Enter Room'}
+      <button class="enter-room-btn magnetic-btn" data-cursor="ENTER" data-room-id="${room.id}" style="width:100%;padding:12px;border-radius:10px;border:1px solid ${locked?'rgba(236,72,153,0.3)':`${room.colorHex}44`};background:${locked?'rgba(236,72,153,0.08)':`${room.colorHex}14`};color:${locked?'#ec4899':room.colorHex};font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">
+        ${locked ? 'Locked — ' + room.lockRank + ' required' : 'Enter Spatial Room'}
       </button>
     </div>
   `;
