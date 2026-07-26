@@ -605,3 +605,8 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   100% { transform: translateX(0); }
 }
 
+@keyframes auth-title-rise {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0%); }
+}
+

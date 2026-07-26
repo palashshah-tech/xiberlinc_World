@@ -73,9 +73,17 @@ export function WorldView() {
           </div>
 
           <h1 class="hero-title" style="font-family:'Montserrat',sans-serif; font-size:clamp(2.2rem, 5.5vw, 3.8rem); font-weight:900; line-height:1.05; margin:0 0 16px 0; letter-spacing:-0.03em; color:#ffffff;">
-            <span class="line" style="display:block;">Connect by</span>
-            <span class="line" style="display:block;"><span class="accent glitch-text scramble-text" data-text="xiberlinc." style="color:#50A87F; position:relative; display:inline-block;">xiberlinc.</span></span>
-            <span class="line jp" style="font-family:'M PLUS 1p',sans-serif; font-weight:700; font-size:0.45em; display:block; margin-top:0.6rem; color:rgba(255,255,255,0.45); letter-spacing:0.18em;">見えない未来を、形にする。</span>
+            <span class="line" style="display:block; overflow:hidden;">
+              <span class="line-inner" style="display:block; transform:translateY(100%); animation:auth-title-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;">Connect by</span>
+            </span>
+            <span class="line" style="display:block; overflow:hidden;">
+              <span class="line-inner" style="display:block; transform:translateY(100%); animation:auth-title-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.28s forwards;">
+                <span class="accent glitch-text scramble-text" data-text="xiberlinc." style="color:#7c3aed; position:relative; display:inline-block;">xiberlinc.</span>
+              </span>
+            </span>
+            <span class="line jp" style="font-family:'M PLUS 1p',sans-serif; font-weight:700; font-size:0.45em; display:block; margin-top:0.6rem; color:rgba(255,255,255,0.45); letter-spacing:0.18em; overflow:hidden;">
+              <span class="line-inner" style="display:block; transform:translateY(100%); animation:auth-title-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.45s forwards;">見えない未来を、形にする。</span>
+            </span>
           </h1>
 
           <p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.65;margin:0 auto;max-width:320px;">
