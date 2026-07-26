@@ -62,6 +62,34 @@ export function WorldView() {
           </div>
         </div>
 
+        <!-- Floating Experimental Badge (Top Left) -->
+        <div id="auth-experimental-badge" style="
+          position:absolute; top:24px; left:28px; z-index:10000;
+          background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.35);
+          border-radius:100px; padding:7px 16px; color:#ffffff;
+          backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+          display:flex; align-items:center; gap:8px;
+          box-shadow:0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(124,58,237,0.2);
+          transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        " onmouseenter="this.style.borderColor='rgba(124,58,237,0.6)';this.style.boxShadow='0 10px 30px rgba(124,58,237,0.35)'" onmouseleave="this.style.borderColor='rgba(124,58,237,0.35)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(124,58,237,0.2)'">
+          <!-- Purple 5-Arm Bold Asterisk Matching User PNG -->
+          <svg width="15" height="15" viewBox="0 0 100 100" style="flex-shrink:0; filter:drop-shadow(0 0 6px rgba(124,58,237,0.8));">
+            <g transform="translate(50,50)">
+              <path d="M-8,-45 L8,-45 L5,0 L-5,0 Z" fill="#7c3aed" />
+              <path d="M-8,-45 L8,-45 L5,0 L-5,0 Z" fill="#7c3aed" transform="rotate(72)" />
+              <path d="M-8,-45 L8,-45 L5,0 L-5,0 Z" fill="#7c3aed" transform="rotate(144)" />
+              <path d="M-8,-45 L8,-45 L5,0 L-5,0 Z" fill="#7c3aed" transform="rotate(216)" />
+              <path d="M-8,-45 L8,-45 L5,0 L-5,0 Z" fill="#7c3aed" transform="rotate(288)" />
+              <circle cx="0" cy="0" r="9" fill="#7c3aed" />
+            </g>
+          </svg>
+          <span id="auth-experimental-text" style="
+            font-family:'JetBrains Mono','Space Grotesk',monospace;
+            font-size:10.5px; font-weight:800; letter-spacing:0.18em;
+            text-transform:uppercase; color:#ffffff;
+          ">${t('auth_experimental')}</span>
+        </div>
+
         <!-- Floating Language Switcher Button (Top Right) -->
         <button id="auth-lang-toggle-btn" class="magnetic-btn" data-cursor="LANGUAGE" style="
           position:absolute; top:24px; right:28px; z-index:10000;
@@ -253,6 +281,8 @@ function _updateAuthGateLanguage() {
     `;
   }
 
+  const expText = document.getElementById('auth-experimental-text');
+  if (expText) expText.textContent = t('auth_experimental');
   if (titlePrefix) titlePrefix.textContent = t('auth_title_prefix');
   if (subhead) subhead.textContent = t('auth_subhead');
   if (googleBtnText) googleBtnText.textContent = t('auth_google_btn');
