@@ -15,6 +15,7 @@ import { signInWithGoogle, auth, db, signOut } from '../utils/firebase.js';
 import { splitTextReveal, maskedReveal, staggerCards3D, bindMagneticElements, refreshMotion } from '../engine/motionEngine.js';
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
+import { getLang, setLang, t } from '../utils/i18n.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 
 export function WorldView() {
@@ -61,6 +62,20 @@ export function WorldView() {
           </div>
         </div>
 
+        <!-- Floating Language Switcher Button (Top Right) -->
+        <button id="auth-lang-toggle-btn" class="magnetic-btn" data-cursor="LANGUAGE" style="
+          position:absolute; top:24px; right:28px; z-index:10000;
+          background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+          border-radius:100px; padding:8px 18px; color:#ffffff;
+          font-family:'Montserrat','Space Grotesk',sans-serif; font-size:12px; font-weight:800;
+          cursor:pointer; backdrop-filter:blur(16px); transition:all 0.25s ease;
+          display:flex; align-items:center; gap:8px;
+        ">
+          <span style="font-family:'M PLUS 1p',sans-serif; font-weight:700; color:${getLang() === 'en' ? '#7c3aed' : 'rgba(255,255,255,0.4)'};">A</span>
+          <span style="color:rgba(255,255,255,0.3);">/</span>
+          <span style="font-family:'M PLUS 1p',sans-serif; font-weight:700; color:${getLang() === 'ja' ? '#7c3aed' : 'rgba(255,255,255,0.4)'};">文</span>
+        </button>
+
         <div style="position:relative;z-index:10;margin-bottom:36px;max-width:380px;">
           <!-- Official Xiberlinc Logo Frame -->
           <div style="
@@ -74,7 +89,7 @@ export function WorldView() {
 
           <h1 class="hero-title" style="font-family:'Montserrat',sans-serif; font-size:clamp(2.2rem, 5.5vw, 3.8rem); font-weight:900; line-height:1.05; margin:0 0 16px 0; letter-spacing:-0.03em; color:#ffffff;">
             <span class="line" style="display:block; overflow:hidden;">
-              <span class="line-inner" style="display:block; transform:translateY(100%); animation:auth-title-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;">Connect by</span>
+              <span id="auth-title-prefix" class="line-inner" style="display:block; transform:translateY(100%); animation:auth-title-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;">${t('auth_title_prefix')}</span>
             </span>
             <span class="line" style="display:block; overflow:hidden;">
               <span class="line-inner" style="display:block; transform:translateY(100%); animation:auth-title-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.28s forwards;">
@@ -86,8 +101,8 @@ export function WorldView() {
             </span>
           </h1>
 
-          <p style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.65;margin:0 auto;max-width:320px;">
-            Welcome to the Xiberlinc Experience. Authenticate with your <code style="color:#7c3aed;font-family:'JetBrains Mono',monospace;background:rgba(124,58,237,0.12);padding:2px 6px;border-radius:4px;">xiberlinc.one</code> credentials to enter.
+          <p id="auth-subhead-text" style="font-family:'Space Grotesk',sans-serif;font-size:13px;color:rgba(255,255,255,0.5);line-height:1.65;margin:0 auto;max-width:320px;">
+            ${t('auth_subhead')}
           </p>
         </div>
 
@@ -106,13 +121,13 @@ export function WorldView() {
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 6.31l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
-          Sign in with Google
+          <span id="auth-google-btn-text">${t('auth_google_btn')}</span>
         </button>
 
         <!-- Domain Lock Tag -->
         <div style="position:relative;z-index:10;margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.12em;display:flex;align-items:center;gap:6px;">
           <span style="width:5px;height:5px;border-radius:50%;background:#7c3aed;display:inline-block;"></span>
-          Restricted to @xiberlinc.one accounts
+          <span id="auth-domain-lock-text">${t('auth_domain_lock')}</span>
         </div>
 
         <!-- Error message display -->
@@ -221,10 +236,54 @@ export function WorldView() {
 /* ════════════════════════════════════════════════════════════
    AUTH & BOOT SEQUENCE
    ════════════════════════════════════════════════════════════ */
+function _updateAuthGateLanguage() {
+  const currentLang = getLang();
+  const titlePrefix = document.getElementById('auth-title-prefix');
+  const subhead = document.getElementById('auth-subhead-text');
+  const googleBtnText = document.getElementById('auth-google-btn-text');
+  const domainLock = document.getElementById('auth-domain-lock-text');
+  const tickerContainer = document.getElementById('auth-kinetic-ticker');
+  const langToggleBtn = document.getElementById('auth-lang-toggle-btn');
+
+  if (langToggleBtn) {
+    langToggleBtn.innerHTML = `
+      <span style="font-family:'M PLUS 1p',sans-serif; font-weight:700; color:${currentLang === 'en' ? '#7c3aed' : 'rgba(255,255,255,0.4)'};">A</span>
+      <span style="color:rgba(255,255,255,0.3);">/</span>
+      <span style="font-family:'M PLUS 1p',sans-serif; font-weight:700; color:${currentLang === 'ja' ? '#7c3aed' : 'rgba(255,255,255,0.4)'};">文</span>
+    `;
+  }
+
+  if (titlePrefix) titlePrefix.textContent = t('auth_title_prefix');
+  if (subhead) subhead.textContent = t('auth_subhead');
+  if (googleBtnText) googleBtnText.textContent = t('auth_google_btn');
+  if (domainLock) domainLock.textContent = t('auth_domain_lock');
+
+  if (tickerContainer) {
+    const rows = tickerContainer.querySelectorAll('.kinetic-ticker-row');
+    rows.forEach((row, i) => {
+      const text = t(`ticker_${i}`);
+      row.textContent = `${text} • ${text}`;
+    });
+  }
+}
+
 function _initAuth() {
   const authGate = document.getElementById('world-auth-gate');
   const loginBtn = document.getElementById('google-login-btn');
   const errMsg = document.getElementById('auth-error-msg');
+  const langToggleBtn = document.getElementById('auth-lang-toggle-btn');
+
+  if (langToggleBtn) {
+    langToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const current = getLang();
+      const nextLang = current === 'en' ? 'ja' : 'en';
+      setLang(nextLang);
+      _updateAuthGateLanguage();
+    });
+  }
+
+  _updateAuthGateLanguage();
 
   // Verify current auth user
   const user = auth.currentUser;

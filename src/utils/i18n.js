@@ -198,9 +198,32 @@ const DICTIONARY = {
     "ad_modal_tab_overview": "Overview",
     "ad_modal_tab_raw": "Raw Data",
     "ad_modal_no_raw": "No raw trial data saved for this candidate.",
-    "ad_syncing": "Syncing with Cloud Database..."
+    "ad_syncing": "Syncing with Cloud Database...",
+
+    // World & Auth Gate
+    "auth_title_prefix": "Connect by",
+    "auth_subhead": "Welcome to the Xiberlinc Experience. Authenticate with your xiberlinc.one credentials to enter.",
+    "auth_google_btn": "Sign in with Google",
+    "auth_domain_lock": "Restricted to @xiberlinc.one accounts",
+    "ticker_0": "XIBERLINC • SIGNAL PROCESSING • NEURAL MAPPING • BIOMETRIC ANALYSIS • DEEP LEARNING • PATTERN RECOGNITION • AXIS TRAJECTORY",
+    "ticker_1": "FREQUENCY DOMAIN • TEMPORAL ANALYSIS • MOBILITY BUSINESS • BRAND INNOVATION • FUTURE MOBILITY • CREATIVE TECH • DIGITAL TRANSFORMATION",
+    "ticker_2": "XIBERLINC • COGNITIVE ARCHITECTURE • RECRUITMENT PROVING GROUND • VERIFIED CANDIDATE LEDGER • SPATIAL ROOMS • TELEMETRY ENGINE",
+    "ticker_3": "SHAPE THE INVISIBLE FUTURE • 見えない未来を、形にする • WORKING MEMORY CAPACITY • QUANTUM NEURAL PIPELINE • XIBERLINC",
+    "ticker_4": "NEURAL NETWORK • REALTIME SYNAPSE LINK • MULTIPLAYER TELEMETRY • RECRUITMENT ECOSYSTEM • XIBERLINC EXPERIENCE",
+    "ticker_5": "XIBERLINC • SIGNAL PROCESSING • NEURAL MAPPING • BIOMETRIC ANALYSIS • DEEP LEARNING • PATTERN RECOGNITION • AXIS TRAJECTORY"
   },
   ja: {
+    // World & Auth Gate
+    "auth_title_prefix": "に接続する",
+    "auth_subhead": "Xiberlinc エクスペリエンスへようこそ。xiberlinc.one 認証情報でログインしてください。",
+    "auth_google_btn": "Google でサインイン",
+    "auth_domain_lock": "@xiberlinc.one アカウント限定",
+    "ticker_0": "XIBERLINC • 信号処理 • 神経マッピング • 生体認証分析 • 深層学習 • パターン認識 • 軸軌道",
+    "ticker_1": "周波数ドメイン • 時間解析 • モビリティビジネス • ブランドイノベーション • 未来のモビリティ • クリエイティブテクノロジー • デジタルトランスフォーメーション",
+    "ticker_2": "XIBERLINC • 認知アーキテクチャ • 採用検証場 • 認証候補者台帳 • 空間空間 • テレメトリエンジン",
+    "ticker_3": "見えない未来を、形にする • SHAPE THE INVISIBLE FUTURE • ワーキングメモリ容量 • 量子神経パイプライン • XIBERLINC",
+    "ticker_4": "神経ネットワーク • リアルタイムシナプスリンク • マルチプレイヤーテレメトリ • 採用エコシステム • XIBERLINC エクスペリエンス",
+    "ticker_5": "XIBERLINC • 信号処理 • 神経マッピング • 生体認証分析 • 深層学習 • パターン認識 • 軸軌道",
     // Welcome
     "badge_task": "タスク 01/03",
     "app_title": "注意力とワーキングメモリ",
