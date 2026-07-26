@@ -12,7 +12,7 @@ import {
   createCustomRoom, deleteCustomRoom, fetchIgnoreEmails
 } from '../utils/worldData.js';
 import { signInWithGoogle, auth, db, signOut } from '../utils/firebase.js';
-import { splitTextReveal, maskedReveal, staggerCards3D, bindMagneticElements, refreshMotion, initLenisSmoothScroll } from '../engine/motionEngine.js';
+import { splitTextReveal, maskedReveal, staggerCards3D, bindMagneticElements, refreshMotion } from '../engine/motionEngine.js';
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
@@ -27,11 +27,11 @@ export function WorldView() {
   }
   // Render the wrapper structures
   render(`
-    <div id="world-root" style="position:fixed;inset:0;z-index:9000;background:#000000;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;overflow:hidden;">
+    <div id="world-root" style="position:relative;width:100%;min-height:100vh;background:#000000;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;">
       
       <!-- ── GOOGLE AUTH GATE SCREEN ── -->
       <div id="world-auth-gate" style="
-        position:absolute;inset:0;z-index:9500;
+        position:fixed;inset:0;z-index:9500;
         display:flex;flex-direction:column;align-items:center;justify-content:center;
         background:#000000;transition:opacity 0.8s ease, transform 0.8s ease;
         padding:24px;text-align:center;
@@ -76,7 +76,7 @@ export function WorldView() {
 
       <!-- ── LOADER SCREEN ── -->
       <div id="world-loader" style="
-        position:absolute;inset:0;z-index:9000;
+        position:fixed;inset:0;z-index:9000;
         overflow:hidden;background:#000000;display:none;
       ">
         <!-- Spline Container -->
@@ -112,7 +112,7 @@ export function WorldView() {
       </div>
 
       <!-- ── WORLD DASHBOARD (hidden until loader finishes) ── -->
-      <div id="world-dashboard" style="display:none;position:absolute;inset:0;overflow-y:auto;z-index:8000;background:#000000;"></div>
+      <div id="world-dashboard" style="display:none;position:relative;width:100%;min-height:100vh;background:#000000;"></div>
 
 
       <!-- ── CONTROL CENTER TASKBAR OVERLAY ── -->
@@ -798,17 +798,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
     return !ignoreSet.has(p.email.toLowerCase().trim());
   }).slice(0, 4);
 
-  const worldRoot = document.getElementById('world-root');
-  if (worldRoot) {
-    worldRoot.style.position = 'relative';
-    worldRoot.style.overflow = 'visible';
-    worldRoot.style.height = 'auto';
-  }
-
   dash.style.display = 'block';
-  dash.style.position = 'relative';
-  dash.style.overflow = 'visible';
-  dash.style.height = 'auto';
   dash.innerHTML = `
     <div style="min-height:100vh;background:#000000;font-family:'Space Grotesk',sans-serif;color:#ffffff;padding-bottom:60px;">
 
@@ -846,6 +836,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       <section style="position:relative;width:100%;height:42vh;background:#000000;overflow:hidden;margin-top:50px;display:flex;align-items:center;justify-content:center;">
         <spline-viewer
           id="dashboard-spline-el"
+          url="/world_homepage.splinecode"
           loading-anim-type="none"
           style="width:100%;height:100%;transform:scale(1.48);transform-origin:top center;opacity:0;transition:opacity 1.5s ease;"
         ></spline-viewer>
@@ -1470,28 +1461,22 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
     navigate('');
   });
 
-  // Re-initialize Lenis smooth scroll on main window once dashboard is active
-  initLenisSmoothScroll(window);
-
   // Trigger Awwwards Cinematic Animations
   setTimeout(() => {
     splitTextReveal('#world-dashboard h1, #world-dashboard h2');
-    maskedReveal('#world-dashboard .editorial-card-glass', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 40 });
+    maskedReveal('#world-dashboard .editorial-card-glass', { clipFrom: 'inset(100% 0% 0% 0%)', yFrom: 60 });
     staggerCards3D('.wld-star-card');
     staggerCards3D('.wld-room-card');
     staggerCards3D('.wld-event-card');
     bindMagneticElements();
     refreshMotion();
-  }, 100);
+  }, 120);
 
-  // Safely set Spline url and hide watermark after layout is visible to avoid WebGL 0x0 texture errors
+  // Hide watermark and transition dashboard Spline opacity
   const dashSpline = document.getElementById('dashboard-spline-el');
   if (dashSpline) {
+    _hideSplineLogo(dashSpline);
     setTimeout(() => {
-      if (!dashSpline.hasAttribute('url')) {
-        dashSpline.setAttribute('url', '/world_homepage.splinecode');
-      }
-      _hideSplineLogo(dashSpline);
       dashSpline.style.opacity = '1';
     }, 150);
   }
