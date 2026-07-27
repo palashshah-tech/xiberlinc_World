@@ -162,54 +162,17 @@ export function WorldView() {
         <div id="auth-error-msg" style="position:relative;z-index:10;display:none; margin-top:20px; font-family:'Space Grotesk',sans-serif; font-size:12px; color:#ef4444; max-width:340px; line-height:1.5; font-weight:600; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:8px; padding:10px 14px;"></div>
       </div>
 
-      <!-- ── LOADER SCREEN & SPOTLIGHT 3D AVATAR STAGE ── -->
+      <!-- ── LOADER SCREEN ── -->
       <div id="world-loader" style="
         position:fixed;inset:0;z-index:9000;
         overflow:hidden;background:#000000;display:none;
       ">
-        <!-- Dual Corner Dramatic Spotlight Beams -->
-        <div class="spotlight-beam-left"></div>
-        <div class="spotlight-beam-right"></div>
+        <!-- Spline Container -->
+        <div id="spline-container" style="position:absolute;inset:0;"></div>
 
-        <!-- Animated Stage Floor Ring -->
-        <div id="avatar-stage-ring" style="
-          position:absolute; bottom:18vh; left:50%;
-          transform:translate(-50%, -50%); width:380px; height:120px;
-          border-radius:50%; border:2px dashed rgba(124,58,237,0.5);
-          box-shadow:0 0 40px rgba(124,58,237,0.4), inset 0 0 30px rgba(6,182,212,0.3);
-          pointer-events:none; z-index:90;
-          animation:stage-ring-spin 20s linear infinite;
-        "></div>
-
-        <!-- 3D Spline Container -->
-        <div id="spline-container" style="position:absolute;inset:0;z-index:85;perspective:1000px;"></div>
-
-        <!-- Carousel Rotational Arrow Controls -->
-        <button id="prev-avatar-btn" class="magnetic-btn" data-cursor="PREV" style="
-          position:absolute; top:50%; left:36px; transform:translateY(-50%); z-index:110;
-          width:52px; height:52px; border-radius:50%;
-          background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18);
-          color:#ffffff; cursor:pointer; backdrop-filter:blur(16px);
-          display:flex; align-items:center; justify-content:center;
-          box-shadow:0 10px 30px rgba(0,0,0,0.5); transition:all 0.3s ease;
-        " onmouseenter="this.style.background='rgba(124,58,237,0.25)';this.style.borderColor='#7c3aed'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.18)'">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-
-        <button id="next-avatar-btn" class="magnetic-btn" data-cursor="NEXT" style="
-          position:absolute; top:50%; right:36px; transform:translateY(-50%); z-index:110;
-          width:52px; height:52px; border-radius:50%;
-          background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18);
-          color:#ffffff; cursor:pointer; backdrop-filter:blur(16px);
-          display:flex; align-items:center; justify-content:center;
-          box-shadow:0 10px 30px rgba(0,0,0,0.5); transition:all 0.3s ease;
-        " onmouseenter="this.style.background='rgba(124,58,237,0.25)';this.style.borderColor='#7c3aed'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.18)'">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        </button>
-
-        <!-- Dynamic Status Title -->
+        <!-- Content (Apple-like static title with clean fade-in) -->
         <div id="loader-ui" style="
-          position:absolute;top:8vh;left:50%;transform:translateX(-50%);z-index:100;
+          position:absolute;top:12vh;left:50%;transform:translateX(-50%);z-index:100;
           text-align:center;pointer-events:none;width:100%;padding:0 24px;
         ">
           <div id="loader-text" style="
@@ -234,43 +197,124 @@ export function WorldView() {
             </span>
           </div>
         </div>
+      </div>
 
-        <!-- Interactive Avatar Customization Dock (Bottom) -->
-        <div id="avatar-custom-dock" style="
-          position:absolute; bottom:28px; left:50%; transform:translateX(-50%); z-index:100;
-          background:rgba(8,8,12,0.85); border:1px solid rgba(255,255,255,0.15);
-          border-radius:20px; padding:16px 28px; backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
-          display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;
-          box-shadow:0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(124,58,237,0.25);
-          max-width:90vw;
-        ">
-          <!-- Active Avatar Name Badge -->
-          <div style="text-align:left;">
-            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em;">SPOTLIGHT AVATAR</div>
-            <div id="avatar-model-title" style="font-family:'Montserrat',sans-serif; font-size:14px; font-weight:900; color:#7c3aed; letter-spacing:0.05em; text-transform:uppercase;">MAN · NODE ALPHA</div>
-          </div>
+      <!-- ── 3D AVATAR SPOTLIGHT CUSTOMIZER STAGE ── -->
+      <div id="avatar-spotlight-stage" style="display:none;">
+        <!-- Top Left Corner Light Beam -->
+        <div class="spotlight-beam-left" id="spotlight-beam-l"></div>
+        <!-- Top Right Corner Light Beam -->
+        <div class="spotlight-beam-right" id="spotlight-beam-r"></div>
+        <!-- Floor Spotlight Pool -->
+        <div class="spotlight-floor-pool" id="spotlight-floor"></div>
 
-          <!-- Color Aura Selector -->
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em;">AURA:</span>
-            <div style="display:flex; gap:8px;">
-              <button class="aura-color-btn" data-color="#7c3aed" style="width:22px;height:22px;border-radius:50%;background:#7c3aed;border:2px solid #fff;cursor:pointer;box-shadow:0 0 10px #7c3aed;"></button>
-              <button class="aura-color-btn" data-color="#06b6d4" style="width:22px;height:22px;border-radius:50%;background:#06b6d4;border:1px solid transparent;cursor:pointer;"></button>
-              <button class="aura-color-btn" data-color="#d4ff00" style="width:22px;height:22px;border-radius:50%;background:#d4ff00;border:1px solid transparent;cursor:pointer;"></button>
-              <button class="aura-color-btn" data-color="#ec4899" style="width:22px;height:22px;border-radius:50%;background:#ec4899;border:1px solid transparent;cursor:pointer;"></button>
+        <!-- Floating Top Header Controls -->
+        <div style="position:absolute; top:28px; left:32px; right:32px; z-index:100; display:flex; align-items:center; justify-content:space-between; pointer-events:auto;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:32px; height:32px; border-radius:8px; background:#000; border:1px solid rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; padding:4px;">
+              <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;" alt="Xiberlinc" />
+            </div>
+            <div>
+              <div style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase;">アバターカスタマイザ · AVATAR STAGE</div>
+              <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.1rem; color:#ffffff;">3D Identity Node</div>
             </div>
           </div>
 
-          <!-- Confirm & Enter World CTA -->
-          <button id="lock-avatar-enter-btn" class="magnetic-btn" data-cursor="ENTER" style="
-            background:linear-gradient(135deg, #7c3aed, #06b6d4); color:#ffffff;
-            border:none; border-radius:12px; padding:12px 24px;
-            font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:12px;
-            text-transform:uppercase; letter-spacing:0.08em; cursor:pointer;
-            box-shadow:0 8px 24px rgba(124,58,237,0.4); transition:all 0.25s ease;
-          " onmouseenter="this.style.transform='scale(1.03)';" onmouseleave="this.style.transform='scale(1)';">
-            ENTER WORLD →
+          <button id="avatar-skip-btn" class="magnetic-btn" data-cursor="SKIP" style="
+            background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+            border-radius:100px; padding:8px 20px; color:#ffffff;
+            font-family:'Space Grotesk',sans-serif; font-size:11.5px; font-weight:700;
+            cursor:pointer; backdrop-filter:blur(16px); transition:all 0.25s ease;
+            text-transform:uppercase; letter-spacing:0.1em;
+          ">
+            Skip Stage &rarr;
           </button>
+        </div>
+
+        <!-- 3D Avatars Orbital Stage Container -->
+        <div class="avatar-3d-stage">
+          <!-- Man Avatar Wrapper -->
+          <div id="avatar-wrapper-man" class="avatar-model-wrapper active-spotlight">
+            <spline-viewer id="spline-avatar-man" url="/man.splinecode" loading-anim-type="none" style="width:100%;height:100%;"></spline-viewer>
+          </div>
+
+          <!-- Woman Avatar Wrapper -->
+          <div id="avatar-wrapper-woman" class="avatar-model-wrapper arc-hidden-right">
+            <spline-viewer id="spline-avatar-woman" url="/woman.splinecode" loading-anim-type="none" style="width:100%;height:100%;"></spline-viewer>
+          </div>
+        </div>
+
+        <!-- 3D Orbital Left & Right Arrow Navigation Controls -->
+        <button id="avatar-prev-arrow" class="magnetic-btn" data-cursor="PREV" style="
+          position:absolute; left:36px; top:50%; transform:translateY(-50%); z-index:100;
+          width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.2); color:#ffffff; cursor:pointer;
+          display:flex; align-items:center; justify-content:center; backdrop-filter:blur(20px);
+          box-shadow:0 12px 32px rgba(0,0,0,0.6); transition:all 0.3s ease;
+        " onmouseenter="this.style.background='#ffffff';this.style.color='#000000';this.style.transform='translateY(-50%) scale(1.1)'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.color='#ffffff';this.style.transform='translateY(-50%) scale(1)'">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <button id="avatar-next-arrow" class="magnetic-btn" data-cursor="NEXT" style="
+          position:absolute; right:36px; top:50%; transform:translateY(-50%); z-index:100;
+          width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.2); color:#ffffff; cursor:pointer;
+          display:flex; align-items:center; justify-content:center; backdrop-filter:blur(20px);
+          box-shadow:0 12px 32px rgba(0,0,0,0.6); transition:all 0.3s ease;
+        " onmouseenter="this.style.background='#ffffff';this.style.color='#000000';this.style.transform='translateY(-50%) scale(1.1)'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.color='#ffffff';this.style.transform='translateY(-50%) scale(1)'">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+
+        <!-- Bottom Customization HUD Bar -->
+        <div style="position:absolute; bottom:32px; left:50%; transform:translateX(-50%); z-index:100; max-width:680px; width:90%; pointer-events:auto;">
+          <div class="editorial-card-glass" style="padding:20px 28px; border-radius:20px; background:rgba(12,12,16,0.8); border:1px solid rgba(255,255,255,0.12); backdrop-filter:blur(30px); box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+            
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px;">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase; margin-bottom:2px;">SPOTLIGHT SELECTION</div>
+                <div id="avatar-model-label" style="font-family:'Montserrat',sans-serif; font-size:1.15rem; font-weight:800; color:#ffffff;">
+                  MALE AVATAR // NODE 01
+                </div>
+              </div>
+
+              <!-- Spotlight Lighting Preset Selector -->
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase;">BEAM:</span>
+                ${[
+                  { color:'#ffffff', name:'white' },
+                  { color:'#7c3aed', name:'purple' },
+                  { color:'#06b6d4', name:'cyan' },
+                  { color:'#e2b857', name:'gold' }
+                ].map(b => `
+                  <button class="avatar-beam-btn" data-color="${b.color}" style="
+                    width:22px; height:22px; border-radius:50%; background:${b.color};
+                    border:2px solid rgba(255,255,255,0.3); cursor:pointer; transition:transform 0.2s;
+                  " onmouseenter="this.style.transform='scale(1.25)'" onmouseleave="this.style.transform='scale(1)'"></button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid rgba(255,255,255,0.06); padding-top:14px;">
+              <div style="font-family:'Space Grotesk',sans-serif; font-size:11px; color:rgba(255,255,255,0.45);">
+                Rotate &amp; Orbit to inspect 3D node meshes in real-time.
+              </div>
+
+              <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
+                padding:12px 28px; border-radius:10px; border:none;
+                background:#ffffff; color:#000000; font-family:'Space Grotesk',sans-serif;
+                font-weight:700; font-size:12px; cursor:pointer; text-transform:uppercase;
+                letter-spacing:0.08em; box-shadow:0 10px 30px rgba(255,255,255,0.15);
+                transition:all 0.25s ease;
+              " onmouseenter="this.style.transform='scale(1.03)';this.style.background='#7c3aed';this.style.color='#ffffff'" onmouseleave="this.style.transform='scale(1)';this.style.background='#ffffff';this.style.color='#000000'">
+                Equip Avatar Node &amp; Enter World &rarr;
+              </button>
+            </div>
+
+          </div>
         </div>
       </div>
 
@@ -500,147 +544,141 @@ async function _cycleLoaderText(loaderText) {
 
 async function _runLoader() {
   const container = document.getElementById('spline-container');
-  const stageRing = document.getElementById('avatar-stage-ring');
-  const prevBtn = document.getElementById('prev-avatar-btn');
-  const nextBtn = document.getElementById('next-avatar-btn');
-  const modelTitle = document.getElementById('avatar-model-title');
-  const lockBtn = document.getElementById('lock-avatar-enter-btn');
-  const loaderText = document.getElementById('loader-text');
-
-  const avatars = [
-    { id: 'man', name: 'MAN · NODE ALPHA', url: '/man.splinecode' },
-    { id: 'woman', name: 'WOMAN · NODE BETA', url: '/woman.splinecode' }
-  ];
-
-  let activeIndex = 0;
-  let activeColor = '#7c3aed';
-
   if (container) {
     container.innerHTML = `
-      <div id="avatar-viewer-wrap" style="
-        width:100%; height:100%; position:relative;
-        transition:transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
-        transform-style:preserve-3d;
-      ">
-        <spline-viewer
-          id="spline-avatar-el"
-          url="${avatars[0].url}"
-          loading-anim-type="none"
-          style="width:100%;height:100%;opacity:0;transition:opacity 1.5s ease;"
-        ></spline-viewer>
-      </div>
+      <spline-viewer
+        id="spline-el"
+        url="/master.splinecode"
+        loading-anim-type="none"
+        style="width:100%;height:100%;opacity:0;transition:opacity 2.5s ease;"
+      ></spline-viewer>
     `;
   }
 
-  const wrap = document.getElementById('avatar-viewer-wrap');
-  const spline = document.getElementById('spline-avatar-el');
+  const spline     = document.getElementById('spline-el');
+  const loaderText = document.getElementById('loader-text');
 
   if (spline) {
     setTimeout(() => {
-      spline.style.opacity = '0.92';
-    }, 600);
+      spline.style.opacity = '0.85';
+    }, 800);
     _hideSplineLogo(spline);
   }
-
-  function _switchAvatar(index) {
-    if (!wrap || !spline) return;
-    activeIndex = index;
-    const target = avatars[activeIndex];
-
-    // Rotational Spotlight Cue Transition
-    wrap.style.transform = 'scale(0.85) rotateY(180deg)';
-    wrap.style.opacity = '0.3';
-
-    setTimeout(() => {
-      spline.setAttribute('url', target.url);
-      if (modelTitle) modelTitle.textContent = target.name;
-      _hideSplineLogo(spline);
-
-      wrap.style.transform = 'scale(1) rotateY(0deg)';
-      wrap.style.opacity = '1';
-    }, 320);
-  }
-
-  if (prevBtn) {
-    prevBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const nextIdx = (activeIndex - 1 + avatars.length) % avatars.length;
-      _switchAvatar(nextIdx);
-    });
-  }
-
-  if (nextBtn) {
-    nextBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const nextIdx = (activeIndex + 1) % avatars.length;
-      _switchAvatar(nextIdx);
-    });
-  }
-
-  // Aura Color Selection
-  document.querySelectorAll('.aura-color-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      document.querySelectorAll('.aura-color-btn').forEach(b => b.style.borderColor = 'transparent');
-      btn.style.borderColor = '#ffffff';
-      activeColor = btn.getAttribute('data-color');
-
-      if (stageRing) {
-        stageRing.style.borderColor = activeColor;
-        stageRing.style.boxShadow = `0 0 40px ${activeColor}88, inset 0 0 30px ${activeColor}44`;
-      }
-      if (modelTitle) {
-        modelTitle.style.color = activeColor;
-      }
-    });
-  });
 
   // Pre-fetch world data in parallel while animation plays
   const dataPromise = _fetchWorldData();
 
-  // Smoothly fade in static loader text
-  await _delay(500);
+  // Smoothly fade in the static loader text
+  await _delay(600);
   if (loaderText) {
     loaderText.style.opacity = '1';
   }
 
-  // Start dynamic status text cycling
+  // Start the dynamic status text cycling
   _cycleLoaderText(loaderText);
 
-  let isProceeded = false;
+  // Play loader
+  const [worldData] = await Promise.all([dataPromise, _delay(LOADER_MS)]);
 
-  async function _proceedToWorld() {
-    if (isProceeded) return;
-    isProceeded = true;
+  // Fade out text before dashboard transition
+  if (loaderText) {
+    loaderText.style.opacity = '0';
+  }
+  await _delay(800);
 
-    // Save customized avatar selection
-    const chosenAvatar = avatars[activeIndex];
-    localStorage.setItem('xiberlinc_active_avatar', JSON.stringify({
-      id: chosenAvatar.id,
-      url: chosenAvatar.url,
-      name: chosenAvatar.name,
-      color: activeColor
-    }));
-
-    if (loaderText) loaderText.style.opacity = '0';
-    await _delay(400);
-
-    const loader = document.getElementById('world-loader');
-    if (loader) {
-      loader.style.animation = 'wld-loader-out 0.9s cubic-bezier(0.4,0,1,1) forwards';
-      await _delay(800);
-      loader.style.display = 'none';
-    }
-
-    const worldData = await dataPromise;
-    window.xiberlinc_world_loaded = true;
-    _renderDashboard(worldData);
+  // Fade out loader screen
+  const loader = document.getElementById('world-loader');
+  if (loader) {
+    loader.style.animation = 'wld-loader-out 0.9s cubic-bezier(0.4,0,1,1) forwards';
+    await _delay(800);
+    loader.style.display = 'none';
   }
 
-  if (lockBtn) {
-    lockBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _proceedToWorld();
+  _initAvatarSpotlightStage(worldData);
+}
+
+function _initAvatarSpotlightStage(worldData) {
+  const stage = document.getElementById('avatar-spotlight-stage');
+  if (!stage) {
+    window.xiberlinc_world_loaded = true;
+    _renderDashboard(worldData);
+    return;
+  }
+
+  stage.style.display = 'flex';
+  void stage.offsetWidth; // Trigger reflow for CSS opacity
+  stage.classList.add('active');
+
+  let activeModel = 'man'; // 'man' or 'woman'
+
+  const wrapperMan = document.getElementById('avatar-wrapper-man');
+  const wrapperWoman = document.getElementById('avatar-wrapper-woman');
+  const labelEl = document.getElementById('avatar-model-label');
+  const prevArrow = document.getElementById('avatar-prev-arrow');
+  const nextArrow = document.getElementById('avatar-next-arrow');
+  const confirmBtn = document.getElementById('avatar-confirm-btn');
+  const skipBtn = document.getElementById('avatar-skip-btn');
+  const beamL = document.getElementById('spotlight-beam-l');
+  const beamR = document.getElementById('spotlight-beam-r');
+  const floorPool = document.getElementById('spotlight-floor');
+
+  function updateStageState() {
+    if (activeModel === 'man') {
+      if (wrapperMan) wrapperMan.className = 'avatar-model-wrapper active-spotlight';
+      if (wrapperWoman) wrapperWoman.className = 'avatar-model-wrapper arc-hidden-right';
+      if (labelEl) {
+        labelEl.textContent = getLang() === 'ja' ? '男性アバター // ノード 01' : 'MALE AVATAR // NODE 01';
+      }
+    } else {
+      if (wrapperMan) wrapperMan.className = 'avatar-model-wrapper arc-hidden-left';
+      if (wrapperWoman) wrapperWoman.className = 'avatar-model-wrapper active-spotlight';
+      if (labelEl) {
+        labelEl.textContent = getLang() === 'ja' ? '女性アバター // ノード 02' : 'FEMALE AVATAR // NODE 02';
+      }
+    }
+  }
+
+  function toggleModel() {
+    activeModel = activeModel === 'man' ? 'woman' : 'man';
+    updateStageState();
+  }
+
+  if (prevArrow) prevArrow.addEventListener('click', toggleModel);
+  if (nextArrow) nextArrow.addEventListener('click', toggleModel);
+
+  // Spotlight color beam customization
+  const beamBtns = stage.querySelectorAll('.avatar-beam-btn');
+  beamBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const color = btn.getAttribute('data-color');
+      if (beamL) beamL.style.background = `linear-gradient(180deg, ${color}dd 0%, ${color}33 35%, rgba(0,0,0,0) 85%)`;
+      if (beamR) beamR.style.background = `linear-gradient(180deg, ${color}dd 0%, ${color}33 35%, rgba(0,0,0,0) 85%)`;
+      if (floorPool) {
+        floorPool.style.background = `radial-gradient(ellipse at center, ${color}bb 0%, ${color}33 45%, rgba(0,0,0,0) 75%)`;
+        floorPool.style.boxShadow = `0 0 80px ${color}66`;
+      }
+    });
+  });
+
+  function exitStage() {
+    stage.classList.remove('active');
+    setTimeout(() => {
+      stage.style.display = 'none';
+      window.xiberlinc_world_loaded = true;
+      _renderDashboard(worldData);
+    }, 800);
+  }
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', () => {
+      localStorage.setItem('xiberlinc_avatar_node', activeModel);
+      exitStage();
+    });
+  }
+
+  if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+      exitStage();
     });
   }
 }
