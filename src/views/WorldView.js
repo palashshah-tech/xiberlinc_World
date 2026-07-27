@@ -233,14 +233,8 @@ export function WorldView() {
 
         <!-- 3D Avatars Orbital Stage Container -->
         <div class="avatar-3d-stage">
-          <!-- Man Avatar Wrapper -->
-          <div id="avatar-wrapper-man" class="avatar-model-wrapper active-spotlight">
-            <spline-viewer id="spline-avatar-man" url="/man.splinecode" loading-anim-type="none" style="width:100%;height:100%;"></spline-viewer>
-          </div>
-
-          <!-- Woman Avatar Wrapper -->
-          <div id="avatar-wrapper-woman" class="avatar-model-wrapper arc-hidden-right">
-            <spline-viewer id="spline-avatar-woman" url="/woman.splinecode" loading-anim-type="none" style="width:100%;height:100%;"></spline-viewer>
+          <div id="avatar-model-wrapper" class="avatar-model-wrapper active-spotlight">
+            <div id="avatar-spline-mount" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
           </div>
         </div>
 
@@ -609,10 +603,8 @@ function _initAvatarSpotlightStage(worldData) {
   void stage.offsetWidth; // Trigger reflow for CSS opacity
   stage.classList.add('active');
 
-  let activeModel = 'man'; // 'man' or 'woman'
-
-  const wrapperMan = document.getElementById('avatar-wrapper-man');
-  const wrapperWoman = document.getElementById('avatar-wrapper-woman');
+  const mountEl = document.getElementById('avatar-spline-mount');
+  const wrapper = document.getElementById('avatar-model-wrapper');
   const labelEl = document.getElementById('avatar-model-label');
   const prevArrow = document.getElementById('avatar-prev-arrow');
   const nextArrow = document.getElementById('avatar-next-arrow');
@@ -622,29 +614,65 @@ function _initAvatarSpotlightStage(worldData) {
   const beamR = document.getElementById('spotlight-beam-r');
   const floorPool = document.getElementById('spotlight-floor');
 
-  function updateStageState() {
-    if (activeModel === 'man') {
-      if (wrapperMan) wrapperMan.className = 'avatar-model-wrapper active-spotlight';
-      if (wrapperWoman) wrapperWoman.className = 'avatar-model-wrapper arc-hidden-right';
-      if (labelEl) {
-        labelEl.textContent = getLang() === 'ja' ? '男性アバター // ノード 01' : 'MALE AVATAR // NODE 01';
-      }
-    } else {
-      if (wrapperMan) wrapperMan.className = 'avatar-model-wrapper arc-hidden-left';
-      if (wrapperWoman) wrapperWoman.className = 'avatar-model-wrapper active-spotlight';
-      if (labelEl) {
-        labelEl.textContent = getLang() === 'ja' ? '女性アバター // ノード 02' : 'FEMALE AVATAR // NODE 02';
-      }
+  let activeModel = 'man'; // 'man' or 'woman'
+  let isTransitioning = false;
+
+  // Mount primary WebGL spline viewer once container is visible
+  if (mountEl) {
+    mountEl.innerHTML = `
+      <spline-viewer id="avatar-spline-viewer" url="/man.splinecode" loading-anim-type="none" style="width:100%;height:100%;"></spline-viewer>
+    `;
+    const viewer = document.getElementById('avatar-spline-viewer');
+    if (viewer) _hideSplineLogo(viewer);
+  }
+
+  function updateLabel() {
+    if (labelEl) {
+      labelEl.textContent = activeModel === 'man' 
+        ? (getLang() === 'ja' ? '男性アバター // ノード 01' : 'MALE AVATAR // NODE 01')
+        : (getLang() === 'ja' ? '女性アバター // ノード 02' : 'FEMALE AVATAR // NODE 02');
     }
   }
 
-  function toggleModel() {
+  function executeArcOrbit(direction) {
+    if (isTransitioning || !wrapper) return;
+    isTransitioning = true;
+
     activeModel = activeModel === 'man' ? 'woman' : 'man';
-    updateStageState();
+    const nextUrl = activeModel === 'man' ? '/man.splinecode' : '/woman.splinecode';
+
+    // Step 1: Orbit arc out into dark shadow
+    const exitClass = direction === 'next' ? 'arc-hidden-right' : 'arc-hidden-left';
+    const enterClass = direction === 'next' ? 'arc-hidden-left' : 'arc-hidden-right';
+    wrapper.className = `avatar-model-wrapper ${exitClass}`;
+
+    setTimeout(() => {
+      // Step 2: Swap model url in dark shadow
+      const viewer = document.getElementById('avatar-spline-viewer');
+      if (viewer) {
+        viewer.setAttribute('url', nextUrl);
+        _hideSplineLogo(viewer);
+      }
+      updateLabel();
+
+      // Step 3: Snap to entrance arc position in dark shadow
+      wrapper.style.transition = 'none';
+      wrapper.className = `avatar-model-wrapper ${enterClass}`;
+      void wrapper.offsetWidth; // Force reflow
+
+      // Step 4: Arc smoothly out of shadow into center spotlight
+      requestAnimationFrame(() => {
+        wrapper.style.transition = '';
+        wrapper.className = 'avatar-model-wrapper active-spotlight';
+        setTimeout(() => {
+          isTransitioning = false;
+        }, 1100);
+      });
+    }, 500);
   }
 
-  if (prevArrow) prevArrow.addEventListener('click', toggleModel);
-  if (nextArrow) nextArrow.addEventListener('click', toggleModel);
+  if (prevArrow) prevArrow.addEventListener('click', () => executeArcOrbit('prev'));
+  if (nextArrow) nextArrow.addEventListener('click', () => executeArcOrbit('next'));
 
   // Spotlight color beam customization
   const beamBtns = stage.querySelectorAll('.avatar-beam-btn');
