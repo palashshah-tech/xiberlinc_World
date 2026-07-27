@@ -621,52 +621,54 @@ function _initAvatarSpotlightStage(worldData) {
   let activeModel = 'man'; // 'man' or 'woman'
   let isTransitioning = false;
 
-  function renderHologramFallback(model) {
+  function render3DAvatarNode(model) {
     if (!mountEl) return;
-    const color = model === 'man' ? '#7c3aed' : '#ec4899';
+    const isMale = model === 'man';
+    const primaryColor = isMale ? '#7c3aed' : '#ec4899';
+    const secondaryColor = isMale ? '#06b6d4' : '#f43f5e';
+
     mountEl.innerHTML = `
-      <div style="position:relative;width:320px;height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="position:absolute;width:240px;height:240px;border-radius:50%;border:2px dashed ${color};animation:spin 12s linear infinite;opacity:0.6;"></div>
-        <div style="position:absolute;width:280px;height:280px;border-radius:50%;border:1px solid ${color};animation:spin 18s linear infinite reverse;opacity:0.3;"></div>
-        <div style="position:relative;z-index:2;width:120px;height:120px;border-radius:50%;background:rgba(124,58,237,0.15);border:2px solid ${color};display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px ${color}88;">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            ${model === 'man' ? `
+      <div style="position:relative; width:340px; height:460px; display:flex; flex-direction:column; align-items:center; justify-content:center; transform-style:preserve-3d;">
+        <!-- Glowing Outer Orbit Rings -->
+        <div style="position:absolute; width:300px; height:300px; border-radius:50%; border:1.5px dashed ${primaryColor}; animation:wld-spin 14s linear infinite; opacity:0.65; box-shadow:0 0 30px ${primaryColor}44;"></div>
+        <div style="position:absolute; width:360px; height:360px; border-radius:50%; border:1px solid ${secondaryColor}; animation:wld-spin 22s linear infinite reverse; opacity:0.35;"></div>
+        
+        <!-- 3D Node Silhouette Frame -->
+        <div style="position:relative; z-index:5; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle, ${primaryColor}33 0%, rgba(0,0,0,0.85) 75%); border:2px solid ${primaryColor}; display:flex; align-items:center; justify-content:center; box-shadow:0 0 50px ${primaryColor}aa, inset 0 0 30px ${primaryColor}66;">
+          <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="${primaryColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 12px ${primaryColor});">
+            ${isMale ? `
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
+              <polyline points="16 3 21 3 21 8"></polyline>
+              <line x1="15" y1="9" x2="21" y2="3"></line>
             ` : `
-              <path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"></path>
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="17" r="3" style="stroke:${secondaryColor}"></circle>
+              <line x1="12" y1="20" x2="12" y2="23" style="stroke:${secondaryColor}"></line>
             `}
           </svg>
         </div>
-        <div style="margin-top:28px;font-family:'Space Grotesk',sans-serif;font-size:11px;color:#ffffff;letter-spacing:0.2em;text-transform:uppercase;text-shadow:0 0 10px ${color};">
-          ${model === 'man' ? 'MALE 3D NODE // ACTIVE' : 'FEMALE 3D NODE // ACTIVE'}
+
+        <!-- Floating Synapse Particles -->
+        <div style="position:absolute; width:100%; height:100%; pointer-events:none; overflow:hidden;">
+          <div style="position:absolute; top:20%; left:25%; width:6px; height:6px; background:${primaryColor}; border-radius:50%; box-shadow:0 0 10px ${primaryColor}; animation:wld-bounce 2s infinite ease-in-out;"></div>
+          <div style="position:absolute; top:70%; left:75%; width:8px; height:8px; background:${secondaryColor}; border-radius:50%; box-shadow:0 0 12px ${secondaryColor}; animation:wld-bounce 2.6s infinite ease-in-out 0.4s;"></div>
+          <div style="position:absolute; top:35%; left:80%; width:5px; height:5px; background:${primaryColor}; border-radius:50%; box-shadow:0 0 8px ${primaryColor}; animation:wld-bounce 1.8s infinite ease-in-out 0.8s;"></div>
+        </div>
+
+        <!-- Telemetry Badge -->
+        <div style="margin-top:36px; padding:6px 18px; border-radius:100px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); backdrop-filter:blur(10px);">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:800; color:#ffffff; letter-spacing:0.18em; text-transform:uppercase;">
+            ${isMale ? 'MALE AVATAR // NODE_01' : 'FEMALE AVATAR // NODE_02'}
+          </span>
         </div>
       </div>
     `;
   }
 
-  function loadSplineViewer(model) {
-    if (!mountEl) return;
-    mountEl.innerHTML = '';
-    try {
-      const viewer = document.createElement('spline-viewer');
-      viewer.id = 'avatar-spline-viewer';
-      viewer.setAttribute('url', `/${model}.splinecode`);
-      viewer.setAttribute('loading-anim-type', 'none');
-      viewer.style.width = '100%';
-      viewer.style.height = '100%';
-
-      viewer.addEventListener('error', () => renderHologramFallback(model));
-      mountEl.appendChild(viewer);
-      _hideSplineLogo(viewer);
-    } catch(err) {
-      renderHologramFallback(model);
-    }
-  }
-
-  // Mount primary WebGL spline viewer once stage is active
-  loadSplineViewer(activeModel);
+  // Render initial 3D Avatar Node
+  render3DAvatarNode(activeModel);
 
   function updateLabel() {
     if (labelEl) {
@@ -689,8 +691,8 @@ function _initAvatarSpotlightStage(worldData) {
     wrapper.className = `avatar-model-wrapper ${exitClass}`;
 
     setTimeout(() => {
-      // Step 2: Swap model viewer in dark shadow
-      loadSplineViewer(activeModel);
+      // Step 2: Swap avatar node in dark shadow
+      render3DAvatarNode(activeModel);
       updateLabel();
 
       // Step 3: Snap to entrance arc position in dark shadow
