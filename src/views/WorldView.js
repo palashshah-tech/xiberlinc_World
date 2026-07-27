@@ -630,68 +630,31 @@ function _initAvatarSpotlightStage(worldData) {
       try { currentAvatarApp.dispose(); } catch(e) {}
       currentAvatarApp = null;
     }
-    mountEl.innerHTML = '';
+    mountEl.innerHTML = `
+      <div id="spline-loader-spinner" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;">
+        <div style="width:36px;height:36px;border:3px solid rgba(124,58,237,0.2);border-top:3px solid #7c3aed;border-radius:50%;animation:wld-spin 0.8s linear infinite;"></div>
+      </div>
+    `;
 
     const canvas = document.createElement('canvas');
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.display = 'block';
+    canvas.style.opacity = '0';
+    canvas.style.transition = 'opacity 0.6s ease';
     mountEl.appendChild(canvas);
 
     try {
       const app = new Application(canvas);
       currentAvatarApp = app;
-      await app.load(model === 'man' ? '/man.splinecode' : '/woman.splinecode');
+      const fileUrl = `${window.location.origin}/${model}.splinecode`;
+      await app.load(fileUrl);
+      canvas.style.opacity = '1';
+      const spinner = document.getElementById('spline-loader-spinner');
+      if (spinner) spinner.style.display = 'none';
     } catch(err) {
-      console.warn('Spline load error, rendering fallback:', err);
-      render3DAvatarNode(model);
+      console.error('Spline avatar 3D load error:', err);
     }
-  }
-
-  function render3DAvatarNode(model) {
-    if (!mountEl) return;
-    const isMale = model === 'man';
-    const primaryColor = isMale ? '#7c3aed' : '#ec4899';
-    const secondaryColor = isMale ? '#06b6d4' : '#f43f5e';
-
-    mountEl.innerHTML = `
-      <div style="position:relative; width:340px; height:460px; display:flex; flex-direction:column; align-items:center; justify-content:center; transform-style:preserve-3d;">
-        <!-- Glowing Outer Orbit Rings -->
-        <div style="position:absolute; width:300px; height:300px; border-radius:50%; border:1.5px dashed ${primaryColor}; animation:wld-spin 14s linear infinite; opacity:0.65; box-shadow:0 0 30px ${primaryColor}44;"></div>
-        <div style="position:absolute; width:360px; height:360px; border-radius:50%; border:1px solid ${secondaryColor}; animation:wld-spin 22s linear infinite reverse; opacity:0.35;"></div>
-        
-        <!-- 3D Node Silhouette Frame -->
-        <div style="position:relative; z-index:5; width:150px; height:150px; border-radius:50%; background:radial-gradient(circle, ${primaryColor}33 0%, rgba(0,0,0,0.85) 75%); border:2px solid ${primaryColor}; display:flex; align-items:center; justify-content:center; box-shadow:0 0 50px ${primaryColor}aa, inset 0 0 30px ${primaryColor}66;">
-          <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="${primaryColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 12px ${primaryColor});">
-            ${isMale ? `
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-              <polyline points="16 3 21 3 21 8"></polyline>
-              <line x1="15" y1="9" x2="21" y2="3"></line>
-            ` : `
-              <circle cx="12" cy="7" r="4"></circle>
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="17" r="3" style="stroke:${secondaryColor}"></circle>
-              <line x1="12" y1="20" x2="12" y2="23" style="stroke:${secondaryColor}"></line>
-            `}
-          </svg>
-        </div>
-
-        <!-- Floating Synapse Particles -->
-        <div style="position:absolute; width:100%; height:100%; pointer-events:none; overflow:hidden;">
-          <div style="position:absolute; top:20%; left:25%; width:6px; height:6px; background:${primaryColor}; border-radius:50%; box-shadow:0 0 10px ${primaryColor}; animation:wld-bounce 2s infinite ease-in-out;"></div>
-          <div style="position:absolute; top:70%; left:75%; width:8px; height:8px; background:${secondaryColor}; border-radius:50%; box-shadow:0 0 12px ${secondaryColor}; animation:wld-bounce 2.6s infinite ease-in-out 0.4s;"></div>
-          <div style="position:absolute; top:35%; left:80%; width:5px; height:5px; background:${primaryColor}; border-radius:50%; box-shadow:0 0 8px ${primaryColor}; animation:wld-bounce 1.8s infinite ease-in-out 0.8s;"></div>
-        </div>
-
-        <!-- Telemetry Badge -->
-        <div style="margin-top:36px; padding:6px 18px; border-radius:100px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); backdrop-filter:blur(10px);">
-          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:800; color:#ffffff; letter-spacing:0.18em; text-transform:uppercase;">
-            ${isMale ? 'MALE AVATAR // NODE_01' : 'FEMALE AVATAR // NODE_02'}
-          </span>
-        </div>
-      </div>
-    `;
   }
 
   // Load 3D Spline model using @splinetool/runtime Application
