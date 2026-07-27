@@ -17,6 +17,7 @@ import { getSocialGraphData, formatChainDistance, getRecommendations } from '../
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { getLang, setLang, t } from '../utils/i18n.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+import { Application } from '@splinetool/runtime';
 
 export function WorldView() {
   // Inject Spline viewer script if not already loaded
@@ -620,6 +621,32 @@ function _initAvatarSpotlightStage(worldData) {
 
   let activeModel = 'man'; // 'man' or 'woman'
   let isTransitioning = false;
+  let currentAvatarApp = null;
+
+  async function loadSplineAvatar(model) {
+    if (!mountEl) return;
+    
+    if (currentAvatarApp) {
+      try { currentAvatarApp.dispose(); } catch(e) {}
+      currentAvatarApp = null;
+    }
+    mountEl.innerHTML = '';
+
+    const canvas = document.createElement('canvas');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    mountEl.appendChild(canvas);
+
+    try {
+      const app = new Application(canvas);
+      currentAvatarApp = app;
+      await app.load(model === 'man' ? '/man.splinecode' : '/woman.splinecode');
+    } catch(err) {
+      console.warn('Spline load error, rendering fallback:', err);
+      render3DAvatarNode(model);
+    }
+  }
 
   function render3DAvatarNode(model) {
     if (!mountEl) return;
@@ -667,8 +694,8 @@ function _initAvatarSpotlightStage(worldData) {
     `;
   }
 
-  // Render initial 3D Avatar Node
-  render3DAvatarNode(activeModel);
+  // Load 3D Spline model using @splinetool/runtime Application
+  loadSplineAvatar(activeModel);
 
   function updateLabel() {
     if (labelEl) {
@@ -683,16 +710,15 @@ function _initAvatarSpotlightStage(worldData) {
     isTransitioning = true;
 
     activeModel = activeModel === 'man' ? 'woman' : 'man';
-    const nextUrl = activeModel === 'man' ? '/man.splinecode' : '/woman.splinecode';
 
     // Step 1: Orbit arc out into dark shadow
     const exitClass = direction === 'next' ? 'arc-hidden-right' : 'arc-hidden-left';
     const enterClass = direction === 'next' ? 'arc-hidden-left' : 'arc-hidden-right';
     wrapper.className = `avatar-model-wrapper ${exitClass}`;
 
-    setTimeout(() => {
-      // Step 2: Swap avatar node in dark shadow
-      render3DAvatarNode(activeModel);
+    setTimeout(async () => {
+      // Step 2: Swap Spline avatar model in dark shadow
+      await loadSplineAvatar(activeModel);
       updateLabel();
 
       // Step 3: Snap to entrance arc position in dark shadow
