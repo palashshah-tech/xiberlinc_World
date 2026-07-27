@@ -610,3 +610,48 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   100% { transform: translateY(0%); }
 }
 
+@keyframes spotlight-pulse-left {
+  0% { opacity: 0.55; transform: rotate(28deg) scale(0.98); }
+  50% { opacity: 0.85; transform: rotate(34deg) scale(1.05); }
+  100% { opacity: 0.55; transform: rotate(28deg) scale(0.98); }
+}
+
+@keyframes spotlight-pulse-right {
+  0% { opacity: 0.55; transform: rotate(-28deg) scale(0.98); }
+  50% { opacity: 0.85; transform: rotate(-34deg) scale(1.05); }
+  100% { opacity: 0.55; transform: rotate(-28deg) scale(0.98); }
+}
+
+@keyframes stage-ring-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.spotlight-beam-left {
+  position: absolute;
+  top: -160px;
+  left: -120px;
+  width: 550px;
+  height: 950px;
+  background: radial-gradient(ellipse at top left, rgba(124, 58, 237, 0.6) 0%, rgba(124, 58, 237, 0.18) 45%, transparent 75%);
+  pointer-events: none;
+  z-index: 92;
+  transform-origin: top left;
+  animation: spotlight-pulse-left 4s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+.spotlight-beam-right {
+  position: absolute;
+  top: -160px;
+  right: -120px;
+  width: 550px;
+  height: 950px;
+  background: radial-gradient(ellipse at top right, rgba(6, 182, 212, 0.6) 0%, rgba(6, 182, 212, 0.18) 45%, transparent 75%);
+  pointer-events: none;
+  z-index: 92;
+  transform-origin: top right;
+  animation: spotlight-pulse-right 4s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
