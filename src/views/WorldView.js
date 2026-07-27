@@ -16,8 +16,9 @@ import { splitTextReveal, maskedReveal, staggerCards3D, bindMagneticElements, re
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { getLang, setLang, t } from '../utils/i18n.js';
-import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { Application } from '@splinetool/runtime';
+import manSplineUrl from '../../public/man.splinecode?url';
+import womanSplineUrl from '../../public/woman.splinecode?url';
 
 export function WorldView() {
   // Inject Spline viewer script if not already loaded
@@ -645,10 +646,10 @@ function _initAvatarSpotlightStage(worldData) {
     mountEl.appendChild(canvas);
 
     try {
+      const targetAssetUrl = model === 'man' ? manSplineUrl : womanSplineUrl;
       const app = new Application(canvas);
       currentAvatarApp = app;
-      const fileUrl = `${window.location.origin}/${model}.splinecode`;
-      await app.load(fileUrl);
+      await app.load(targetAssetUrl);
       canvas.style.opacity = '1';
       const spinner = document.getElementById('spline-loader-spinner');
       if (spinner) spinner.style.display = 'none';
