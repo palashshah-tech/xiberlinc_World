@@ -588,6 +588,10 @@ async function _runLoader() {
     loader.style.display = 'none';
   }
 
+  // Cleanly destroy intro loader WebGL context to prevent zero-size framebuffer errors
+  const splineContainer = document.getElementById('spline-container');
+  if (splineContainer) splineContainer.innerHTML = '';
+
   _initAvatarSpotlightStage(worldData);
 }
 
@@ -617,14 +621,52 @@ function _initAvatarSpotlightStage(worldData) {
   let activeModel = 'man'; // 'man' or 'woman'
   let isTransitioning = false;
 
-  // Mount primary WebGL spline viewer once container is visible
-  if (mountEl) {
+  function renderHologramFallback(model) {
+    if (!mountEl) return;
+    const color = model === 'man' ? '#7c3aed' : '#ec4899';
     mountEl.innerHTML = `
-      <spline-viewer id="avatar-spline-viewer" url="/man.splinecode" loading-anim-type="none" style="width:100%;height:100%;"></spline-viewer>
+      <div style="position:relative;width:320px;height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="position:absolute;width:240px;height:240px;border-radius:50%;border:2px dashed ${color};animation:spin 12s linear infinite;opacity:0.6;"></div>
+        <div style="position:absolute;width:280px;height:280px;border-radius:50%;border:1px solid ${color};animation:spin 18s linear infinite reverse;opacity:0.3;"></div>
+        <div style="position:relative;z-index:2;width:120px;height:120px;border-radius:50%;background:rgba(124,58,237,0.15);border:2px solid ${color};display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px ${color}88;">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            ${model === 'man' ? `
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            ` : `
+              <path d="M12 2a5 5 0 0 0-5 5v3a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"></path>
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            `}
+          </svg>
+        </div>
+        <div style="margin-top:28px;font-family:'Space Grotesk',sans-serif;font-size:11px;color:#ffffff;letter-spacing:0.2em;text-transform:uppercase;text-shadow:0 0 10px ${color};">
+          ${model === 'man' ? 'MALE 3D NODE // ACTIVE' : 'FEMALE 3D NODE // ACTIVE'}
+        </div>
+      </div>
     `;
-    const viewer = document.getElementById('avatar-spline-viewer');
-    if (viewer) _hideSplineLogo(viewer);
   }
+
+  function loadSplineViewer(model) {
+    if (!mountEl) return;
+    mountEl.innerHTML = '';
+    try {
+      const viewer = document.createElement('spline-viewer');
+      viewer.id = 'avatar-spline-viewer';
+      viewer.setAttribute('url', `/${model}.splinecode`);
+      viewer.setAttribute('loading-anim-type', 'none');
+      viewer.style.width = '100%';
+      viewer.style.height = '100%';
+
+      viewer.addEventListener('error', () => renderHologramFallback(model));
+      mountEl.appendChild(viewer);
+      _hideSplineLogo(viewer);
+    } catch(err) {
+      renderHologramFallback(model);
+    }
+  }
+
+  // Mount primary WebGL spline viewer once stage is active
+  loadSplineViewer(activeModel);
 
   function updateLabel() {
     if (labelEl) {
@@ -647,12 +689,8 @@ function _initAvatarSpotlightStage(worldData) {
     wrapper.className = `avatar-model-wrapper ${exitClass}`;
 
     setTimeout(() => {
-      // Step 2: Swap model url in dark shadow
-      const viewer = document.getElementById('avatar-spline-viewer');
-      if (viewer) {
-        viewer.setAttribute('url', nextUrl);
-        _hideSplineLogo(viewer);
-      }
+      // Step 2: Swap model viewer in dark shadow
+      loadSplineViewer(activeModel);
       updateLabel();
 
       // Step 3: Snap to entrance arc position in dark shadow

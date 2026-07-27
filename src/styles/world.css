@@ -634,13 +634,13 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
 
 .spotlight-beam-left {
   position: absolute;
-  top: -120px;
-  left: -80px;
-  width: 500px;
-  height: 1300px;
-  transform-origin: top left;
-  transform: rotate(26deg) scale(0.6);
-  background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0) 85%);
+  top: -100px;
+  left: 2%;
+  width: 460px;
+  height: 1200px;
+  transform-origin: top center;
+  transform: rotate(-35deg) scale(0.6);
+  background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0) 85%);
   clip-path: polygon(45% 0%, 55% 0%, 100% 100%, 0% 100%);
   opacity: 0;
   pointer-events: none;
@@ -651,13 +651,13 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
 
 .spotlight-beam-right {
   position: absolute;
-  top: -120px;
-  right: -80px;
-  width: 500px;
-  height: 1300px;
-  transform-origin: top right;
-  transform: rotate(-26deg) scale(0.6);
-  background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0) 85%);
+  top: -100px;
+  right: 2%;
+  width: 460px;
+  height: 1200px;
+  transform-origin: top center;
+  transform: rotate(35deg) scale(0.6);
+  background: linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0) 85%);
   clip-path: polygon(45% 0%, 55% 0%, 100% 100%, 0% 100%);
   opacity: 0;
   pointer-events: none;
@@ -668,12 +668,12 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
 
 #avatar-spotlight-stage.active .spotlight-beam-left {
   opacity: 1;
-  transform: rotate(26deg) scale(1);
+  transform: rotate(-35deg) scale(1);
 }
 
 #avatar-spotlight-stage.active .spotlight-beam-right {
   opacity: 1;
-  transform: rotate(-26deg) scale(1);
+  transform: rotate(35deg) scale(1);
 }
 
 .spotlight-floor-pool {
