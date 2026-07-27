@@ -16,6 +16,7 @@ import { splitTextReveal, maskedReveal, staggerCards3D, bindMagneticElements, re
 import { getSocialGraphData, formatChainDistance, getRecommendations } from '../utils/worldGraph.js';
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { getLang, setLang, t } from '../utils/i18n.js';
+import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { Application } from '@splinetool/runtime';
 import manSplineUrl from '../../public/man.splinecode?url';
 import womanSplineUrl from '../../public/woman.splinecode?url';
@@ -638,6 +639,10 @@ function _initAvatarSpotlightStage(worldData) {
     `;
 
     const canvas = document.createElement('canvas');
+    // Set explicit pixel dimensions BEFORE WebGL context creation to prevent zero-size framebuffer
+    const rect = mountEl.getBoundingClientRect();
+    canvas.width = Math.max(rect.width, 400) * window.devicePixelRatio;
+    canvas.height = Math.max(rect.height, 500) * window.devicePixelRatio;
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.display = 'block';
@@ -647,9 +652,17 @@ function _initAvatarSpotlightStage(worldData) {
 
     try {
       const targetAssetUrl = model === 'man' ? manSplineUrl : womanSplineUrl;
+      // Fetch binary data first, then pass as blob URL to guarantee valid splinecode bytes
+      const res = await fetch(targetAssetUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${targetAssetUrl}`);
+      const buf = await res.arrayBuffer();
+      const blob = new Blob([buf], { type: 'application/octet-stream' });
+      const blobUrl = URL.createObjectURL(blob);
+
       const app = new Application(canvas);
       currentAvatarApp = app;
-      await app.load(targetAssetUrl);
+      await app.load(blobUrl);
+      URL.revokeObjectURL(blobUrl);
       canvas.style.opacity = '1';
       const spinner = document.getElementById('spline-loader-spinner');
       if (spinner) spinner.style.display = 'none';
