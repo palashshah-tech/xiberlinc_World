@@ -36,54 +36,77 @@ function buildHumanoid(gender, palette) {
   // ── Hair Styles ──
   const selectedStyle = palette.hairStyle || (isMale ? 'buzz' : 'long');
 
-  // Cropped hair base (common to all styles, sitting nicely on crown of head, does not block eyes)
-  const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.46);
+  // 1. Skull Base Cap: covers the back and top crown of the head skull, leaving the forehead bare
+  const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.38);
   const hairBase = new THREE.Mesh(hairBaseGeo, hair);
-  hairBase.position.set(0, 1.74, -0.01);
+  hairBase.position.set(0, 1.76, -0.04);
   hairBase.name = 'hair';
   root.add(hairBase);
 
+  // 2. V-Parted Front Swept Bangs (gives a natural hairline instead of a straight bowl-cut line)
+  const sweepL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.05), hair);
+  sweepL.position.set(-0.07, 1.87, 0.23);
+  sweepL.rotation.set(0.1, 0.1, -0.22);
+  root.add(sweepL);
+
+  const sweepR = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.05), hair);
+  sweepR.position.set(0.07, 1.87, 0.23);
+  sweepR.rotation.set(0.1, -0.1, 0.22);
+  root.add(sweepR);
+
+  // 3. Sideburn Locks
+  const sideL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.06), hair);
+  sideL.position.set(-0.25, 1.72, 0.12);
+  sideL.rotation.y = 0.2;
+  root.add(sideL);
+
+  const sideR = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.06), hair);
+  sideR.position.set(0.25, 1.72, 0.12);
+  sideR.rotation.y = -0.2;
+  root.add(sideR);
+
+  // 4. Style-Specific Geometry Additions
   if (selectedStyle === 'spiky') {
-    // Add spiky cones on centerline of head
+    // Spiky Mohawk Lock cones running along the middle of the head
     const spikeGeo = new THREE.ConeGeometry(0.045, 0.14, 4);
     for (let i = 0; i < 6; i++) {
       const spike = new THREE.Mesh(spikeGeo, hair);
-      const zOffset = -0.15 + i * 0.06;
-      spike.position.set(0, 2.02 - Math.abs(zOffset) * 0.15, zOffset);
+      const zOffset = -0.14 + i * 0.06;
+      spike.position.set(0, 2.03 - Math.abs(zOffset) * 0.15, zOffset - 0.02);
       spike.rotation.x = zOffset * -0.9;
       root.add(spike);
     }
-    // Side spikes for anime look
+    // Anime side spikes
     const sideSpikeGeo = new THREE.ConeGeometry(0.03, 0.1, 4);
     [-1, 1].forEach(side => {
       const sideSpike = new THREE.Mesh(sideSpikeGeo, hair);
-      sideSpike.position.set(side * 0.24, 1.84, 0.05);
+      sideSpike.position.set(side * 0.23, 1.88, 0.05);
       sideSpike.rotation.z = side * -0.7;
       root.add(sideSpike);
     });
   } else if (selectedStyle === 'long') {
-    // Ponytail draping down back
+    // Ponytail at the back of the head
     const ponyGeo = new THREE.CylinderGeometry(0.045, 0.02, 0.45, 12);
     const pony = new THREE.Mesh(ponyGeo, hair);
-    pony.position.set(0, 1.48, -0.22);
-    pony.rotation.x = -0.3; // tilt back slightly
+    pony.position.set(0, 1.46, -0.24);
+    pony.rotation.x = -0.35; // tilt back slightly
     root.add(pony);
 
-    // Ponytail tie band (bright red tie)
+    // Ponytail tie band (red tie)
     const tieGeo = new THREE.TorusGeometry(0.048, 0.015, 6, 12);
     const tieMat = makeMat('#e74c3c');
     const tie = new THREE.Mesh(tieGeo, tieMat);
-    tie.position.set(0, 1.68, -0.18);
+    tie.position.set(0, 1.66, -0.2);
     tie.rotation.x = Math.PI / 2;
     root.add(tie);
 
-    // Side framing drapes (left & right face bangs)
-    const drapeGeo = new THREE.CylinderGeometry(0.03, 0.015, 0.28, 8);
+    // Shoulder-draping front locks
+    const lockGeo = new THREE.CylinderGeometry(0.035, 0.015, 0.4, 8);
     [-1, 1].forEach(side => {
-      const drape = new THREE.Mesh(drapeGeo, hair);
-      drape.position.set(side * 0.23, 1.58, 0.12);
-      drape.rotation.z = side * 0.1;
-      root.add(drape);
+      const lock = new THREE.Mesh(lockGeo, hair);
+      lock.position.set(side * 0.24, 1.46, 0.1);
+      lock.rotation.z = side * 0.1;
+      root.add(lock);
     });
   }
 
