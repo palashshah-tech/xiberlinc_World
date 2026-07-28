@@ -55,25 +55,25 @@ function buildHumanoid(gender, palette) {
     root.add(drape);
   }
 
-  // ── Eyes (small dark spheres) ──
+  // ── Eyes (small dark spheres on head surface) ──
   const eyeGeo = new THREE.SphereGeometry(0.035, 16, 16);
   const eyeMat = makeMat('#1a1a2e', { roughness: 0.2, metalness: 0.4 });
   const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.09, 1.74, 0.24);
+  // Head is radius 0.28, slice at y=1.74 has radius ~0.279. Push Z to 0.27
+  eyeL.position.set(-0.09, 1.74, 0.27);
   root.add(eyeL);
   const eyeR = eyeL.clone();
   eyeR.position.x = 0.09;
   root.add(eyeR);
 
-  // ── Smile (Curved Torus Geometry) ──
-  const mouthGeo = new THREE.TorusGeometry(0.05, 0.015, 8, 24, Math.PI);
+  // ── Smile (Curved Torus Geometry facing front) ──
+  const mouthGeo = new THREE.TorusGeometry(0.05, 0.012, 8, 24, Math.PI);
   const mouthMat = makeMat('#c0392b', { roughness: 0.5 });
   const smile = new THREE.Mesh(mouthGeo, mouthMat);
-  // Positioned slightly below the eyes (y=1.74 -> y=1.65) and facing forward
-  smile.position.set(0, 1.65, 0.25);
-  // Rotate torus so it curves upwards like a smile
-  smile.rotation.x = Math.PI / 2;
-  smile.rotation.z = Math.PI;
+  // Head slice at y=1.65 has radius ~0.271. Push Z to 0.262
+  smile.position.set(0, 1.63, 0.262);
+  // No X rotation so it faces forward; rotate 180 deg around Z to make it a smile (u-shape)
+  smile.rotation.set(0, 0, Math.PI);
   root.add(smile);
 
   // ── Neck ──
@@ -92,7 +92,7 @@ function buildHumanoid(gender, palette) {
   torso.name = 'torso';
   root.add(torso);
 
-  // ── Xiberlinc Logo on T-Shirt ──
+  // ── Xiberlinc Logo on T-Shirt (placed on chest surface) ──
   const textureLoader = new THREE.TextureLoader();
   const logoTexture = textureLoader.load('/xiberlinc_logo.png');
   const logoGeo = new THREE.PlaneGeometry(0.18, 0.18);
@@ -100,11 +100,11 @@ function buildHumanoid(gender, palette) {
     map: logoTexture,
     transparent: true,
     side: THREE.DoubleSide,
-    depthWrite: false // prevents z-fighting
+    depthWrite: false
   });
   const logoMesh = new THREE.Mesh(logoGeo, logoMat);
-  // Position chest logo plate slightly in front of the t-shirt surface
-  logoMesh.position.set(0, 1.15, isMale ? 0.28 : 0.25);
+  // Push Z beyond the chest cylinder surface (radius is ~0.36 for male, ~0.31 for female)
+  logoMesh.position.set(0, 1.15, isMale ? 0.37 : 0.32);
   root.add(logoMesh);
 
   if (!isMale) {
