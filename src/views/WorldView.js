@@ -927,6 +927,155 @@ async function _fetchWorldData() {
 /* ════════════════════════════════════════════════════════════
    CONSTELLATION CANVAS ALGORITHM
    ════════════════════════════════════════════════════════════ */
+function _drawNodeAvatar(ctx, x, y, r, node) {
+  // Read colors/styles
+  let skinColor = '#c89b7b';
+  let hairColor = '#2c1810';
+  let hairStyle = 'buzz';
+  let outfitColor = '#1e1e2e';
+  let gender = 'man';
+
+  if (node.isUser) {
+    gender = localStorage.getItem('xiberlinc_avatar_node') || 'man';
+    let savedPalette = null;
+    try {
+      savedPalette = JSON.parse(localStorage.getItem('xiberlinc_avatar_palette'));
+    } catch(e) {}
+    if (savedPalette) {
+      skinColor = savedPalette.skin;
+      hairColor = savedPalette.hair;
+      hairStyle = savedPalette.hairStyle || (gender === 'man' ? 'buzz' : 'long');
+      outfitColor = savedPalette.outfit;
+    } else {
+      skinColor = DEFAULT_PALETTES[gender].skin;
+      hairColor = DEFAULT_PALETTES[gender].hair;
+      hairStyle = DEFAULT_PALETTES[gender].hairStyle;
+      outfitColor = DEFAULT_PALETTES[gender].outfit;
+    }
+  } else {
+    // Generate deterministic styling for other players
+    const charCodeSum = (node.label || 'Player').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const skins = ['#f5d0b0', '#c89b7b', '#a67c52', '#7b5638', '#4a3020'];
+    const hairs = ['#1a1008', '#4a2520', '#c4a35a', '#8b2500', '#d0d0d0', '#6b21a8', '#06b6d4'];
+    const styles = ['buzz', 'spiky', 'long'];
+    const outfits = ['#1e1e2e', '#2d1b4e', '#7f1d1d', '#0c4a6e', '#14532d', '#ec4899'];
+    
+    skinColor = skins[charCodeSum % skins.length];
+    hairColor = hairs[(charCodeSum * 3) % hairs.length];
+    hairStyle = styles[(charCodeSum * 7) % styles.length];
+    outfitColor = outfits[(charCodeSum * 11) % outfits.length];
+  }
+
+  ctx.save();
+
+  // Create clipping region for the node circle boundary
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Draw background circle tint
+  ctx.fillStyle = 'rgba(12, 12, 16, 0.95)';
+  ctx.fill();
+
+  // 1. Draw Torso (Shirt)
+  ctx.fillStyle = outfitColor;
+  ctx.beginPath();
+  // Draw rounded rectangle shoulders/torso extending down
+  ctx.roundRect(x - r * 0.75, y + r * 0.28, r * 1.5, r * 1.1, [r * 0.2, r * 0.2, 0, 0]);
+  ctx.fill();
+
+  // Draw tiny white logo mark on shirt chest
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.beginPath();
+  ctx.arc(x, y + r * 0.65, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Draw Neck
+  ctx.fillStyle = skinColor;
+  ctx.fillRect(x - r * 0.16, y + r * 0.08, r * 0.32, r * 0.35);
+
+  // 3. Draw Head (Skin)
+  ctx.fillStyle = skinColor;
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.68, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Draw Hair Styles (covers top/sides based on style)
+  ctx.fillStyle = hairColor;
+  const hr = r * 0.68; // Head radius
+
+  if (hairStyle === 'buzz') {
+    // Simple top crop fade
+    ctx.beginPath();
+    ctx.arc(x, y - hr * 0.05, hr * 1.02, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.fill();
+    // Sideburn sweeps
+    ctx.fillRect(x - hr * 1.01, y - hr * 0.1, hr * 0.12, hr * 0.3);
+    ctx.fillRect(x + hr * 0.89, y - hr * 0.1, hr * 0.12, hr * 0.3);
+  } else if (hairStyle === 'spiky') {
+    // Base crop
+    ctx.beginPath();
+    ctx.arc(x, y - hr * 0.05, hr * 1.02, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.fill();
+    // Sideburn sweeps
+    ctx.fillRect(x - hr * 1.01, y - hr * 0.1, hr * 0.12, hr * 0.3);
+    ctx.fillRect(x + hr * 0.89, y - hr * 0.1, hr * 0.12, hr * 0.3);
+    
+    // Spiky crown cones (drawn as triangles)
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const angle = Math.PI * 1.15 + (i * Math.PI * 0.7) / 4;
+      const spikeX = x + Math.cos(angle) * hr * 1.15;
+      const spikeY = y + Math.sin(angle) * hr * 1.15;
+      const base1X = x + Math.cos(angle - 0.15) * hr;
+      const base1Y = y + Math.sin(angle - 0.15) * hr;
+      const base2X = x + Math.cos(angle + 0.15) * hr;
+      const base2Y = y + Math.sin(angle + 0.15) * hr;
+      
+      ctx.moveTo(base1X, base1Y);
+      ctx.lineTo(spikeX, spikeY);
+      ctx.lineTo(base2X, base2Y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (hairStyle === 'long') {
+    // Base crop
+    ctx.beginPath();
+    ctx.arc(x, y - hr * 0.05, hr * 1.02, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.fill();
+
+    // Side bangs draping down shoulders
+    ctx.fillRect(x - hr * 1.04, y - hr * 0.1, hr * 0.18, hr * 0.95);
+    ctx.fillRect(x + hr * 0.86, y - hr * 0.1, hr * 0.18, hr * 0.95);
+
+    // Ponytail tie at the back (red tie)
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(x - 3, y + hr * 0.78, 6, 2.5);
+    
+    // Ponytail bulb extending down behind the neck
+    ctx.fillStyle = hairColor;
+    ctx.beginPath();
+    ctx.arc(x, y + hr * 1.05, hr * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 5. Draw Eyes
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath();
+  ctx.arc(x - hr * 0.25, y, 1.8, 0, Math.PI * 2);
+  ctx.arc(x + hr * 0.25, y, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 6. Draw Smile (Curved red arc)
+  ctx.strokeStyle = '#c0392b';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(x, y + hr * 0.15, hr * 0.2, 0, Math.PI, false);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function _initConstellationCanvas(players, userProfile) {
   const canvas = document.getElementById('constellation-canvas');
   if (!canvas) return;
@@ -965,10 +1114,10 @@ function _initConstellationCanvas(players, userProfile) {
   // Initialize nodes with dynamic positions & physical properties
   const nodes = graph.nodes.map((node) => {
     const angle = Math.random() * Math.PI * 2;
-    // User is dead-center, other nodes orbit at varying distances
     const dist = node.isUser ? 0 : 70 + Math.random() * 110;
     return {
       ...node,
+      radius: node.isUser ? 24 : Math.max(14, node.radius * 1.35),
       x: width / 2 + Math.cos(angle) * dist,
       y: height / 2 + Math.sin(angle) * dist,
       vx: 0,
@@ -1234,11 +1383,8 @@ function _initConstellationCanvas(players, userProfile) {
       ctx.shadowBlur = isHovered ? 28 : 12;
       ctx.shadowColor = node.color;
       
-      // Node core circle
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
-      ctx.fillStyle = node.color;
-      ctx.fill();
+      // Node core avatar projection matching 3D customizer settings
+      _drawNodeAvatar(ctx, node.x, node.y, r, node);
       
       // Node outer glow ring
       ctx.strokeStyle = 'rgba(255,255,255,0.45)';
