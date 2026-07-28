@@ -37,22 +37,30 @@ function buildHumanoid(gender, palette) {
   const selectedStyle = palette.hairStyle || (isMale ? 'buzz' : 'long');
 
   // Cropped hair base (common to all styles, sitting nicely on crown of head, does not block eyes)
-  const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.42);
+  const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.46);
   const hairBase = new THREE.Mesh(hairBaseGeo, hair);
-  hairBase.position.y = 1.76;
+  hairBase.position.set(0, 1.74, -0.01);
   hairBase.name = 'hair';
   root.add(hairBase);
 
   if (selectedStyle === 'spiky') {
     // Add spiky cones on centerline of head
-    const spikeGeo = new THREE.ConeGeometry(0.04, 0.12, 4);
-    for (let i = 0; i < 5; i++) {
+    const spikeGeo = new THREE.ConeGeometry(0.045, 0.14, 4);
+    for (let i = 0; i < 6; i++) {
       const spike = new THREE.Mesh(spikeGeo, hair);
-      const zOffset = -0.12 + i * 0.06;
-      spike.position.set(0, 2.01 - Math.abs(zOffset) * 0.15, zOffset);
-      spike.rotation.x = zOffset * -0.8;
+      const zOffset = -0.15 + i * 0.06;
+      spike.position.set(0, 2.02 - Math.abs(zOffset) * 0.15, zOffset);
+      spike.rotation.x = zOffset * -0.9;
       root.add(spike);
     }
+    // Side spikes for anime look
+    const sideSpikeGeo = new THREE.ConeGeometry(0.03, 0.1, 4);
+    [-1, 1].forEach(side => {
+      const sideSpike = new THREE.Mesh(sideSpikeGeo, hair);
+      sideSpike.position.set(side * 0.24, 1.84, 0.05);
+      sideSpike.rotation.z = side * -0.7;
+      root.add(sideSpike);
+    });
   } else if (selectedStyle === 'long') {
     // Ponytail draping down back
     const ponyGeo = new THREE.CylinderGeometry(0.045, 0.02, 0.45, 12);
@@ -61,20 +69,28 @@ function buildHumanoid(gender, palette) {
     pony.rotation.x = -0.3; // tilt back slightly
     root.add(pony);
 
-    // Ponytail tie band
+    // Ponytail tie band (bright red tie)
     const tieGeo = new THREE.TorusGeometry(0.048, 0.015, 6, 12);
-    const tieMat = makeMat('#e74c3c'); // bright red tie
+    const tieMat = makeMat('#e74c3c');
     const tie = new THREE.Mesh(tieGeo, tieMat);
     tie.position.set(0, 1.68, -0.18);
     tie.rotation.x = Math.PI / 2;
     root.add(tie);
+
+    // Side framing drapes (left & right face bangs)
+    const drapeGeo = new THREE.CylinderGeometry(0.03, 0.015, 0.28, 8);
+    [-1, 1].forEach(side => {
+      const drape = new THREE.Mesh(drapeGeo, hair);
+      drape.position.set(side * 0.23, 1.58, 0.12);
+      drape.rotation.z = side * 0.1;
+      root.add(drape);
+    });
   }
 
   // ── Eyes (small dark spheres on head surface) ──
   const eyeGeo = new THREE.SphereGeometry(0.035, 16, 16);
   const eyeMat = makeMat('#1a1a2e', { roughness: 0.2, metalness: 0.4 });
   const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  // Head is radius 0.28, slice at y=1.74 has radius ~0.279. Push Z to 0.27
   eyeL.position.set(-0.09, 1.74, 0.27);
   root.add(eyeL);
   const eyeR = eyeL.clone();
@@ -85,9 +101,7 @@ function buildHumanoid(gender, palette) {
   const mouthGeo = new THREE.TorusGeometry(0.05, 0.012, 8, 24, Math.PI);
   const mouthMat = makeMat('#c0392b', { roughness: 0.5 });
   const smile = new THREE.Mesh(mouthGeo, mouthMat);
-  // Head slice at y=1.65 has radius ~0.271. Push Z to 0.262
   smile.position.set(0, 1.63, 0.262);
-  // No X rotation so it faces forward; rotate 180 deg around Z to make it a smile (u-shape)
   smile.rotation.set(0, 0, Math.PI);
   root.add(smile);
 
@@ -97,7 +111,7 @@ function buildHumanoid(gender, palette) {
   neck.position.y = 1.38;
   root.add(neck);
 
-  // ── Torso ──
+  // ── Torso (Shirt Body) ──
   const torsoW = isMale ? 0.38 : 0.33;
   const torsoWBot = isMale ? 0.3 : 0.26;
   const torsoH = isMale ? 0.65 : 0.55;
@@ -118,7 +132,6 @@ function buildHumanoid(gender, palette) {
     depthWrite: false
   });
   const logoMesh = new THREE.Mesh(logoGeo, logoMat);
-  // Push Z beyond the chest cylinder surface (radius is ~0.36 for male, ~0.31 for female)
   logoMesh.position.set(0, 1.15, isMale ? 0.37 : 0.32);
   root.add(logoMesh);
 
@@ -134,62 +147,90 @@ function buildHumanoid(gender, palette) {
     root.add(bustR);
   }
 
-  // ── Shoulders & Arms ──
+  // ── Shoulders & Arms (Shirt Sleeves + Bare Arms) ──
   const shoulderOff = isMale ? 0.42 : 0.36;
   const armRad = isMale ? 0.065 : 0.055;
 
   [-1, 1].forEach(side => {
-    // Upper arm
-    const upperGeo = new THREE.CylinderGeometry(armRad, armRad * 0.9, 0.38, 12);
+    // 1. T-Shirt Sleeve (outfit color)
+    const sleeveGeo = new THREE.CylinderGeometry(armRad * 1.15, armRad * 1.05, 0.18, 12);
+    const sleeve = new THREE.Mesh(sleeveGeo, outfit);
+    sleeve.position.set(side * shoulderOff, 1.15, 0);
+    sleeve.rotation.z = side * 0.12;
+    root.add(sleeve);
+
+    // 2. Bare Upper Arm (skin color)
+    const upperGeo = new THREE.CylinderGeometry(armRad, armRad * 0.9, 0.24, 12);
     const upper = new THREE.Mesh(upperGeo, skin);
-    upper.position.set(side * shoulderOff, 1.1, 0);
+    upper.position.set(side * (shoulderOff + 0.01), 0.96, 0);
     upper.rotation.z = side * 0.12;
     root.add(upper);
 
-    // Forearm
+    // 3. Forearm (skin color)
     const foreGeo = new THREE.CylinderGeometry(armRad * 0.85, armRad * 0.7, 0.35, 12);
     const fore = new THREE.Mesh(foreGeo, skin);
-    fore.position.set(side * (shoulderOff + 0.02), 0.74, 0);
+    fore.position.set(side * (shoulderOff + 0.02), 0.72, 0);
     root.add(fore);
 
-    // Hand
+    // 4. Hand (skin color)
     const handGeo = new THREE.SphereGeometry(armRad * 1.1, 12, 12);
     const hand = new THREE.Mesh(handGeo, skin);
-    hand.position.set(side * (shoulderOff + 0.02), 0.55, 0);
+    hand.position.set(side * (shoulderOff + 0.02), 0.53, 0);
     hand.scale.y = 1.2;
     root.add(hand);
   });
 
-  // ── Hips / Waist ──
+  // ── Hips / Waist (Pants Top) ──
   const hipW = isMale ? 0.28 : 0.32;
   const hipGeo = new THREE.CylinderGeometry(hipW, hipW * 0.95, 0.2, 16);
   const hips = new THREE.Mesh(hipGeo, outfit);
   hips.position.y = 0.6;
   root.add(hips);
 
-  // ── Legs ──
+  // Belt buckle decoration (silver metal)
+  const buckleGeo = new THREE.BoxGeometry(0.08, 0.04, 0.03);
+  const buckleMat = makeMat('#bdc3c7', { roughness: 0.15, metalness: 0.85 });
+  const buckle = new THREE.Mesh(buckleGeo, buckleMat);
+  buckle.position.set(0, 0.62, hipW * 0.98);
+  root.add(buckle);
+
+  // ── Legs (Pants / Trousers) ──
   const legRad = isMale ? 0.09 : 0.08;
   const legOff = isMale ? 0.14 : 0.15;
 
   [-1, 1].forEach(side => {
-    // Upper leg
+    // 1. Thigh (Pants)
     const thighGeo = new THREE.CylinderGeometry(legRad, legRad * 0.85, 0.45, 12);
     const thigh = new THREE.Mesh(thighGeo, outfit);
     thigh.position.set(side * legOff, 0.28, 0);
     root.add(thigh);
 
-    // Lower leg
+    // 2. Shin (Pants / Socks)
     const shinGeo = new THREE.CylinderGeometry(legRad * 0.8, legRad * 0.65, 0.45, 12);
-    const shin = new THREE.Mesh(shinGeo, skin);
+    const shin = new THREE.Mesh(shinGeo, outfit); // Trousers run all the way down
     shin.position.set(side * legOff, -0.15, 0);
     root.add(shin);
 
-    // Shoe
-    const shoeGeo = new THREE.BoxGeometry(legRad * 2.2, 0.08, legRad * 3);
-    const shoeMesh = new THREE.Mesh(shoeGeo, shoe);
-    shoeMesh.position.set(side * legOff, -0.4, 0.03);
-    shoeMesh.name = 'shoe';
-    root.add(shoeMesh);
+    // 3. Sneakers (shoe base + white sole + toe cap)
+    const shoeBaseGeo = new THREE.BoxGeometry(legRad * 2.2, 0.08, legRad * 3);
+    const shoeBaseMesh = new THREE.Mesh(shoeBaseGeo, shoe);
+    shoeBaseMesh.position.set(side * legOff, -0.4, 0.03);
+    shoeBaseMesh.name = 'shoe';
+    root.add(shoeBaseMesh);
+
+    // White sole
+    const soleGeo = new THREE.BoxGeometry(legRad * 2.3, 0.03, legRad * 3.1);
+    const whiteMat = makeMat('#ffffff', { roughness: 0.9 });
+    const sole = new THREE.Mesh(soleGeo, whiteMat);
+    sole.position.set(side * legOff, -0.45, 0.03);
+    root.add(sole);
+
+    // White toe cap
+    const capGeo = new THREE.SphereGeometry(legRad * 1.1, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const toeCap = new THREE.Mesh(capGeo, whiteMat);
+    toeCap.position.set(side * legOff, -0.38, 0.13);
+    toeCap.scale.set(1.05, 0.4, 1.25);
+    root.add(toeCap);
   });
 
   // Center the model at origin
