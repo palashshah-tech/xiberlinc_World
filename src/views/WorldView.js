@@ -17,9 +17,7 @@ import { getSocialGraphData, formatChainDistance, getRecommendations } from '../
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { getLang, setLang, t } from '../utils/i18n.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
-import { Application } from '@splinetool/runtime';
-import manSplineUrl from '../../public/man.splinecode?url';
-import womanSplineUrl from '../../public/woman.splinecode?url';
+import { AvatarEngine, DEFAULT_PALETTES, SKIN_PRESETS, HAIR_PRESETS, OUTFIT_PRESETS } from '../engine/avatarEngine.js';
 
 export function WorldView() {
   // Inject Spline viewer script if not already loaded
@@ -267,19 +265,19 @@ export function WorldView() {
         </button>
 
         <!-- Bottom Customization HUD Bar -->
-        <div style="position:absolute; bottom:24px; left:50%; transform:translateX(-50%); z-index:100; max-width:720px; width:92%; pointer-events:auto;">
-          <div class="editorial-card-glass" style="padding:18px 24px; border-radius:20px; background:rgba(8,8,12,0.88); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(30px); box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+        <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:100; max-width:740px; width:93%; pointer-events:auto;">
+          <div class="editorial-card-glass" style="padding:16px 22px; border-radius:18px; background:rgba(8,8,12,0.9); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(30px); box-shadow:0 20px 60px rgba(0,0,0,0.85);">
 
             <!-- Row 1: Title + Beam Colors -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;">
               <div>
-                <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase; margin-bottom:2px;">AVATAR CUSTOMIZER</div>
-                <div id="avatar-model-label" style="font-family:'Montserrat',sans-serif; font-size:1.05rem; font-weight:800; color:#ffffff;">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase; margin-bottom:2px;">AVATAR CUSTOMIZER</div>
+                <div id="avatar-model-label" style="font-family:'Montserrat',sans-serif; font-size:1rem; font-weight:800; color:#ffffff;">
                   MALE AVATAR // NODE 01
                 </div>
               </div>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.35); text-transform:uppercase;">BEAM:</span>
+              <div style="display:flex; align-items:center; gap:5px;">
+                <span style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.3); text-transform:uppercase;">BEAM:</span>
                 ${[
                   { color:'#ffffff', name:'white' },
                   { color:'#7c3aed', name:'purple' },
@@ -288,62 +286,83 @@ export function WorldView() {
                   { color:'#f43f5e', name:'rose' },
                   { color:'#22c55e', name:'green' }
                 ].map(b => `
-                  <button class="avatar-beam-btn" data-color="${b.color}" style="
-                    width:20px; height:20px; border-radius:50%; background:${b.color};
-                    border:2px solid rgba(255,255,255,0.25); cursor:pointer; transition:all 0.2s;
-                  " onmouseenter="this.style.transform='scale(1.3)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.25)'"></button>
+                  <button class="avatar-beam-btn" data-color="${b.color}" title="${b.name}" style="
+                    width:18px; height:18px; border-radius:50%; background:${b.color};
+                    border:2px solid rgba(255,255,255,0.2); cursor:pointer; transition:all 0.2s;
+                  " onmouseenter="this.style.transform='scale(1.3)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.2)'"></button>
                 `).join('')}
               </div>
             </div>
 
-            <!-- Row 2: Scale + Rotate Speed Sliders -->
-            <div style="display:flex; align-items:center; gap:20px; margin-bottom:14px; padding:10px 14px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+            <!-- Row 2: Skin / Hair / Outfit Color Swatches -->
+            <div style="display:flex; gap:16px; margin-bottom:12px; padding:10px 12px; background:rgba(255,255,255,0.025); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+              
+              <!-- Skin Tone -->
               <div style="flex:1;">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                  <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.45); text-transform:uppercase; letter-spacing:0.12em;">SCALE</span>
-                  <span id="avatar-scale-val" style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#7c3aed;">1.0x</span>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;">SKIN TONE</div>
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                  ${SKIN_PRESETS.map(s => `
+                    <button class="avatar-skin-btn" data-color="${s.color}" title="${s.name}" style="
+                      width:22px; height:22px; border-radius:6px; background:${s.color};
+                      border:2px solid rgba(255,255,255,0.15); cursor:pointer; transition:all 0.2s;
+                    " onmouseenter="this.style.transform='scale(1.2)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.15)'"></button>
+                  `).join('')}
                 </div>
-                <input id="avatar-scale-slider" type="range" min="50" max="150" value="100" style="
-                  width:100%; height:4px; -webkit-appearance:none; appearance:none; background:rgba(255,255,255,0.1);
-                  border-radius:4px; outline:none; cursor:pointer; accent-color:#7c3aed;
-                "/>
               </div>
-              <div style="width:1px; height:28px; background:rgba(255,255,255,0.08);"></div>
+
+              <div style="width:1px; background:rgba(255,255,255,0.06);"></div>
+
+              <!-- Hair Color -->
               <div style="flex:1;">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                  <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.45); text-transform:uppercase; letter-spacing:0.12em;">ROTATE</span>
-                  <span id="avatar-rotate-val" style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#7c3aed;">0°</span>
+                <div style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;">HAIR COLOR</div>
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                  ${HAIR_PRESETS.map(h => `
+                    <button class="avatar-hair-btn" data-color="${h.color}" title="${h.name}" style="
+                      width:22px; height:22px; border-radius:6px; background:${h.color};
+                      border:2px solid rgba(255,255,255,0.15); cursor:pointer; transition:all 0.2s;
+                    " onmouseenter="this.style.transform='scale(1.2)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.15)'"></button>
+                  `).join('')}
                 </div>
-                <input id="avatar-rotate-slider" type="range" min="0" max="360" value="0" style="
-                  width:100%; height:4px; -webkit-appearance:none; appearance:none; background:rgba(255,255,255,0.1);
-                  border-radius:4px; outline:none; cursor:pointer; accent-color:#7c3aed;
-                "/>
               </div>
-              <div style="width:1px; height:28px; background:rgba(255,255,255,0.08);"></div>
-              <div style="display:flex; gap:6px;">
-                <button id="avatar-reset-btn" data-cursor="RESET" style="
-                  padding:6px 12px; border-radius:8px; background:rgba(255,255,255,0.06);
-                  border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6);
-                  font-family:'JetBrains Mono',monospace; font-size:8px; cursor:pointer;
-                  text-transform:uppercase; letter-spacing:0.1em; transition:all 0.2s;
-                " onmouseenter="this.style.background='rgba(124,58,237,0.2)';this.style.borderColor='#7c3aed';this.style.color='#fff'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='rgba(255,255,255,0.6)'">Reset</button>
+
+              <div style="width:1px; background:rgba(255,255,255,0.06);"></div>
+
+              <!-- Outfit Color -->
+              <div style="flex:1;">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;">OUTFIT</div>
+                <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                  ${OUTFIT_PRESETS.map(o => `
+                    <button class="avatar-outfit-btn" data-color="${o.color}" title="${o.name}" style="
+                      width:22px; height:22px; border-radius:6px; background:${o.color};
+                      border:2px solid rgba(255,255,255,0.15); cursor:pointer; transition:all 0.2s;
+                    " onmouseenter="this.style.transform='scale(1.2)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.15)'"></button>
+                  `).join('')}
+                </div>
               </div>
             </div>
 
-            <!-- Row 3: Hint + Equip Button -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
-              <div style="font-family:'Space Grotesk',sans-serif; font-size:10.5px; color:rgba(255,255,255,0.4); line-height:1.4;">
-                Drag to orbit &middot; Scroll to zoom &middot; Customize with sliders above
+            <!-- Row 3: Hint + Reset + Equip Button -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+              <div style="font-family:'Space Grotesk',sans-serif; font-size:10px; color:rgba(255,255,255,0.35); line-height:1.3;">
+                Drag to orbit &middot; Scroll to zoom &middot; Customize colors above
               </div>
-              <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
-                padding:11px 24px; border-radius:10px; border:none; white-space:nowrap;
-                background:#ffffff; color:#000000; font-family:'Space Grotesk',sans-serif;
-                font-weight:700; font-size:11.5px; cursor:pointer; text-transform:uppercase;
-                letter-spacing:0.08em; box-shadow:0 10px 30px rgba(255,255,255,0.15);
-                transition:all 0.25s ease;
-              " onmouseenter="this.style.transform='scale(1.03)';this.style.background='#7c3aed';this.style.color='#ffffff'" onmouseleave="this.style.transform='scale(1)';this.style.background='#ffffff';this.style.color='#000000'">
-                Equip &amp; Enter World &rarr;
-              </button>
+              <div style="display:flex; gap:8px;">
+                <button id="avatar-reset-btn" data-cursor="RESET" style="
+                  padding:9px 16px; border-radius:10px; background:rgba(255,255,255,0.05);
+                  border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.5);
+                  font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:600; cursor:pointer;
+                  text-transform:uppercase; letter-spacing:0.06em; transition:all 0.2s;
+                " onmouseenter="this.style.background='rgba(124,58,237,0.2)';this.style.borderColor='#7c3aed';this.style.color='#fff'" onmouseleave="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.5)'">Reset</button>
+                <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
+                  padding:9px 22px; border-radius:10px; border:none; white-space:nowrap;
+                  background:#ffffff; color:#000000; font-family:'Space Grotesk',sans-serif;
+                  font-weight:700; font-size:11.5px; cursor:pointer; text-transform:uppercase;
+                  letter-spacing:0.06em; box-shadow:0 10px 30px rgba(255,255,255,0.15);
+                  transition:all 0.25s ease;
+                " onmouseenter="this.style.transform='scale(1.03)';this.style.background='#7c3aed';this.style.color='#ffffff'" onmouseleave="this.style.transform='scale(1)';this.style.background='#ffffff';this.style.color='#000000'">
+                  Equip &amp; Enter &rarr;
+                </button>
+              </div>
             </div>
 
           </div>
@@ -658,56 +677,24 @@ function _initAvatarSpotlightStage(worldData) {
 
   let activeModel = 'man'; // 'man' or 'woman'
   let isTransitioning = false;
-  let currentAvatarApp = null;
+  let avatarEngine = null;
+  let currentPalette = { ...DEFAULT_PALETTES['man'] };
 
-  async function loadSplineAvatar(model) {
+  function loadAvatar(model) {
     if (!mountEl) return;
-    
-    if (currentAvatarApp) {
-      try { currentAvatarApp.dispose(); } catch(e) {}
-      currentAvatarApp = null;
+
+    if (!avatarEngine) {
+      mountEl.innerHTML = '';
+      avatarEngine = new AvatarEngine(mountEl);
+      avatarEngine.init();
     }
-    mountEl.innerHTML = `
-      <div id="spline-loader-spinner" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;pointer-events:none;">
-        <div style="width:36px;height:36px;border:3px solid rgba(124,58,237,0.2);border-top:3px solid #7c3aed;border-radius:50%;animation:wld-spin 0.8s linear infinite;"></div>
-      </div>
-    `;
 
-    const canvas = document.createElement('canvas');
-    // Set explicit pixel dimensions BEFORE WebGL context creation to prevent zero-size framebuffer
-    const rect = mountEl.getBoundingClientRect();
-    canvas.width = Math.max(rect.width, 400) * window.devicePixelRatio;
-    canvas.height = Math.max(rect.height, 500) * window.devicePixelRatio;
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.display = 'block';
-    canvas.style.opacity = '0';
-    canvas.style.transition = 'opacity 0.6s ease';
-    mountEl.appendChild(canvas);
-
-    try {
-      const targetAssetUrl = model === 'man' ? manSplineUrl : womanSplineUrl;
-      // Fetch binary data first, then pass as blob URL to guarantee valid splinecode bytes
-      const res = await fetch(targetAssetUrl);
-      if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${targetAssetUrl}`);
-      const buf = await res.arrayBuffer();
-      const blob = new Blob([buf], { type: 'application/octet-stream' });
-      const blobUrl = URL.createObjectURL(blob);
-
-      const app = new Application(canvas);
-      currentAvatarApp = app;
-      await app.load(blobUrl);
-      URL.revokeObjectURL(blobUrl);
-      canvas.style.opacity = '1';
-      const spinner = document.getElementById('spline-loader-spinner');
-      if (spinner) spinner.style.display = 'none';
-    } catch(err) {
-      console.error('Spline avatar 3D load error:', err);
-    }
+    currentPalette = { ...DEFAULT_PALETTES[model] };
+    avatarEngine.loadAvatar(model, currentPalette);
   }
 
-  // Load 3D Spline model using @splinetool/runtime Application
-  loadSplineAvatar(activeModel);
+  // Load initial 3D avatar instantly — zero network, zero buffering
+  loadAvatar(activeModel);
 
   function updateLabel() {
     if (labelEl) {
@@ -729,8 +716,8 @@ function _initAvatarSpotlightStage(worldData) {
     wrapper.className = `avatar-model-wrapper ${exitClass}`;
 
     setTimeout(async () => {
-      // Step 2: Swap Spline avatar model in dark shadow
-      await loadSplineAvatar(activeModel);
+      // Step 2: Swap 3D avatar in dark shadow
+      loadAvatar(activeModel);
       updateLabel();
 
       // Step 3: Snap to entrance arc position in dark shadow
@@ -763,49 +750,55 @@ function _initAvatarSpotlightStage(worldData) {
         floorPool.style.background = `radial-gradient(ellipse at center, ${color}bb 0%, ${color}33 45%, rgba(0,0,0,0) 75%)`;
         floorPool.style.boxShadow = `0 0 80px ${color}66`;
       }
-      // Add subtle glow outline on the mount container
-      if (mountEl) {
-        mountEl.style.boxShadow = `0 0 60px ${color}33, inset 0 0 40px ${color}11`;
+      if (avatarEngine) {
+        avatarEngine.setSpotlightColor(color);
       }
     });
   });
 
-  // Scale slider — transforms the Spline mount container
-  const scaleSlider = document.getElementById('avatar-scale-slider');
-  const scaleVal = document.getElementById('avatar-scale-val');
-  if (scaleSlider) {
-    scaleSlider.addEventListener('input', () => {
-      const s = parseInt(scaleSlider.value) / 100;
-      if (mountEl) mountEl.style.transform = `scale(${s}) rotateY(${currentRotateDeg}deg)`;
-      if (scaleVal) scaleVal.textContent = `${s.toFixed(1)}x`;
+  // Skin tone picker
+  const skinBtns = stage.querySelectorAll('.avatar-skin-btn');
+  skinBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const color = btn.getAttribute('data-color');
+      currentPalette.skin = color;
+      if (avatarEngine) avatarEngine.setSkinColor(color);
     });
-  }
+  });
 
-  // Rotate slider — rotates the Spline mount container on Y axis
-  let currentRotateDeg = 0;
-  const rotateSlider = document.getElementById('avatar-rotate-slider');
-  const rotateVal = document.getElementById('avatar-rotate-val');
-  if (rotateSlider) {
-    rotateSlider.addEventListener('input', () => {
-      currentRotateDeg = parseInt(rotateSlider.value);
-      const currentScale = scaleSlider ? parseInt(scaleSlider.value) / 100 : 1;
-      if (mountEl) mountEl.style.transform = `scale(${currentScale}) rotateY(${currentRotateDeg}deg)`;
-      if (rotateVal) rotateVal.textContent = `${currentRotateDeg}°`;
+  // Hair color picker
+  const hairBtns = stage.querySelectorAll('.avatar-hair-btn');
+  hairBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const color = btn.getAttribute('data-color');
+      currentPalette.hair = color;
+      if (avatarEngine) avatarEngine.setHairColor(color);
     });
-  }
+  });
 
-  // Reset button — reset all customization to defaults
+  // Outfit color picker
+  const outfitBtns = stage.querySelectorAll('.avatar-outfit-btn');
+  outfitBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const color = btn.getAttribute('data-color');
+      currentPalette.outfit = color;
+      if (avatarEngine) avatarEngine.setOutfitColor(color);
+    });
+  });
+
+  // Reset button
   const resetBtn = document.getElementById('avatar-reset-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      if (scaleSlider) { scaleSlider.value = 100; if (scaleVal) scaleVal.textContent = '1.0x'; }
-      if (rotateSlider) { rotateSlider.value = 0; if (rotateVal) rotateVal.textContent = '0°'; }
-      currentRotateDeg = 0;
-      if (mountEl) { mountEl.style.transform = ''; mountEl.style.boxShadow = ''; }
-      // Reset beams to white
+      // Reload the default avatar
+      loadAvatar(activeModel);
+      // Reset beam/glow visual states
       if (beamL) beamL.style.background = '';
       if (beamR) beamR.style.background = '';
       if (floorPool) { floorPool.style.background = ''; floorPool.style.boxShadow = ''; }
+      if (avatarEngine) {
+        avatarEngine.resetCamera();
+      }
     });
   }
 
@@ -813,6 +806,10 @@ function _initAvatarSpotlightStage(worldData) {
     stage.classList.remove('active');
     setTimeout(() => {
       stage.style.display = 'none';
+      if (avatarEngine) {
+        avatarEngine.dispose();
+        avatarEngine = null;
+      }
       window.xiberlinc_world_loaded = true;
       _renderDashboard(worldData);
     }, 800);
@@ -820,7 +817,9 @@ function _initAvatarSpotlightStage(worldData) {
 
   if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
+      // Save avatar configuration to localStorage
       localStorage.setItem('xiberlinc_avatar_node', activeModel);
+      localStorage.setItem('xiberlinc_avatar_palette', JSON.stringify(currentPalette));
       exitStage();
     });
   }
