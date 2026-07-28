@@ -17,7 +17,7 @@ import { getSocialGraphData, formatChainDistance, getRecommendations } from '../
 import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { getLang, setLang, t } from '../utils/i18n.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
-import { AvatarEngine, DEFAULT_PALETTES, SKIN_PRESETS, HAIR_PRESETS, OUTFIT_PRESETS } from '../engine/avatarEngine.js';
+import { AvatarEngine, DEFAULT_PALETTES, SKIN_PRESETS, HAIR_PRESETS, OUTFIT_PRESETS, HAIR_STYLE_PRESETS } from '../engine/avatarEngine.js';
 
 export function WorldView() {
   // Inject Spline viewer script if not already loaded
@@ -272,6 +272,10 @@ export function WorldView() {
               <span>Skin</span>
               <span class="tab-indicator"></span>
             </button>
+            <button class="avatar-tab-btn" data-tab="hair-style">
+              <span>Style</span>
+              <span class="tab-indicator"></span>
+            </button>
             <button class="avatar-tab-btn" data-tab="hair">
               <span>Hair</span>
               <span class="tab-indicator"></span>
@@ -294,6 +298,20 @@ export function WorldView() {
               <div class="swatches-grid">
                 ${SKIN_PRESETS.map(s => `
                   <button class="avatar-skin-btn" data-color="${s.color}" title="${s.name}" style="background:${s.color};"></button>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Hair Style -->
+            <div class="avatar-panel-pane" id="pane-hair-style">
+              <div class="panel-pane-title" style="margin-bottom: 8px;">Hair Style</div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                ${HAIR_STYLE_PRESETS.map(hs => `
+                  <button class="avatar-style-btn" data-style="${hs.id}" style="
+                    padding:8px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12);
+                    border-radius:8px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:11px;
+                    font-weight:600; cursor:pointer; text-align:left; transition:all 0.2s;
+                  " onmouseenter="this.style.background='rgba(124,58,237,0.15)';this.style.borderColor='#7c3aed';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.12)';">${hs.name}</button>
                 `).join('')}
               </div>
             </div>
@@ -749,6 +767,24 @@ function _initAvatarSpotlightStage(worldData) {
           pane.classList.remove('active');
         }
       });
+    });
+  });
+
+  // Hair style picker
+  const styleBtns = stage.querySelectorAll('.avatar-style-btn');
+  styleBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      styleBtns.forEach(b => {
+        b.style.borderColor = 'rgba(255,255,255,0.12)';
+        b.style.background = 'rgba(255,255,255,0.04)';
+      });
+      btn.style.borderColor = '#7c3aed';
+      btn.style.background = 'rgba(124,58,237,0.15)';
+      const styleId = btn.getAttribute('data-style');
+      currentPalette.hairStyle = styleId;
+      if (avatarEngine) {
+        avatarEngine.loadAvatar(activeModel, currentPalette);
+      }
     });
   });
 

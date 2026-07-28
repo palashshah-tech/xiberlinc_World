@@ -33,26 +33,41 @@ function buildHumanoid(gender, palette) {
   head.name = 'head';
   root.add(head);
 
-  // ── Hair ──
-  if (isMale) {
-    // Short cropped hair
-    const hairGeo = new THREE.SphereGeometry(0.295, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
-    const hairMesh = new THREE.Mesh(hairGeo, hair);
-    hairMesh.position.y = 1.74;
-    hairMesh.name = 'hair';
-    root.add(hairMesh);
-  } else {
-    // Longer hair
-    const hairTopGeo = new THREE.SphereGeometry(0.3, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.6);
-    const hairTop = new THREE.Mesh(hairTopGeo, hair);
-    hairTop.position.y = 1.74;
-    hairTop.name = 'hair';
-    root.add(hairTop);
-    // Hair drape down back
-    const drapeGeo = new THREE.CylinderGeometry(0.22, 0.14, 0.55, 16);
-    const drape = new THREE.Mesh(drapeGeo, hair);
-    drape.position.set(0, 1.38, -0.12);
-    root.add(drape);
+  // ── Hair Styles ──
+  const selectedStyle = palette.hairStyle || (isMale ? 'buzz' : 'long');
+
+  // Cropped hair base (common to all styles, sitting nicely on crown of head, does not block eyes)
+  const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.42);
+  const hairBase = new THREE.Mesh(hairBaseGeo, hair);
+  hairBase.position.y = 1.76;
+  hairBase.name = 'hair';
+  root.add(hairBase);
+
+  if (selectedStyle === 'spiky') {
+    // Add spiky cones on centerline of head
+    const spikeGeo = new THREE.ConeGeometry(0.04, 0.12, 4);
+    for (let i = 0; i < 5; i++) {
+      const spike = new THREE.Mesh(spikeGeo, hair);
+      const zOffset = -0.12 + i * 0.06;
+      spike.position.set(0, 2.01 - Math.abs(zOffset) * 0.15, zOffset);
+      spike.rotation.x = zOffset * -0.8;
+      root.add(spike);
+    }
+  } else if (selectedStyle === 'long') {
+    // Ponytail draping down back
+    const ponyGeo = new THREE.CylinderGeometry(0.045, 0.02, 0.45, 12);
+    const pony = new THREE.Mesh(ponyGeo, hair);
+    pony.position.set(0, 1.48, -0.22);
+    pony.rotation.x = -0.3; // tilt back slightly
+    root.add(pony);
+
+    // Ponytail tie band
+    const tieGeo = new THREE.TorusGeometry(0.048, 0.015, 6, 12);
+    const tieMat = makeMat('#e74c3c'); // bright red tie
+    const tie = new THREE.Mesh(tieGeo, tieMat);
+    tie.position.set(0, 1.68, -0.18);
+    tie.rotation.x = Math.PI / 2;
+    root.add(tie);
   }
 
   // ── Eyes (small dark spheres on head surface) ──
@@ -238,9 +253,16 @@ function buildGroundDisc() {
 
 // ── Default palettes ──
 export const DEFAULT_PALETTES = {
-  man: { skin: '#c89b7b', hair: '#2c1810', outfit: '#1e1e2e', shoes: '#1a1a1a' },
-  woman: { skin: '#d4a574', hair: '#4a2520', outfit: '#2d1b4e', shoes: '#1a1a1a' }
+  man: { skin: '#c89b7b', hair: '#2c1810', outfit: '#1e1e2e', shoes: '#1a1a1a', hairStyle: 'buzz' },
+  woman: { skin: '#d4a574', hair: '#4a2520', outfit: '#2d1b4e', shoes: '#1a1a1a', hairStyle: 'long' }
 };
+
+export const HAIR_STYLE_PRESETS = [
+  { id: 'buzz', name: 'Buzzcut' },
+  { id: 'spiky', name: 'Spiky Mohawk' },
+  { id: 'long', name: 'Ponytail' }
+];
+
 
 export const SKIN_PRESETS = [
   { name: 'Light', color: '#f5d0b0' },
