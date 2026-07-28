@@ -264,108 +264,98 @@ export function WorldView() {
           </svg>
         </button>
 
-        <!-- Bottom Customization HUD Bar -->
-        <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:100; max-width:740px; width:93%; pointer-events:auto;">
-          <div class="editorial-card-glass" style="padding:16px 22px; border-radius:18px; background:rgba(8,8,12,0.9); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(30px); box-shadow:0 20px 60px rgba(0,0,0,0.85);">
+        <!-- Left Side Sliding Customization Dock -->
+        <div class="avatar-sidebar-dock">
+          <!-- Left Column Tabs -->
+          <div class="avatar-sidebar-tabs">
+            <button class="avatar-tab-btn active" data-tab="skin">
+              <span>Skin</span>
+              <span class="tab-indicator"></span>
+            </button>
+            <button class="avatar-tab-btn" data-tab="hair">
+              <span>Hair</span>
+              <span class="tab-indicator"></span>
+            </button>
+            <button class="avatar-tab-btn" data-tab="outfit">
+              <span>Outfit</span>
+              <span class="tab-indicator"></span>
+            </button>
+            <button class="avatar-tab-btn" data-tab="beam">
+              <span>Beam</span>
+              <span class="tab-indicator"></span>
+            </button>
+          </div>
 
-            <!-- Row 1: Title + Beam Colors -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;">
-              <div>
-                <div style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase; margin-bottom:2px;">AVATAR CUSTOMIZER</div>
-                <div id="avatar-model-label" style="font-family:'Montserrat',sans-serif; font-size:1rem; font-weight:800; color:#ffffff;">
-                  MALE AVATAR // NODE 01
-                </div>
-              </div>
-              <div style="display:flex; align-items:center; gap:5px;">
-                <span style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.3); text-transform:uppercase;">BEAM:</span>
-                ${[
-                  { color:'#ffffff', name:'white' },
-                  { color:'#7c3aed', name:'purple' },
-                  { color:'#06b6d4', name:'cyan' },
-                  { color:'#e2b857', name:'gold' },
-                  { color:'#f43f5e', name:'rose' },
-                  { color:'#22c55e', name:'green' }
-                ].map(b => `
-                  <button class="avatar-beam-btn" data-color="${b.color}" title="${b.name}" style="
-                    width:18px; height:18px; border-radius:50%; background:${b.color};
-                    border:2px solid rgba(255,255,255,0.2); cursor:pointer; transition:all 0.2s;
-                  " onmouseenter="this.style.transform='scale(1.3)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.2)'"></button>
+          <!-- Right Column content pane (slides open seamlessly to the right) -->
+          <div class="avatar-sidebar-content">
+            <!-- Skin Tone -->
+            <div class="avatar-panel-pane active" id="pane-skin">
+              <div class="panel-pane-title" style="margin-bottom: 8px;">Skin Tone</div>
+              <div class="swatches-grid">
+                ${SKIN_PRESETS.map(s => `
+                  <button class="avatar-skin-btn" data-color="${s.color}" title="${s.name}" style="background:${s.color};"></button>
                 `).join('')}
               </div>
             </div>
 
-            <!-- Row 2: Skin / Hair / Outfit Color Swatches -->
-            <div style="display:flex; gap:16px; margin-bottom:12px; padding:10px 12px; background:rgba(255,255,255,0.025); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
-              
-              <!-- Skin Tone -->
-              <div style="flex:1;">
-                <div style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;">SKIN TONE</div>
-                <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                  ${SKIN_PRESETS.map(s => `
-                    <button class="avatar-skin-btn" data-color="${s.color}" title="${s.name}" style="
-                      width:22px; height:22px; border-radius:6px; background:${s.color};
-                      border:2px solid rgba(255,255,255,0.15); cursor:pointer; transition:all 0.2s;
-                    " onmouseenter="this.style.transform='scale(1.2)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.15)'"></button>
-                  `).join('')}
-                </div>
-              </div>
-
-              <div style="width:1px; background:rgba(255,255,255,0.06);"></div>
-
-              <!-- Hair Color -->
-              <div style="flex:1;">
-                <div style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;">HAIR COLOR</div>
-                <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                  ${HAIR_PRESETS.map(h => `
-                    <button class="avatar-hair-btn" data-color="${h.color}" title="${h.name}" style="
-                      width:22px; height:22px; border-radius:6px; background:${h.color};
-                      border:2px solid rgba(255,255,255,0.15); cursor:pointer; transition:all 0.2s;
-                    " onmouseenter="this.style.transform='scale(1.2)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.15)'"></button>
-                  `).join('')}
-                </div>
-              </div>
-
-              <div style="width:1px; background:rgba(255,255,255,0.06);"></div>
-
-              <!-- Outfit Color -->
-              <div style="flex:1;">
-                <div style="font-family:'JetBrains Mono',monospace; font-size:7.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;">OUTFIT</div>
-                <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                  ${OUTFIT_PRESETS.map(o => `
-                    <button class="avatar-outfit-btn" data-color="${o.color}" title="${o.name}" style="
-                      width:22px; height:22px; border-radius:6px; background:${o.color};
-                      border:2px solid rgba(255,255,255,0.15); cursor:pointer; transition:all 0.2s;
-                    " onmouseenter="this.style.transform='scale(1.2)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.15)'"></button>
-                  `).join('')}
-                </div>
+            <!-- Hair Color -->
+            <div class="avatar-panel-pane" id="pane-hair">
+              <div class="panel-pane-title" style="margin-bottom: 8px;">Hair Color</div>
+              <div class="swatches-grid">
+                ${HAIR_PRESETS.map(h => `
+                  <button class="avatar-hair-btn" data-color="${h.color}" title="${h.name}" style="background:${h.color};"></button>
+                `).join('')}
               </div>
             </div>
 
-            <!-- Row 3: Hint + Reset + Equip Button -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
-              <div style="font-family:'Space Grotesk',sans-serif; font-size:10px; color:rgba(255,255,255,0.35); line-height:1.3;">
-                Drag to orbit &middot; Scroll to zoom &middot; Customize colors above
-              </div>
-              <div style="display:flex; gap:8px;">
-                <button id="avatar-reset-btn" data-cursor="RESET" style="
-                  padding:9px 16px; border-radius:10px; background:rgba(255,255,255,0.05);
-                  border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.5);
-                  font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:600; cursor:pointer;
-                  text-transform:uppercase; letter-spacing:0.06em; transition:all 0.2s;
-                " onmouseenter="this.style.background='rgba(124,58,237,0.2)';this.style.borderColor='#7c3aed';this.style.color='#fff'" onmouseleave="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.5)'">Reset</button>
-                <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
-                  padding:9px 22px; border-radius:10px; border:none; white-space:nowrap;
-                  background:#ffffff; color:#000000; font-family:'Space Grotesk',sans-serif;
-                  font-weight:700; font-size:11.5px; cursor:pointer; text-transform:uppercase;
-                  letter-spacing:0.06em; box-shadow:0 10px 30px rgba(255,255,255,0.15);
-                  transition:all 0.25s ease;
-                " onmouseenter="this.style.transform='scale(1.03)';this.style.background='#7c3aed';this.style.color='#ffffff'" onmouseleave="this.style.transform='scale(1)';this.style.background='#ffffff';this.style.color='#000000'">
-                  Equip &amp; Enter &rarr;
-                </button>
+            <!-- Outfit -->
+            <div class="avatar-panel-pane" id="pane-outfit">
+              <div class="panel-pane-title" style="margin-bottom: 8px;">Outfit Color</div>
+              <div class="swatches-grid">
+                ${OUTFIT_PRESETS.map(o => `
+                  <button class="avatar-outfit-btn" data-color="${o.color}" title="${o.name}" style="background:${o.color};"></button>
+                `).join('')}
               </div>
             </div>
 
+            <!-- Beam -->
+            <div class="avatar-panel-pane" id="pane-beam">
+              <div class="panel-pane-title" style="margin-bottom: 8px;">Spotlight</div>
+              <div class="swatches-grid">
+                ${[
+                  { color:'#ffffff', name:'White' },
+                  { color:'#7c3aed', name:'Purple' },
+                  { color:'#06b6d4', name:'Cyan' },
+                  { color:'#e2b857', name:'Gold' },
+                  { color:'#f43f5e', name:'Rose' },
+                  { color:'#22c55e', name:'Green' }
+                ].map(b => `
+                  <button class="avatar-beam-btn" data-color="${b.color}" title="${b.name}" style="background:${b.color};"></button>
+                `).join('')}
+              </div>
+            </div>
           </div>
+        </div>
+
+        <!-- Elegant Bottom Right Action Controls -->
+        <div style="position:absolute; bottom:32px; right:32px; z-index:100; display:flex; align-items:center; gap:12px; pointer-events:auto;">
+          <button id="avatar-reset-btn" data-cursor="RESET" style="
+            padding:10px 20px; border-radius:10px; background:rgba(255,255,255,0.05);
+            border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6);
+            font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; cursor:pointer;
+            text-transform:uppercase; letter-spacing:0.08em; transition:all 0.25s ease;
+          " onmouseenter="this.style.background='rgba(124,58,237,0.15)';this.style.borderColor='#7c3aed';this.style.color='#fff'" onmouseleave="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.6)'">
+            Reset
+          </button>
+          <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
+            padding:10px 24px; border-radius:10px; border:none; white-space:nowrap;
+            background:#ffffff; color:#000000; font-family:'Space Grotesk',sans-serif;
+            font-weight:700; font-size:11.5px; cursor:pointer; text-transform:uppercase;
+            letter-spacing:0.08em; box-shadow:0 10px 30px rgba(255,255,255,0.15);
+            transition:all 0.25s ease;
+          " onmouseenter="this.style.transform='scale(1.03)';this.style.background='#7c3aed';this.style.color='#ffffff'" onmouseleave="this.style.transform='scale(1)';this.style.background='#ffffff';this.style.color='#000000'">
+            Equip &amp; Enter &rarr;
+          </button>
         </div>
       </div>
 
@@ -739,10 +729,35 @@ function _initAvatarSpotlightStage(worldData) {
   if (prevArrow) prevArrow.addEventListener('click', () => executeArcOrbit('prev'));
   if (nextArrow) nextArrow.addEventListener('click', () => executeArcOrbit('next'));
 
+  // Category Tabs click toggle logic for side sliding dock
+  const tabBtns = stage.querySelectorAll('.avatar-tab-btn');
+  const panelPanes = stage.querySelectorAll('.avatar-panel-pane');
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabName = btn.getAttribute('data-tab');
+      
+      // Update active states on tab buttons
+      tabBtns.forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update active states on sliding content panes
+      panelPanes.forEach(pane => {
+        if (pane.id === `pane-${tabName}`) {
+          pane.classList.add('active');
+        } else {
+          pane.classList.remove('active');
+        }
+      });
+    });
+  });
+
   // Spotlight color beam customization
   const beamBtns = stage.querySelectorAll('.avatar-beam-btn');
   beamBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      beamBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
       const color = btn.getAttribute('data-color');
       if (beamL) beamL.style.background = `linear-gradient(180deg, ${color}dd 0%, ${color}33 35%, rgba(0,0,0,0) 85%)`;
       if (beamR) beamR.style.background = `linear-gradient(180deg, ${color}dd 0%, ${color}33 35%, rgba(0,0,0,0) 85%)`;
@@ -760,6 +775,8 @@ function _initAvatarSpotlightStage(worldData) {
   const skinBtns = stage.querySelectorAll('.avatar-skin-btn');
   skinBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      skinBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
       const color = btn.getAttribute('data-color');
       currentPalette.skin = color;
       if (avatarEngine) avatarEngine.setSkinColor(color);
@@ -770,6 +787,8 @@ function _initAvatarSpotlightStage(worldData) {
   const hairBtns = stage.querySelectorAll('.avatar-hair-btn');
   hairBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      hairBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
       const color = btn.getAttribute('data-color');
       currentPalette.hair = color;
       if (avatarEngine) avatarEngine.setHairColor(color);
@@ -780,6 +799,8 @@ function _initAvatarSpotlightStage(worldData) {
   const outfitBtns = stage.querySelectorAll('.avatar-outfit-btn');
   outfitBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      outfitBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
       const color = btn.getAttribute('data-color');
       currentPalette.outfit = color;
       if (avatarEngine) avatarEngine.setOutfitColor(color);
@@ -792,6 +813,8 @@ function _initAvatarSpotlightStage(worldData) {
     resetBtn.addEventListener('click', () => {
       // Reload the default avatar
       loadAvatar(activeModel);
+      // Remove visual selections
+      stage.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
       // Reset beam/glow visual states
       if (beamL) beamL.style.background = '';
       if (beamR) beamR.style.background = '';

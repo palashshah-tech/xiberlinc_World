@@ -65,6 +65,17 @@ function buildHumanoid(gender, palette) {
   eyeR.position.x = 0.09;
   root.add(eyeR);
 
+  // ── Smile (Curved Torus Geometry) ──
+  const mouthGeo = new THREE.TorusGeometry(0.05, 0.015, 8, 24, Math.PI);
+  const mouthMat = makeMat('#c0392b', { roughness: 0.5 });
+  const smile = new THREE.Mesh(mouthGeo, mouthMat);
+  // Positioned slightly below the eyes (y=1.74 -> y=1.65) and facing forward
+  smile.position.set(0, 1.65, 0.25);
+  // Rotate torus so it curves upwards like a smile
+  smile.rotation.x = Math.PI / 2;
+  smile.rotation.z = Math.PI;
+  root.add(smile);
+
   // ── Neck ──
   const neckGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.12, 16);
   const neck = new THREE.Mesh(neckGeo, skin);
@@ -271,7 +282,7 @@ export class AvatarEngine {
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
-    this.camera.position.set(0, 0.5, 3.8);
+    this.camera.position.set(0, 0.5, 5.2);
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -386,7 +397,7 @@ export class AvatarEngine {
 
   // ── Reset camera ──
   resetCamera() {
-    this.camera.position.set(0, 0.5, 3.8);
+    this.camera.position.set(0, 0.5, 5.2);
     this.controls.target.set(0, 0.4, 0);
     this.controls.update();
   }
