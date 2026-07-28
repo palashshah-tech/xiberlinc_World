@@ -1387,7 +1387,10 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
         ${!userProfile || userProfile.length === 0 ? `
           <div class="wld-reveal editorial-card-glass" style="padding:40px;">
             <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px;">
-              <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:rgba(255,255,255,0.4);">?</div>
+              <div id="unclaimed-profile-3d-avatar" style="
+                width:60px; height:60px; border-radius:10px; background:rgba(8,8,12,0.95);
+                border:2px solid rgba(255,255,255,0.15); overflow:hidden; position:relative;
+              }"></div>
               <div style="text-align:left;">
                 <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.15rem;color:#fff;">${auth.currentUser?.displayName || 'Gamer'}</div>
                 <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,0.35);">${auth.currentUser?.email || ''}</div>
@@ -1412,10 +1415,11 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
           <div class="wld-reveal editorial-card-glass" style="padding:40px;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:28px;">
               <div style="display:flex;align-items:center;gap:18px;">
-                ${auth.currentUser?.photoURL 
-                  ? `<img src="${auth.currentUser.photoURL}" style="width:54px;height:54px;border-radius:50%;border:2px solid #e2b857;" />`
-                  : `<div style="width:54px;height:54px;border-radius:50%;background:rgba(226,184,87,0.1);border:2px solid #e2b857;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:1.3rem;color:#e2b857;">${(auth.currentUser?.displayName || 'P')[0].toUpperCase()}</div>`
-                }
+                <div id="claimed-profile-3d-avatar" style="
+                  width:72px; height:72px; border-radius:12px; background:rgba(8,8,12,0.95);
+                  border:2px solid #7c3aed; box-shadow:0 0 16px rgba(124,58,237,0.3);
+                  overflow:hidden; position:relative;
+                }"></div>
                 <div style="text-align:left;">
                   <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:1.25rem;color:#fff;margin-bottom:1px;">${auth.currentUser?.displayName || 'Gamer'}</div>
                   <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#e2b857;">@${(auth.currentUser?.email || '').split('@')[0]}</div>
@@ -1988,6 +1992,41 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       });
     });
   }, 100);
+
+  // Initialize 3D Profile Avatar nodes with saved user config
+  const savedGender = localStorage.getItem('xiberlinc_avatar_node') || 'man';
+  let savedPalette = null;
+  try {
+    savedPalette = JSON.parse(localStorage.getItem('xiberlinc_avatar_palette'));
+  } catch(e) {}
+  if (!savedPalette) {
+    savedPalette = { ...DEFAULT_PALETTES[savedGender] };
+  }
+
+  function mountProfile3DAvatar(elId) {
+    const container = document.getElementById(elId);
+    if (!container) return;
+    if (container._avatarEngine) {
+      try { container._avatarEngine.dispose(); } catch(e) {}
+      container._avatarEngine = null;
+    }
+    container.innerHTML = '';
+    const engine = new AvatarEngine(container);
+    engine.init();
+    engine.loadAvatar(savedGender, savedPalette);
+    
+    // Zoom in on head/chest area for profile icon thumbnail
+    engine.camera.position.set(0, 0.45, 2.5);
+    engine.controls.target.set(0, 0.35, 0);
+    engine.controls.enableRotate = true; // User can rotate their profile card character
+    engine.controls.enableZoom = false;
+    engine.controls.update();
+
+    container._avatarEngine = engine;
+  }
+
+  mountProfile3DAvatar('unclaimed-profile-3d-avatar');
+  mountProfile3DAvatar('claimed-profile-3d-avatar');
 
   // Hide watermark and transition dashboard Spline opacity
   const dashSpline = document.getElementById('dashboard-spline-el');

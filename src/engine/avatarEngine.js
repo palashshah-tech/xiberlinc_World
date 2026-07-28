@@ -92,6 +92,21 @@ function buildHumanoid(gender, palette) {
   torso.name = 'torso';
   root.add(torso);
 
+  // ── Xiberlinc Logo on T-Shirt ──
+  const textureLoader = new THREE.TextureLoader();
+  const logoTexture = textureLoader.load('/xiberlinc_logo.png');
+  const logoGeo = new THREE.PlaneGeometry(0.18, 0.18);
+  const logoMat = new THREE.MeshBasicMaterial({
+    map: logoTexture,
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthWrite: false // prevents z-fighting
+  });
+  const logoMesh = new THREE.Mesh(logoGeo, logoMat);
+  // Position chest logo plate slightly in front of the t-shirt surface
+  logoMesh.position.set(0, 1.15, isMale ? 0.28 : 0.25);
+  root.add(logoMesh);
+
   if (!isMale) {
     // Slight bust geometry for female
     const bustGeo = new THREE.SphereGeometry(0.1, 16, 16);
@@ -266,7 +281,6 @@ export class AvatarEngine {
     this.renderer = null;
     this.controls = null;
     this.avatar = null;
-    this.rings = [];
     this.particles = null;
     this.animId = null;
     this.clock = new THREE.Clock();
@@ -343,8 +357,6 @@ export class AvatarEngine {
       this.scene.remove(this.avatar);
       this.avatar.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
     }
-    this.rings.forEach(r => this.scene.remove(r));
-    this.rings = [];
     if (this.particles) { this.scene.remove(this.particles); this.particles = null; }
 
     const pal = palette || DEFAULT_PALETTES[gender];
@@ -353,18 +365,7 @@ export class AvatarEngine {
     this.avatar = buildHumanoid(gender, pal);
     this.scene.add(this.avatar);
 
-    // Orbital rings
     const accentColor = gender === 'man' ? 0x7c3aed : 0xec4899;
-    const ring1 = buildOrbitalRing(1.3, accentColor, true);
-    ring1.rotation.x = Math.PI / 2 + 0.3;
-    this.scene.add(ring1);
-    this.rings.push(ring1);
-
-    const ring2 = buildOrbitalRing(1.6, 0x06b6d4, false);
-    ring2.rotation.x = Math.PI / 2 - 0.15;
-    ring2.rotation.z = 0.4;
-    this.scene.add(ring2);
-    this.rings.push(ring2);
 
     // Particles
     this.particles = buildParticles(60, 2.0, accentColor);
@@ -389,8 +390,6 @@ export class AvatarEngine {
   setSpotlightColor(hex) {
     if (this.fillLight) this.fillLight.color.set(hex);
     if (this.rimLight) this.rimLight.color.set(hex);
-    // Update ring colors
-    this.rings.forEach(r => { if (r.material) r.material.color.set(hex); });
     // Update particle colors
     if (this.particles?.material) this.particles.material.color.set(hex);
   }
@@ -435,11 +434,6 @@ export class AvatarEngine {
   _animate() {
     this.animId = requestAnimationFrame(() => this._animate());
     const t = this.clock.getElapsedTime();
-
-    // Gently rotate rings
-    this.rings.forEach((r, i) => {
-      r.rotation.y = t * (0.15 + i * 0.08);
-    });
 
     // Float particles
     if (this.particles) {
