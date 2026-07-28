@@ -237,7 +237,7 @@ export function WorldView() {
         <!-- 3D Avatars Orbital Stage Container -->
         <div class="avatar-3d-stage">
           <div id="avatar-model-wrapper" class="avatar-model-wrapper active-spotlight">
-            <div id="avatar-spline-mount" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
+            <div id="avatar-spline-mount" style="position:relative;width:min(70vw,600px);height:min(70vh,600px);margin:0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:16px;"></div>
           </div>
         </div>
 
@@ -267,47 +267,82 @@ export function WorldView() {
         </button>
 
         <!-- Bottom Customization HUD Bar -->
-        <div style="position:absolute; bottom:32px; left:50%; transform:translateX(-50%); z-index:100; max-width:680px; width:90%; pointer-events:auto;">
-          <div class="editorial-card-glass" style="padding:20px 28px; border-radius:20px; background:rgba(12,12,16,0.8); border:1px solid rgba(255,255,255,0.12); backdrop-filter:blur(30px); box-shadow:0 20px 60px rgba(0,0,0,0.8);">
-            
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px;">
+        <div style="position:absolute; bottom:24px; left:50%; transform:translateX(-50%); z-index:100; max-width:720px; width:92%; pointer-events:auto;">
+          <div class="editorial-card-glass" style="padding:18px 24px; border-radius:20px; background:rgba(8,8,12,0.88); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(30px); box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+
+            <!-- Row 1: Title + Beam Colors -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
               <div>
-                <div style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase; margin-bottom:2px;">SPOTLIGHT SELECTION</div>
-                <div id="avatar-model-label" style="font-family:'Montserrat',sans-serif; font-size:1.15rem; font-weight:800; color:#ffffff;">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:8.5px; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase; margin-bottom:2px;">AVATAR CUSTOMIZER</div>
+                <div id="avatar-model-label" style="font-family:'Montserrat',sans-serif; font-size:1.05rem; font-weight:800; color:#ffffff;">
                   MALE AVATAR // NODE 01
                 </div>
               </div>
-
-              <!-- Spotlight Lighting Preset Selector -->
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase;">BEAM:</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.35); text-transform:uppercase;">BEAM:</span>
                 ${[
                   { color:'#ffffff', name:'white' },
                   { color:'#7c3aed', name:'purple' },
                   { color:'#06b6d4', name:'cyan' },
-                  { color:'#e2b857', name:'gold' }
+                  { color:'#e2b857', name:'gold' },
+                  { color:'#f43f5e', name:'rose' },
+                  { color:'#22c55e', name:'green' }
                 ].map(b => `
                   <button class="avatar-beam-btn" data-color="${b.color}" style="
-                    width:22px; height:22px; border-radius:50%; background:${b.color};
-                    border:2px solid rgba(255,255,255,0.3); cursor:pointer; transition:transform 0.2s;
-                  " onmouseenter="this.style.transform='scale(1.25)'" onmouseleave="this.style.transform='scale(1)'"></button>
+                    width:20px; height:20px; border-radius:50%; background:${b.color};
+                    border:2px solid rgba(255,255,255,0.25); cursor:pointer; transition:all 0.2s;
+                  " onmouseenter="this.style.transform='scale(1.3)';this.style.borderColor='#fff'" onmouseleave="this.style.transform='scale(1)';this.style.borderColor='rgba(255,255,255,0.25)'"></button>
                 `).join('')}
               </div>
             </div>
 
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid rgba(255,255,255,0.06); padding-top:14px;">
-              <div style="font-family:'Space Grotesk',sans-serif; font-size:11px; color:rgba(255,255,255,0.45);">
-                Rotate &amp; Orbit to inspect 3D node meshes in real-time.
+            <!-- Row 2: Scale + Rotate Speed Sliders -->
+            <div style="display:flex; align-items:center; gap:20px; margin-bottom:14px; padding:10px 14px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.45); text-transform:uppercase; letter-spacing:0.12em;">SCALE</span>
+                  <span id="avatar-scale-val" style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#7c3aed;">1.0x</span>
+                </div>
+                <input id="avatar-scale-slider" type="range" min="50" max="150" value="100" style="
+                  width:100%; height:4px; -webkit-appearance:none; appearance:none; background:rgba(255,255,255,0.1);
+                  border-radius:4px; outline:none; cursor:pointer; accent-color:#7c3aed;
+                "/>
               </div>
+              <div style="width:1px; height:28px; background:rgba(255,255,255,0.08);"></div>
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                  <span style="font-family:'JetBrains Mono',monospace; font-size:8px; color:rgba(255,255,255,0.45); text-transform:uppercase; letter-spacing:0.12em;">ROTATE</span>
+                  <span id="avatar-rotate-val" style="font-family:'JetBrains Mono',monospace; font-size:8px; color:#7c3aed;">0°</span>
+                </div>
+                <input id="avatar-rotate-slider" type="range" min="0" max="360" value="0" style="
+                  width:100%; height:4px; -webkit-appearance:none; appearance:none; background:rgba(255,255,255,0.1);
+                  border-radius:4px; outline:none; cursor:pointer; accent-color:#7c3aed;
+                "/>
+              </div>
+              <div style="width:1px; height:28px; background:rgba(255,255,255,0.08);"></div>
+              <div style="display:flex; gap:6px;">
+                <button id="avatar-reset-btn" data-cursor="RESET" style="
+                  padding:6px 12px; border-radius:8px; background:rgba(255,255,255,0.06);
+                  border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6);
+                  font-family:'JetBrains Mono',monospace; font-size:8px; cursor:pointer;
+                  text-transform:uppercase; letter-spacing:0.1em; transition:all 0.2s;
+                " onmouseenter="this.style.background='rgba(124,58,237,0.2)';this.style.borderColor='#7c3aed';this.style.color='#fff'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='rgba(255,255,255,0.6)'">Reset</button>
+              </div>
+            </div>
 
+            <!-- Row 3: Hint + Equip Button -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
+              <div style="font-family:'Space Grotesk',sans-serif; font-size:10.5px; color:rgba(255,255,255,0.4); line-height:1.4;">
+                Drag to orbit &middot; Scroll to zoom &middot; Customize with sliders above
+              </div>
               <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
-                padding:12px 28px; border-radius:10px; border:none;
+                padding:11px 24px; border-radius:10px; border:none; white-space:nowrap;
                 background:#ffffff; color:#000000; font-family:'Space Grotesk',sans-serif;
-                font-weight:700; font-size:12px; cursor:pointer; text-transform:uppercase;
+                font-weight:700; font-size:11.5px; cursor:pointer; text-transform:uppercase;
                 letter-spacing:0.08em; box-shadow:0 10px 30px rgba(255,255,255,0.15);
                 transition:all 0.25s ease;
               " onmouseenter="this.style.transform='scale(1.03)';this.style.background='#7c3aed';this.style.color='#ffffff'" onmouseleave="this.style.transform='scale(1)';this.style.background='#ffffff';this.style.color='#000000'">
-                Equip Avatar Node &amp; Enter World &rarr;
+                Equip &amp; Enter World &rarr;
               </button>
             </div>
 
@@ -728,8 +763,51 @@ function _initAvatarSpotlightStage(worldData) {
         floorPool.style.background = `radial-gradient(ellipse at center, ${color}bb 0%, ${color}33 45%, rgba(0,0,0,0) 75%)`;
         floorPool.style.boxShadow = `0 0 80px ${color}66`;
       }
+      // Add subtle glow outline on the mount container
+      if (mountEl) {
+        mountEl.style.boxShadow = `0 0 60px ${color}33, inset 0 0 40px ${color}11`;
+      }
     });
   });
+
+  // Scale slider — transforms the Spline mount container
+  const scaleSlider = document.getElementById('avatar-scale-slider');
+  const scaleVal = document.getElementById('avatar-scale-val');
+  if (scaleSlider) {
+    scaleSlider.addEventListener('input', () => {
+      const s = parseInt(scaleSlider.value) / 100;
+      if (mountEl) mountEl.style.transform = `scale(${s}) rotateY(${currentRotateDeg}deg)`;
+      if (scaleVal) scaleVal.textContent = `${s.toFixed(1)}x`;
+    });
+  }
+
+  // Rotate slider — rotates the Spline mount container on Y axis
+  let currentRotateDeg = 0;
+  const rotateSlider = document.getElementById('avatar-rotate-slider');
+  const rotateVal = document.getElementById('avatar-rotate-val');
+  if (rotateSlider) {
+    rotateSlider.addEventListener('input', () => {
+      currentRotateDeg = parseInt(rotateSlider.value);
+      const currentScale = scaleSlider ? parseInt(scaleSlider.value) / 100 : 1;
+      if (mountEl) mountEl.style.transform = `scale(${currentScale}) rotateY(${currentRotateDeg}deg)`;
+      if (rotateVal) rotateVal.textContent = `${currentRotateDeg}°`;
+    });
+  }
+
+  // Reset button — reset all customization to defaults
+  const resetBtn = document.getElementById('avatar-reset-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (scaleSlider) { scaleSlider.value = 100; if (scaleVal) scaleVal.textContent = '1.0x'; }
+      if (rotateSlider) { rotateSlider.value = 0; if (rotateVal) rotateVal.textContent = '0°'; }
+      currentRotateDeg = 0;
+      if (mountEl) { mountEl.style.transform = ''; mountEl.style.boxShadow = ''; }
+      // Reset beams to white
+      if (beamL) beamL.style.background = '';
+      if (beamR) beamR.style.background = '';
+      if (floorPool) { floorPool.style.background = ''; floorPool.style.boxShadow = ''; }
+    });
+  }
 
   function exitStage() {
     stage.classList.remove('active');

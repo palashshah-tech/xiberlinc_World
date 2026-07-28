@@ -734,3 +734,39 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   pointer-events: none;
 }
 
+#avatar-spline-mount {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+
+/* Range slider thumb styling */
+#avatar-scale-slider::-webkit-slider-thumb,
+#avatar-rotate-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #7c3aed;
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.3);
+  box-shadow: 0 0 8px rgba(124,58,237,0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#avatar-scale-slider::-webkit-slider-thumb:hover,
+#avatar-rotate-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 14px rgba(124,58,237,0.8);
+}
+
+#avatar-scale-slider::-moz-range-thumb,
+#avatar-rotate-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #7c3aed;
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.3);
+}
