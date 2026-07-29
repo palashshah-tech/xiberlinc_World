@@ -683,26 +683,35 @@ function _initAvatarSpotlightStage(worldData) {
   const beamR = document.getElementById('spotlight-beam-r');
   const floorPool = document.getElementById('spotlight-floor');
 
-  let activeModel = 'man'; // 'man' or 'woman'
+  let activeModel = localStorage.getItem('xiberlinc_avatar_node') || 'man';
   let isTransitioning = false;
   let avatarEngine = null;
-  let currentPalette = { ...DEFAULT_PALETTES['man'] };
+  let currentPalette = null;
+  try {
+    currentPalette = JSON.parse(localStorage.getItem('xiberlinc_avatar_palette'));
+  } catch(e) {}
+  if (!currentPalette) {
+    currentPalette = { ...DEFAULT_PALETTES[activeModel] };
+  }
 
   function loadAvatar(model) {
     if (!mountEl) return;
 
-    if (!avatarEngine) {
+    const isFirstTime = !avatarEngine;
+    if (isFirstTime) {
       mountEl.innerHTML = '';
       avatarEngine = new AvatarEngine(mountEl);
       avatarEngine.init();
+    } else {
+      currentPalette = { ...DEFAULT_PALETTES[model] };
     }
 
-    currentPalette = { ...DEFAULT_PALETTES[model] };
     avatarEngine.loadAvatar(model, currentPalette);
   }
 
   // Load initial 3D avatar instantly — zero network, zero buffering
   loadAvatar(activeModel);
+  updateLabel();
 
   function updateLabel() {
     if (labelEl) {
