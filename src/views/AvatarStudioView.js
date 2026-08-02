@@ -1,12 +1,12 @@
 /* ============================================================
    AvatarStudioView.js — 3D Cyberpunk Avatar Creator & Card Studio
-   Allows candidates to customize 3D humanoid avatars with Three.js,
-   select cyber visors, outfit armor, and mint custom 3D cards!
+   Supports native male.glb & female.glb 3D models with Three.js,
+   orbit controls, lighting controls, and instant 3D card minting!
    ============================================================ */
 
 import * as THREE from 'three';
 import { AvatarEngine } from '../engine/avatarEngine.js';
-import { COLLECTIBLE_CARDS, renderCollectiblesStore } from './StoreView.js';
+import { COLLECTIBLE_CARDS } from './StoreView.js';
 import { getOwnedCards, addBattleXp } from '../utils/battlePass.js';
 
 export function renderAvatarStudio(container) {
@@ -14,6 +14,7 @@ export function renderAvatarStudio(container) {
 
   const initialConfig = {
     gender: 'man',
+    useGlb: true,
     skin: '#d1a384',
     hair: '#e2b857',
     outfit: '#12131e',
@@ -35,28 +36,32 @@ export function renderAvatarStudio(container) {
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:18px; margin-bottom:24px;">
         <div>
           <div style="font-family:'Space Grotesk', sans-serif; font-size:10.5px; color:#d4ff00; letter-spacing:0.18em; text-transform:uppercase;">
-            🎨 3D AVATAR CREATOR &amp; CARD MINTING STUDIO
+            🤖 NATIVE GLB 3D AVATAR CREATOR &amp; CARD MINTING STUDIO
           </div>
           <h2 style="font-family:'Outfit', sans-serif; font-size:26px; font-weight:900; margin:4px 0 0 0;">
-            Customize Your 3D Cyber Athlete
+            Interactive 3D GLB Cyber Athlete
           </h2>
         </div>
-        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:rgba(255,255,255,0.5);">
-          Engine: Three.js WebGL &middot; GLB Compatible
+        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#d4ff00; background:rgba(212,255,0,0.1); border:1px solid rgba(212,255,0,0.3); padding:4px 12px; border-radius:6px;">
+          ✓ GLB Models Loaded: male.glb (9MB) &amp; female.glb (1.8MB)
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns: 340px 1fr; gap:32px; align-items:start;">
+      <div style="display:grid; grid-template-columns: 380px 1fr; gap:32px; align-items:start;">
         <!-- Left: Live 3D WebGL Canvas Preview -->
         <div>
           <div id="avatar-3d-canvas-container" style="
-            width: 100%; height: 360px; background: radial-gradient(circle at 50% 30%, rgba(124,58,237,0.3) 0%, rgba(5,5,8,0.95) 75%);
-            border: 1px solid rgba(212,255,0,0.3); border-radius: 18px; position: relative; overflow: hidden;
-            box-shadow: 0 14px 36px rgba(0,0,0,0.6);
+            width: 100%; height: 380px; background: radial-gradient(circle at 50% 30%, rgba(124,58,237,0.35) 0%, rgba(5,5,8,0.98) 75%);
+            border: 1.5px solid rgba(212,255,0,0.4); border-radius: 20px; position: relative; overflow: hidden;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.8);
           "></div>
 
+          <div style="font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.4); text-align:center; margin-top:8px;">
+            💡 Click and drag 3D canvas to rotate model 360&deg;
+          </div>
+
           <button id="btn-mint-custom-card" style="
-            width: 100%; margin-top: 18px; background: #d4ff00; color: #000;
+            width: 100%; margin-top: 16px; background: #d4ff00; color: #000;
             font-family: 'Space Grotesk', sans-serif; font-weight: 900; font-size: 13px;
             border: none; padding: 14px; border-radius: 12px; cursor: pointer; text-transform: uppercase;
             box-shadow: 0 0 30px rgba(212,255,0,0.3); transition: all 0.2s;
@@ -86,62 +91,52 @@ export function renderAvatarStudio(container) {
             </div>
           </div>
 
-          <!-- Body & Hair Style -->
+          <!-- 3D Model Selection -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div>
+              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:#d4ff00; text-transform:uppercase; margin-bottom:6px;">Select 3D GLB Model</label>
+              <select id="avatar-gender-select" style="
+                width:100%; background:rgba(212,255,0,0.12); border:1px solid rgba(212,255,0,0.4);
+                border-radius:8px; padding:10px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:13px; outline:none; font-weight:700;
+              ">
+                <option value="man">🤖 High-Res male.glb (9.0MB)</option>
+                <option value="woman">🤖 High-Res female.glb (1.8MB)</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Rendering Engine</label>
+              <select id="avatar-engine-mode" style="
+                width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+                border-radius:8px; padding:10px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:12px; outline:none;
+              ">
+                <option value="glb">GLB Binary Loader (Recommended)</option>
+                <option value="procedural">Procedural Three.js Mesh</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Visor & Aura Lighting -->
           <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
             <div>
-              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Frame</label>
-              <select id="avatar-gender-select" style="
-                width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
-                border-radius:8px; padding:10px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:12px; outline:none;
-              ">
-                <option value="man">Cyber Male</option>
-                <option value="woman">Cyber Female</option>
-              </select>
-            </div>
-
-            <div>
-              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Hair Style</label>
-              <select id="avatar-hairstyle-select" style="
-                width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
-                border-radius:8px; padding:10px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:12px; outline:none;
-              ">
-                <option value="spiky">Spiky Volt</option>
-                <option value="buzz">Cyber Buzz</option>
-                <option value="long">Fiber Optic Long</option>
-                <option value="bob">Neon Bob</option>
-              </select>
-            </div>
-
-            <div>
-              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Cyber Visor Color</label>
+              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Neon Visor Light</label>
               <input type="color" id="avatar-visor-color" value="#d4ff00" style="
                 width:100%; height:38px; background:transparent; border:1px solid rgba(255,255,255,0.15);
                 border-radius:8px; cursor:pointer; padding:2px;
               " />
             </div>
-          </div>
 
-          <!-- Colors Row -->
-          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
             <div>
-              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Skin Tone</label>
-              <input type="color" id="avatar-skin-color" value="#d1a384" style="
+              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Cyber Armor Tint</label>
+              <input type="color" id="avatar-suit-color" value="#7c3aed" style="
                 width:100%; height:38px; background:transparent; border:1px solid rgba(255,255,255,0.15);
                 border-radius:8px; cursor:pointer; padding:2px;
               " />
             </div>
 
             <div>
-              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Hair Color</label>
-              <input type="color" id="avatar-hair-color" value="#e2b857" style="
-                width:100%; height:38px; background:transparent; border:1px solid rgba(255,255,255,0.15);
-                border-radius:8px; cursor:pointer; padding:2px;
-              " />
-            </div>
-
-            <div>
-              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Suit Armor Color</label>
-              <input type="color" id="avatar-suit-color" value="#12131e" style="
+              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Aura Particles</label>
+              <input type="color" id="avatar-skin-color" value="#00f0ff" style="
                 width:100%; height:38px; background:transparent; border:1px solid rgba(255,255,255,0.15);
                 border-radius:8px; cursor:pointer; padding:2px;
               " />
@@ -167,7 +162,7 @@ export function renderAvatarStudio(container) {
     </div>
   `;
 
-  // Initialize Three.js Live Avatar Engine
+  // Initialize Three.js Live Avatar Engine with GLB Loader
   const canvasBox = document.getElementById('avatar-3d-canvas-container');
   let currentAvatarEngine = null;
 
@@ -177,45 +172,48 @@ export function renderAvatarStudio(container) {
     }
     const palette = {
       skin: document.getElementById('avatar-skin-color').value,
-      hair: document.getElementById('avatar-hair-color').value,
+      hair: '#e2b857',
       outfit: document.getElementById('avatar-suit-color').value,
       shoes: document.getElementById('avatar-visor-color').value,
-      hairStyle: document.getElementById('avatar-hairstyle-select').value,
+      hairStyle: 'spiky',
     };
     const gender = document.getElementById('avatar-gender-select').value;
-    currentAvatarEngine = new AvatarEngine(canvasBox, gender, palette);
+    const mode = document.getElementById('avatar-engine-mode').value;
+
+    currentAvatarEngine = new AvatarEngine(canvasBox, gender, palette, mode === 'glb');
   }
 
   refreshAvatar();
 
   // Attach Input Change Handlers
-  ['avatar-gender-select', 'avatar-hairstyle-select', 'avatar-skin-color', 'avatar-hair-color', 'avatar-suit-color', 'avatar-visor-color'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', refreshAvatar);
+  ['avatar-gender-select', 'avatar-engine-mode', 'avatar-skin-color', 'avatar-suit-color', 'avatar-visor-color'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', refreshAvatar);
   });
 
   // Mint Custom 3D Card Handler
   document.getElementById('btn-mint-custom-card')?.addEventListener('click', () => {
     const name = document.getElementById('avatar-name-input').value.trim() || 'Custom Athlete';
-    const handle = document.getElementById('avatar-handle-input').value.trim() || '@custom.exe';
+    const handle = document.getElementById('avatar-handle-input').value.trim() || '@player.exe';
     const ability = document.getElementById('avatar-ability-select').value;
     const visorColor = document.getElementById('avatar-visor-color').value;
+    const gender = document.getElementById('avatar-gender-select').value;
 
     const customCardId = `card_custom_${Date.now()}`;
     const customCard = {
       id: customCardId,
       name,
       handle,
-      title: 'Custom Cyber Athlete',
-      rarity: 'Custom Mint',
+      title: '3D GLB Custom Athlete',
+      rarity: 'GLB Edition',
       rarityColor: visorColor || '#d4ff00',
       borderClass: 'border-left-behind',
       tokenId: `#${Math.floor(Math.random()*900 + 100)} / MINT`,
-      kCapacity: 4.65,
-      speedMs: 180,
-      alphaSuppression: 0.94,
+      kCapacity: 4.80,
+      speedMs: 175,
+      alphaSuppression: 0.96,
       tier: 'S+',
       price: 0,
-      imageUrl: '/assets/kaito_portrait.jpg',
+      imageUrl: gender === 'man' ? '/assets/kaito_portrait.jpg' : '/assets/yuna_portrait.jpg',
       ability
     };
 
@@ -226,6 +224,6 @@ export function renderAvatarStudio(container) {
     localStorage.setItem('xiberlinc_owned_cards', JSON.stringify(owned));
 
     addBattleXp(500, `Minted Custom 3D Card: ${name}`);
-    alert(`🎉 CONGRATULATIONS! Your Custom 3D Action Card "${name}" has been minted and added to My Deck!`);
+    alert(`🎉 CONGRATULATIONS! Your 3D GLB Action Card "${name}" has been minted and added to My Deck!`);
   });
 }
