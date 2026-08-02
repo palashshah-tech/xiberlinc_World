@@ -3,7 +3,7 @@
    3D Tokenized Action Cards of Working Memory Athletes
    ============================================================ */
 
-import { getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs, addStoreCredits, addBattleXp } from '../utils/battlePass.js';
+import { getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs, addStoreCredits, addBattleXp, getEquippedAbility, setEquippedAbility } from '../utils/battlePass.js';
 import { auth } from '../utils/firebase.js';
 import { createTradeListing, fetchActiveTradeListings, acceptTradeListing } from '../utils/worldData.js';
 
@@ -355,7 +355,7 @@ export async function renderCollectiblesStore(container) {
               gap: 28px;
             ">
               ${ownedCardObjects.map(card => {
-                const isEquipped = equippedAbility === card.ability;
+                const isEquipped = getEquippedAbility() === card.ability;
 
                 return `
                   <div class="card-3d-wrapper" style="perspective: 1000px;">
@@ -790,8 +790,14 @@ export async function renderCollectiblesStore(container) {
   container.querySelectorAll('.btn-equip-ability').forEach(btn => {
     btn.addEventListener('click', () => {
       const ability = btn.dataset.ability;
-      equippedAbility = equippedAbility === ability ? null : ability;
-      alert(equippedAbility ? `⚡ Equipped Special Ability: "${ability}"!` : `Unequipped Ability.`);
+      const current = getEquippedAbility();
+      if (current === ability) {
+        setEquippedAbility(null);
+        alert(`Unequipped Ability.`);
+      } else {
+        setEquippedAbility(ability);
+        alert(`⚡ Equipped Special Ability: "${ability}"! This active buff is now applied to all your VWM matches.`);
+      }
       renderCollectiblesStore(container);
     });
   });

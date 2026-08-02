@@ -3,6 +3,20 @@
    Handles XP progression, victory logs, and 3D Tokenized Card transactions
    ============================================================ */
 
+const EQUIPPED_ABILITY_KEY = 'xiberlinc_equipped_ability';
+
+export function getEquippedAbility() {
+  return localStorage.getItem(EQUIPPED_ABILITY_KEY) || null;
+}
+
+export function setEquippedAbility(ability) {
+  if (!ability) {
+    localStorage.removeItem(EQUIPPED_ABILITY_KEY);
+  } else {
+    localStorage.setItem(EQUIPPED_ABILITY_KEY, ability);
+  }
+}
+
 import { auth } from './firebase.js';
 
 const BP_STORAGE_KEY = 'xiberlinc_battle_pass';

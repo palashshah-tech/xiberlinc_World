@@ -4,7 +4,7 @@
    ============================================================ */
 
 import { generateTrial, renderStudy, renderProbe } from '../engine/StimulusGenerator.js';
-import { addBattleXp } from './battlePass.js';
+import { addBattleXp, getEquippedAbility } from './battlePass.js';
 
 export function startGhostMatch(opponentPlayer, mode = 'Focus Chamber VWM') {
   let modal = document.getElementById('ghost-match-modal');
@@ -152,7 +152,10 @@ export function startGhostMatch(opponentPlayer, mode = 'Focus Chamber VWM') {
     canvasContainer.style.display = 'block';
     responseBtns.style.display = 'none';
 
-    // 1. Study Phase (500ms)
+    const equippedAbility = getEquippedAbility();
+    const studyDuration = equippedAbility === '7-Chain VWM Recall Boost' ? 650 : 500;
+
+    // 1. Study Phase
     renderStudy(canvasContainer, currentTrial);
 
     setTimeout(() => {
@@ -165,7 +168,7 @@ export function startGhostMatch(opponentPlayer, mode = 'Focus Chamber VWM') {
         responseBtns.style.display = 'flex';
         probeStartTime = performance.now();
       }, 800);
-    }, 500);
+    }, studyDuration);
   }
 
   function handleResponse(chosenChange) {
