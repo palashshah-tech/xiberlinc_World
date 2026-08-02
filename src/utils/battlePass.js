@@ -1,8 +1,3 @@
-/* ============================================================
-   battlePass.js — Season 1 Battle Pass & Collectibles Manager
-   Handles XP progression, victory logs, and 3D Tokenized Card transactions
-   ============================================================ */
-
 const EQUIPPED_ABILITY_KEY = 'xiberlinc_equipped_ability';
 
 export function getEquippedAbility() {
@@ -15,6 +10,60 @@ export function setEquippedAbility(ability) {
   } else {
     localStorage.setItem(EQUIPPED_ABILITY_KEY, ability);
   }
+}
+
+const SEASON_PASS_KEY = 'xiberlinc_season_pass_owned';
+const CREATOR_CHAT_KEY = 'xiberlinc_creator_chat';
+
+export function hasSeasonPass() {
+  const currentUserEmail = (auth.currentUser?.email || localStorage.getItem('cogscreen_user_email') || '').toLowerCase().trim();
+  if (currentUserEmail === 'palash.shah@xiberlinc.one') return true;
+  return localStorage.getItem(SEASON_PASS_KEY) === 'true';
+}
+
+export function buySeasonPass() {
+  const bp = getBattlePassState();
+  if (bp.credits < 1500 && !hasSeasonPass()) {
+    return false;
+  }
+  if (!hasSeasonPass()) {
+    bp.credits -= 1500;
+    localStorage.setItem(BP_STORAGE_KEY, JSON.stringify(bp));
+    localStorage.setItem(SEASON_PASS_KEY, 'true');
+    addBattleXp(1000, 'Unlocked Season 1 Premium Creator Pass!');
+  }
+  return true;
+}
+
+export function getCreatorChatMessages() {
+  const data = localStorage.getItem(CREATOR_CHAT_KEY);
+  if (data) return JSON.parse(data);
+  const initial = [
+    { sender: 'Palash Shah (Lead Architect)', text: 'Welcome to Xiberlinc World Season 1 Pass! Thanks for supporting the vision. Feel free to ask me anything about the cognitive engine architecture or request custom card perks.', time: 'System Automated' }
+  ];
+  localStorage.setItem(CREATOR_CHAT_KEY, JSON.stringify(initial));
+  return initial;
+}
+
+export function sendCreatorMessage(text) {
+  const msgs = getCreatorChatMessages();
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  msgs.push({ sender: 'You', text, time });
+  
+  localStorage.setItem(CREATOR_CHAT_KEY, JSON.stringify(msgs));
+
+  setTimeout(() => {
+    const updated = getCreatorChatMessages();
+    updated.push({
+      sender: 'Palash Shah (Lead Architect)',
+      text: `Thanks for your message: "${text}". I have received your note directly in the Xiberlinc architectural feedback stream!`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+    localStorage.setItem(CREATOR_CHAT_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('creator_chat_updated'));
+  }, 1200);
+
+  return msgs;
 }
 
 import { auth } from './firebase.js';

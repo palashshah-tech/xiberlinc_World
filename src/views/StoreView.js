@@ -1,10 +1,14 @@
 /* ============================================================
-   StoreView.js — 3D Hall of Fame Shrine & Collectibles Marketplace
-   Features 3D Multi-Layer Pop-Out Cutout Action Cards with
-   Real AI Athlete Face Cutouts & Smooth 60fps LERP Tilt Engine
+   StoreView.js — Fullscreen 3D Hall of Fame & Marketplace World
+   Includes Full-Screen Overlay Mode, Season 1 Premium Pass,
+   and Direct 1-on-1 "Chat with Creator" Channel
    ============================================================ */
 
-import { getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs, addStoreCredits, addBattleXp, getEquippedAbility, setEquippedAbility } from '../utils/battlePass.js';
+import {
+  getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs,
+  addStoreCredits, addBattleXp, getEquippedAbility, setEquippedAbility,
+  hasSeasonPass, buySeasonPass, getCreatorChatMessages, sendCreatorMessage
+} from '../utils/battlePass.js';
 import { auth } from '../utils/firebase.js';
 import { createTradeListing, fetchActiveTradeListings, acceptTradeListing } from '../utils/worldData.js';
 
@@ -99,6 +103,70 @@ export const COLLECTIBLE_CARDS = [
 let activeStoreTab = 'marketplace'; // 'marketplace' | 'deck' | 'trade_arena'
 let activeAnimationId = null;
 
+// ── FULL-SCREEN MARKETPLACE WORLD LAUNCHER ─────────────────────────
+
+export function openFullscreenMarketplace() {
+  let overlay = document.getElementById('fullscreen-marketplace-overlay');
+  if (overlay) overlay.remove();
+
+  overlay = document.createElement('div');
+  overlay.id = 'fullscreen-marketplace-overlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 99999;
+    background: #050508; color: #fff; overflow-y: auto;
+    animation: fade-in 0.3s ease-out;
+  `;
+
+  overlay.innerHTML = `
+    <!-- Fullscreen Sticky Navigation Bar -->
+    <div style="
+      position: sticky; top: 0; z-index: 100; background: rgba(5,5,8,0.92);
+      backdrop-filter: blur(20px); border-bottom: 1px solid rgba(212,255,0,0.3);
+      padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    ">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div style="
+          width: 38px; height: 38px; border-radius: 10px; background: rgba(212,255,0,0.15);
+          border: 1.5px solid #d4ff00; display: flex; align-items: center; justify-content: center;
+          font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 1.2rem; color: #d4ff00;
+        ">3D</div>
+        <div>
+          <div style="font-family:'Outfit', sans-serif; font-size:1.1rem; font-weight:900; color:#fff;">
+            XIBERLINC 3D HALL OF FAME &amp; MARKETPLACE WORLD
+          </div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(255,255,255,0.5);">
+            Full Immersive Standalone Experience &middot; Season 1 Edition
+          </div>
+        </div>
+      </div>
+
+      <button id="close-fullscreen-marketplace-btn" style="
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+        color: #fff; font-family: 'Space Grotesk', sans-serif; font-weight: 800;
+        font-size: 12.5px; padding: 10px 22px; border-radius: 100px; cursor: pointer;
+        transition: all 0.2s; text-transform: uppercase;
+      ">
+        ✕ Return to World
+      </button>
+    </div>
+
+    <!-- Inner Content Container -->
+    <div id="fullscreen-marketplace-inner" style="padding: 24px 0 60px;"></div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('close-fullscreen-marketplace-btn').addEventListener('click', () => {
+    if (activeAnimationId) cancelAnimationFrame(activeAnimationId);
+    overlay.remove();
+  });
+
+  const innerContainer = document.getElementById('fullscreen-marketplace-inner');
+  renderCollectiblesStore(innerContainer);
+}
+
+// ── MAIN RENDERER ──────────────────────────────────────────────────
+
 export async function renderCollectiblesStore(container) {
   if (!container) return;
 
@@ -110,11 +178,13 @@ export async function renderCollectiblesStore(container) {
   const bp = getBattlePassState();
   const owned = getOwnedCards();
   const logs = getXpLogs();
+  const seasonPassOwned = hasSeasonPass();
   const currentUserEmail = (auth.currentUser?.email || localStorage.getItem('cogscreen_user_email') || '').toLowerCase().trim();
   const isAdminTest = currentUserEmail === 'palash.shah@xiberlinc.one';
 
   const ownedCardObjects = COLLECTIBLE_CARDS.filter(c => owned.includes(c.id));
   const tradeListings = await fetchActiveTradeListings();
+  const chatMessages = getCreatorChatMessages();
 
   container.innerHTML = `
     <style>
@@ -171,6 +241,55 @@ export async function renderCollectiblesStore(container) {
 
     <div class="scroll-reveal hof-shrine-bg" style="max-width: 1380px; margin: 0 auto;">
       <div class="hof-grid-guidelines"></div>
+
+      <!-- Season 1 Premium Creator Pass Highlight Banner -->
+      <div style="
+        position: relative; z-index: 2; margin-bottom: 32px;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(212, 255, 0, 0.15) 100%);
+        border: 1.5px solid rgba(212, 255, 0, 0.4); border-radius: 20px; padding: 20px 28px;
+        display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+      ">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <div style="
+            width: 52px; height: 52px; border-radius: 14px; background: rgba(212,255,0,0.2);
+            border: 2px solid #d4ff00; display: flex; align-items: center; justify-content: center;
+            font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 1.5rem; color: #d4ff00;
+          ">⭐</div>
+          <div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-family:'Outfit', sans-serif; font-size:1.2rem; font-weight:900; color:#fff;">
+                Season 1 Premium Creator Pass
+              </span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:9.5px; background:rgba(212,255,0,0.18); color:#d4ff00; border:1px solid rgba(212,255,0,0.4); padding:2px 8px; border-radius:100px; text-transform:uppercase;">
+                ${seasonPassOwned ? '✓ OWNED PASS' : '$19.99 USD / 1,500 CR'}
+              </span>
+            </div>
+            <div style="font-size:12.5px; color:rgba(255,255,255,0.7); margin-top:4px;">
+              Includes 💬 <strong>Direct 1-on-1 Creator Chat Link with @palash.shah</strong>, ⚡ 1x Free Legendary Ability Card Choice &amp; 🎟 VIP Room Pass.
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          ${seasonPassOwned ? `
+            <button id="btn-open-creator-chat" style="
+              background: #d4ff00; color: #000; font-family: 'Space Grotesk', sans-serif;
+              font-weight: 900; font-size: 12.5px; border: none; padding: 12px 24px;
+              border-radius: 10px; cursor: pointer; text-transform: uppercase;
+            ">
+              💬 Chat with Creator
+            </button>
+          ` : `
+            <button id="btn-buy-season-pass" style="
+              background: #d4ff00; color: #000; font-family: 'Space Grotesk', sans-serif;
+              font-weight: 900; font-size: 12.5px; border: none; padding: 12px 24px;
+              border-radius: 10px; cursor: pointer; text-transform: uppercase;
+            ">
+              Unlock Creator Pass (1,500 CR)
+            </button>
+          `}
+        </div>
+      </div>
       
       <!-- 3D Hall of Fame Header Banner -->
       <div style="
@@ -527,6 +646,64 @@ export async function renderCollectiblesStore(container) {
       ` : ''}
     </div>
 
+    <!-- Direct 1-on-1 Creator Chat Modal -->
+    <div id="creator-chat-modal" style="
+      display: none; position: fixed; inset: 0; z-index: 100000;
+      background: rgba(0,0,0,0.88); backdrop-filter: blur(20px);
+      align-items: center; justify-content: center; padding: 24px;
+    ">
+      <div style="
+        background: rgba(13, 13, 20, 0.98); border: 1.5px solid #d4ff00;
+        border-radius: 22px; max-width: 560px; width: 100%; padding: 28px;
+        position: relative; color: #fff; box-shadow: 0 24px 80px rgba(212,255,0,0.25);
+      ">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:14px; margin-bottom:18px;">
+          <div>
+            <div style="font-family:'Space Grotesk', sans-serif; font-size:10px; color:#d4ff00; letter-spacing:0.12em; text-transform:uppercase;">
+              💬 DIRECT CREATOR CHANNEL &middot; SEASON PASS PERK
+            </div>
+            <h2 style="font-family:'Outfit', sans-serif; font-size:20px; font-weight:800; margin:2px 0 0 0;">
+              Chat with Palash Shah (Lead Architect)
+            </h2>
+          </div>
+          <button id="creator-chat-close" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+
+        <!-- Chat Stream Box -->
+        <div id="creator-chat-stream" style="
+          max-height: 280px; overflow-y: auto; display: flex; flex-direction: column;
+          gap: 12px; margin-bottom: 20px; padding: 12px; background: rgba(0,0,0,0.4);
+          border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+        ">
+          ${chatMessages.map(msg => `
+            <div style="
+              padding: 10px 14px; border-radius: 10px;
+              background: ${msg.sender === 'You' ? 'rgba(212,255,0,0.12)' : 'rgba(124,58,237,0.2)'};
+              border: 1px solid ${msg.sender === 'You' ? 'rgba(212,255,0,0.3)' : 'rgba(167,139,250,0.3)'};
+              align-self: ${msg.sender === 'You' ? 'flex-end' : 'flex-start'}; max-width: 85%;
+            ">
+              <div style="font-family:'Outfit', sans-serif; font-weight:700; font-size:12px; color:${msg.sender === 'You' ? '#d4ff00' : '#a78bfa'}; margin-bottom:2px;">
+                ${msg.sender} <span style="font-family:'JetBrains Mono', monospace; font-size:9px; color:rgba(255,255,255,0.4); font-weight:400;">&middot; ${msg.time}</span>
+              </div>
+              <div style="font-size:13px; color:#fff; line-height:1.4;">${msg.text}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Message Input Box -->
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="creator-chat-input" placeholder="Type a message to Palash Shah..." style="
+            flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18);
+            border-radius:10px; padding:12px 16px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:13px; outline:none;
+          " />
+          <button id="creator-chat-send" style="
+            background:#d4ff00; color:#000; font-family:'Space Grotesk', sans-serif;
+            font-weight:800; font-size:12px; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; text-transform:uppercase;
+          ">Send</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Put Up Card for Trade Modal -->
     <div id="list-card-modal" style="
       display: none; position: fixed; inset: 0; z-index: 10000;
@@ -672,6 +849,57 @@ export async function renderCollectiblesStore(container) {
       </div>
     </div>
   `;
+
+  // Attach Season Pass purchase handler
+  container.querySelector('#btn-buy-season-pass')?.addEventListener('click', () => {
+    if (buySeasonPass()) {
+      alert('🎉 CONGRATULATIONS! Season 1 Creator Pass Unlocked! +1,000 XP & Direct Creator Chat Enabled!');
+      renderCollectiblesStore(container);
+    } else {
+      if (topupModal) topupModal.style.display = 'flex';
+    }
+  });
+
+  // Attach Creator Chat modal handlers
+  const creatorChatModal = document.getElementById('creator-chat-modal');
+  container.querySelector('#btn-open-creator-chat')?.addEventListener('click', () => {
+    if (creatorChatModal) creatorChatModal.style.display = 'flex';
+  });
+  container.querySelector('#creator-chat-close')?.addEventListener('click', () => {
+    if (creatorChatModal) creatorChatModal.style.display = 'none';
+  });
+
+  // Send Creator Message Handler
+  const sendMsgBtn = container.querySelector('#creator-chat-send');
+  const chatInput = container.querySelector('#creator-chat-input');
+  sendMsgBtn?.addEventListener('click', () => {
+    if (chatInput && chatInput.value.trim()) {
+      sendCreatorMessage(chatInput.value.trim());
+      chatInput.value = '';
+      renderCollectiblesStore(container);
+    }
+  });
+
+  window.addEventListener('creator_chat_updated', () => {
+    const stream = document.getElementById('creator-chat-stream');
+    if (stream) {
+      const msgs = getCreatorChatMessages();
+      stream.innerHTML = msgs.map(msg => `
+        <div style="
+          padding: 10px 14px; border-radius: 10px;
+          background: ${msg.sender === 'You' ? 'rgba(212,255,0,0.12)' : 'rgba(124,58,237,0.2)'};
+          border: 1px solid ${msg.sender === 'You' ? 'rgba(212,255,0,0.3)' : 'rgba(167,139,250,0.3)'};
+          align-self: ${msg.sender === 'You' ? 'flex-end' : 'flex-start'}; max-width: 85%;
+        ">
+          <div style="font-family:'Outfit', sans-serif; font-weight:700; font-size:12px; color:${msg.sender === 'You' ? '#d4ff00' : '#a78bfa'}; margin-bottom:2px;">
+            ${msg.sender} <span style="font-family:'JetBrains Mono', monospace; font-size:9px; color:rgba(255,255,255,0.4); font-weight:400;">&middot; ${msg.time}</span>
+          </div>
+          <div style="font-size:13px; color:#fff; line-height:1.4;">${msg.text}</div>
+        </div>
+      `).join('');
+      stream.scrollTop = stream.scrollHeight;
+    }
+  });
 
   // Attach Navigation Tab events
   container.querySelector('#tab-marketplace')?.addEventListener('click', () => {
@@ -833,7 +1061,7 @@ function setupHofCard3dEngine(container) {
       const centerX = (rect.left + rect.right) / 2;
       const centerY = (rect.top + rect.bottom) / 2;
       const posX = event.clientX - centerX;
-      const posY = event.clientY - centerY;
+      const posY = event.pageY - centerY;
       const x = remap(posX, rect.width / 2, angle);
       const y = remap(posY, rect.height / 2, angle);
       card.dataset.targetRotateX = x;

@@ -20,7 +20,7 @@ import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTim
 import { AvatarEngine, DEFAULT_PALETTES, SKIN_PRESETS, HAIR_PRESETS, OUTFIT_PRESETS, HAIR_STYLE_PRESETS } from '../engine/avatarEngine.js';
 import { startGhostMatch } from '../utils/ghostEngine.js';
 import { toggleMobileLiteMode, isMobileLiteMode } from '../utils/perfMode.js';
-import { renderCollectiblesStore } from './StoreView.js';
+import { renderCollectiblesStore, openFullscreenMarketplace } from './StoreView.js';
 
 export function WorldView() {
   window.launchGhostMatch = (name, reactionMs, wmi) => {
@@ -28,6 +28,9 @@ export function WorldView() {
   };
   window.toggleMobileLite = () => {
     toggleMobileLiteMode();
+  };
+  window.openFullscreenMarketplace = () => {
+    openFullscreenMarketplace();
   };
 
   // Inject Spline viewer script if not already loaded
@@ -1567,6 +1570,17 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
             transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
           ">
             ${t('ch1_cta')}
+          </button>
+
+          <button id="hero-marketplace-btn" class="magnetic-btn" onclick="window.openFullscreenMarketplace && window.openFullscreenMarketplace()" style="
+            padding:18px 32px;border-radius:14px;
+            border:1px solid rgba(212,255,0,0.5);background:rgba(212,255,0,0.12);
+            color:#d4ff00;font-family:'Space Grotesk',sans-serif;
+            font-weight:800;font-size:13px;cursor:pointer;text-transform:uppercase;
+            letter-spacing:0.1em;box-shadow:0 14px 40px rgba(212,255,0,0.15);
+            transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+          ">
+            💎 ENTER 3D MARKETPLACE &amp; HALL OF FAME
           </button>
         </div>
 
