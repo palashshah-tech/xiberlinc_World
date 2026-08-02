@@ -11,6 +11,7 @@ import {
 } from '../utils/battlePass.js';
 import { auth } from '../utils/firebase.js';
 import { createTradeListing, fetchActiveTradeListings, acceptTradeListing } from '../utils/worldData.js';
+import { renderAvatarStudio } from './AvatarStudioView.js';
 
 export const COLLECTIBLE_CARDS = [
   {
@@ -384,6 +385,16 @@ export async function renderCollectiblesStore(container) {
           ">
             🤝 Trade Arena (${tradeListings.length})
           </button>
+
+          <button id="tab-avatar-studio" style="
+            font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 12.5px;
+            padding: 10px 24px; border-radius: 10px; border: none; cursor: pointer;
+            background: ${activeStoreTab === 'avatar_studio' ? '#d4ff00' : 'transparent'};
+            color: ${activeStoreTab === 'avatar_studio' ? '#000' : 'rgba(255,255,255,0.7)'};
+            text-transform: uppercase; transition: all 0.2s;
+          ">
+            🎨 3D Avatar Studio (Mint Card)
+          </button>
         </div>
 
         ${activeStoreTab === 'trade_arena' ? `
@@ -646,6 +657,11 @@ export async function renderCollectiblesStore(container) {
             </div>
           `}
         </div>
+      ` : ''}
+
+      <!-- TAB 4: 3D AVATAR STUDIO -->
+      ${activeStoreTab === 'avatar_studio' ? `
+        <div id="avatar-studio-tab-mount" style="position:relative; z-index:2; margin-bottom:48px;"></div>
       ` : ''}
     </div>
 
@@ -938,6 +954,15 @@ export async function renderCollectiblesStore(container) {
     activeStoreTab = 'trade_arena';
     renderCollectiblesStore(container);
   });
+  container.querySelector('#tab-avatar-studio')?.addEventListener('click', () => {
+    activeStoreTab = 'avatar_studio';
+    renderCollectiblesStore(container);
+  });
+
+  if (activeStoreTab === 'avatar_studio') {
+    const studioMount = container.querySelector('#avatar-studio-tab-mount');
+    if (studioMount) renderAvatarStudio(studioMount);
+  }
 
   // Empty deck redirect button
   container.querySelector('#btn-goto-marketplace')?.addEventListener('click', () => {
