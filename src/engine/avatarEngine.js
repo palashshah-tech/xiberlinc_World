@@ -1,7 +1,8 @@
 /* ============================================================
    avatarEngine.js — Three.js 3D Humanoid & GLB Model Engine
    Loads native high-res male.glb & female.glb models with
-   PBR materials, ambient lighting, particles & orbit controls
+   PBR materials, ambient lighting, particles & orbit controls.
+   Guarantees positive canvas dimensions & prevents WebGL errors.
    ============================================================ */
 
 import * as THREE from 'three';
@@ -31,32 +32,31 @@ function makeMat(color, opts = {}) {
 // ── Build procedural fallback humanoid body ──
 function buildHumanoid(gender, palette) {
   const root = new THREE.Group();
-  const skin = makeMat(palette.skin);
-  const outfit = makeMat(palette.outfit, { roughness: 0.55 });
-  const hair = makeMat(palette.hair, { roughness: 0.7 });
-  const shoe = makeMat(palette.shoes, { roughness: 0.6, metalness: 0.2 });
+  const skin = makeMat(palette.skin || '#d1a384');
+  const outfit = makeMat(palette.outfit || '#12131e', { roughness: 0.55 });
+  const hair = makeMat(palette.hair || '#e2b857', { roughness: 0.7 });
+  const shoe = makeMat(palette.shoes || '#e2b857', { roughness: 0.6, metalness: 0.2 });
   const isMale = gender === 'man';
 
-  // ── Head ──
+  // Head
   const headGeo = new THREE.SphereGeometry(0.28, 32, 32);
   const head = new THREE.Mesh(headGeo, skin);
   head.position.y = 1.72;
-  head.name = 'head';
   root.add(head);
 
-  // Hair Cap & Bangs
+  // Hair Cap
   const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.38);
   const hairBase = new THREE.Mesh(hairBaseGeo, hair);
   hairBase.position.set(0, 1.76, -0.04);
   root.add(hairBase);
 
-  // ── Torso ──
+  // Torso
   const torsoGeo = new THREE.CylinderGeometry(isMale ? 0.32 : 0.26, isMale ? 0.26 : 0.22, 0.75, 16);
   const torso = new THREE.Mesh(torsoGeo, outfit);
   torso.position.y = 1.05;
   root.add(torso);
 
-  // ── Legs & Shoes ──
+  // Legs & Shoes
   [-0.14, 0.14].forEach(x => {
     const legGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.7, 16);
     const leg = new THREE.Mesh(legGeo, outfit);
@@ -103,11 +103,13 @@ export class AvatarEngine {
     this.useGlb = useGlb;
 
     this.scene = new THREE.Scene();
-    this.clock = new THREE.Clock();
+    this.startTime = performance.now();
+
+    // Guarantee positive non-zero canvas dimensions
+    const w = Math.max(container.clientWidth || 340, 100);
+    const h = Math.max(container.clientHeight || 380, 100);
 
     // Camera
-    const w = container.clientWidth || 300;
-    const h = container.clientHeight || 360;
     this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
     this.camera.position.set(0, 0.5, 3.8);
 
@@ -172,7 +174,7 @@ export class AvatarEngine {
         const box = new THREE.Box3().setFromObject(this.avatar);
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 2.2 / maxDim;
+        const scale = 2.2 / Math.max(maxDim, 0.001);
         this.avatar.scale.set(scale, scale, scale);
 
         const center = box.getCenter(new THREE.Vector3());
@@ -210,9 +212,8 @@ export class AvatarEngine {
   }
 
   _onResize() {
-    const w = this.container.clientWidth;
-    const h = this.container.clientHeight;
-    if (w === 0 || h === 0) return;
+    const w = Math.max(this.container.clientWidth || 340, 100);
+    const h = Math.max(this.container.clientHeight || 380, 100);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
@@ -220,7 +221,7 @@ export class AvatarEngine {
 
   _animate() {
     this.animId = requestAnimationFrame(() => this._animate());
-    const t = this.clock.getElapsedTime();
+    const t = (performance.now() - this.startTime) * 0.001;
 
     if (this.particles) {
       this.particles.rotation.y = t * 0.04;

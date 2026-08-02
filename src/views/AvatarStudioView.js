@@ -177,10 +177,11 @@ export function renderAvatarStudio(container) {
       shoes: document.getElementById('avatar-visor-color').value,
       hairStyle: 'spiky',
     };
-    const gender = document.getElementById('avatar-gender-select').value;
-    const mode = document.getElementById('avatar-engine-mode').value;
-
-    currentAvatarEngine = new AvatarEngine(canvasBox, gender, palette, mode === 'glb');
+    setTimeout(() => {
+      if (canvasBox && canvasBox.isConnected) {
+        currentAvatarEngine = new AvatarEngine(canvasBox, gender, palette, mode === 'glb');
+      }
+    }, 60);
   }
 
   refreshAvatar();
