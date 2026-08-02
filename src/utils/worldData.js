@@ -548,3 +548,66 @@ export async function deleteCustomRoom(roomId) {
   }
 }
 
+/* ════════════════════════════════════════════════════════════
+   TRADE ARENA & CARD EXCHANGE LAYER
+   ════════════════════════════════════════════════════════════ */
+
+// Publish a trade listing to Firestore
+export async function createTradeListing({ cardId, cardName, cardRarity, askingOffer }) {
+  await authReady;
+  const user = auth.currentUser;
+  const sellerEmail = user?.email || localStorage.getItem('cogscreen_user_email') || 'anonymous@player';
+  const sellerName = user?.displayName || sellerEmail.split('@')[0];
+  const sellerHandle = '@' + sellerEmail.split('@')[0];
+
+  const docRef = await addDoc(collection(db, 'trade_listings'), {
+    sellerUid: user?.uid || 'anon',
+    sellerEmail,
+    sellerName,
+    sellerHandle,
+    cardId,
+    cardName,
+    cardRarity,
+    askingOffer: askingOffer || 'Open to all card offers',
+    status: 'active',
+    createdAt: serverTimestamp()
+  });
+
+  return docRef.id;
+}
+
+// Fetch all active trade listings posted across the network
+export async function fetchActiveTradeListings() {
+  await authReady;
+  try {
+    const q = query(
+      collection(db, 'trade_listings'),
+      where('status', '==', 'active')
+    );
+    const snap = await getDocs(q);
+    const listings = [];
+    snap.forEach(d => {
+      listings.push({ id: d.id, ...d.data() });
+    });
+    listings.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    return listings;
+  } catch (e) {
+    console.error("Failed to fetch trade listings:", e);
+    return [];
+  }
+}
+
+// Accept a trade listing in Firestore
+export async function acceptTradeListing(listingId) {
+  await authReady;
+  const user = auth.currentUser;
+  const buyerEmail = user?.email || localStorage.getItem('cogscreen_user_email') || 'anonymous@player';
+  
+  const ref = doc(db, 'trade_listings', listingId);
+  await updateDoc(ref, {
+    status: 'completed',
+    buyerEmail,
+    completedAt: serverTimestamp()
+  });
+}
+
