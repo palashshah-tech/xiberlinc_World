@@ -18,8 +18,17 @@ import { NEURO_ROOMS, EVENTS } from '../utils/worldStatic.js';
 import { getLang, setLang, t } from '../utils/i18n.js';
 import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { AvatarEngine, DEFAULT_PALETTES, SKIN_PRESETS, HAIR_PRESETS, OUTFIT_PRESETS, HAIR_STYLE_PRESETS } from '../engine/avatarEngine.js';
+import { startGhostMatch } from '../utils/ghostEngine.js';
+import { toggleMobileLiteMode, isMobileLiteMode } from '../utils/perfMode.js';
 
 export function WorldView() {
+  window.launchGhostMatch = (name, reactionMs, wmi) => {
+    startGhostMatch({ name, reactionMs, wmi }, 'Focus Chamber Rivalry');
+  };
+  window.toggleMobileLite = () => {
+    toggleMobileLiteMode();
+  };
+
   // Inject Spline viewer script if not already loaded
   if (!document.querySelector('script[src*="spline-viewer"]')) {
     const s = document.createElement('script');
@@ -1513,7 +1522,14 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       ">
         <img src="/xiberlinc_logo.png" alt="Xiberlinc" style="height:30px;mix-blend-mode:screen;filter:brightness(1.4);" />
         
-        <div style="display:flex;align-items:center;gap:20px;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button id="perf-toggle-btn" class="magnetic-btn" onclick="window.toggleMobileLite && window.toggleMobileLite()" style="
+            color:#d4ff00; border:1px solid rgba(212,255,0,0.3); background:rgba(212,255,0,0.08);
+            border-radius:100px; padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; cursor:pointer;
+          ">
+            <span id="perf-toggle-text">⚡ High-Perf 3D</span>
+          </button>
+
           <div style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#2563eb;">
             <div style="width:6px;height:6px;border-radius:50%;background:#2563eb;position:relative;">
               <div style="position:absolute;inset:-3px;border-radius:50%;border:1px solid #2563eb;animation:wld-pulse-ring 1.5s ease-out infinite;"></div>
@@ -1541,7 +1557,7 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
           ${t('ch1_subhead')}
         </p>
 
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:64px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:32px;">
           <button id="hero-play-btn" class="magnetic-btn" data-cursor="PLAY" style="
             padding:18px 36px;border-radius:14px;border:none;
             background:#ffffff;color:#050507;font-family:'Space Grotesk',sans-serif;
@@ -1551,6 +1567,42 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
           ">
             ${t('ch1_cta')}
           </button>
+        </div>
+
+        <!-- Season 1 Battle Pass & Commercial Monetization Header -->
+        <div class="editorial-card-glass" style="
+          max-width: 1100px; padding: 20px 28px; margin-bottom: 32px;
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(13, 13, 20, 0.9) 100%);
+          border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 18px;
+          display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+        ">
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="
+              width: 48px; height: 48px; border-radius: 12px;
+              background: rgba(212, 255, 0, 0.15); border: 1.5px solid #d4ff00;
+              display: flex; align-items: center; justify-content: center;
+              font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 1.2rem; color: #d4ff00;
+            ">S1</div>
+            <div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-family:'Outfit', sans-serif; font-size:1.1rem; font-weight:800; color:#fff;">Season 1 Battle Pass</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:9px; background:rgba(212,255,0,0.15); color:#d4ff00; border:1px solid rgba(212,255,0,0.3); padding:2px 8px; border-radius:100px; text-transform:uppercase;">Tier 14 / 50</span>
+              </div>
+              <div style="font-size:12px; color:rgba(255,255,255,0.6); margin-top:4px;">
+                Unlock VIP Neuro Room Tickets, Custom Cyber Skins &amp; Ghost Match XP Multipliers.
+              </div>
+            </div>
+          </div>
+
+          <div style="min-width: 220px; flex: 1; max-width: 320px;">
+            <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(255,255,255,0.7); margin-bottom:6px;">
+              <span>XP: 3,450 / 5,000</span>
+              <span style="color:#d4ff00;">🎟 VIP Ticket Active</span>
+            </div>
+            <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 100px; overflow: hidden;">
+              <div style="height: 100%; width: 69%; background: linear-gradient(90deg, #7c3aed, #d4ff00); border-radius: 100px;"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Live Telemetry Bar -->
@@ -2445,39 +2497,97 @@ function _starCard(p) {
 
 function _leaderboardHtml(rows) {
   if (!rows?.length) return _emptyState('No ranked players yet.');
-  const max = rows[0]?.score || 1;
   return `
-    <div class="wld-reveal" style="display:flex;flex-direction:column;gap:10px;">
+    <div class="wld-reveal" style="display:flex;flex-direction:column;gap:12px;">
       ${rows.map((entry, i) => {
         const rankCol = i===0?'#e2b857':i===1?'#2563eb':i===2?'#ec4899':'rgba(255,255,255,0.4)';
-        const pct     = (entry.score / max * 100).toFixed(1);
         const p       = entry.player;
+        const score   = entry.score || p?.wmi || 100;
+        const rating  = Math.min(99, Math.max(65, Math.round((score / 150) * 100)));
+        const tierBadge = rating >= 90 ? 'S+' : rating >= 80 ? 'S' : rating >= 70 ? 'A' : 'B';
+        const speedScore = Math.min(100, Math.max(40, Math.round(300 - (p?.reactionMs || 220))));
+        const memoryScore = Math.min(100, Math.round((score / 140) * 95));
+        const suppressionScore = Math.min(100, Math.round(speedScore * 0.92));
+
         return `
           <div style="
             display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:16px;
-            padding:16px 24px;
-            background:rgba(12,12,16,0.6);border:1px solid rgba(255,255,255,0.05);border-radius:14px;
-            transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+            padding:18px 24px;
+            background:rgba(12,12,16,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:16px;
+            transition:all 0.3s cubic-bezier(0.16,1,0.3,1); box-shadow: 0 8px 24px rgba(0,0,0,0.4);
           " class="wld-lb-row editorial-row-card" data-cursor="RANK"
           >
-            <div style="text-align:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:1.2rem;color:${rankCol};">
+            <!-- Rank Badge -->
+            <div style="text-align:center;font-family:'Outfit',sans-serif;font-weight:900;font-size:1.3rem;color:${rankCol};">
               #${entry.rank}
             </div>
+
+            <!-- Player Profile & Stat Breakdown -->
             <div>
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-                <div style="width:32px;height:32px;border-radius:50%;background:${p.avatarColor||'#e2b857'}14;border:1.5px solid ${p.avatarColor||'#e2b857'}33;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:700;font-size:0.85rem;color:${p.avatarColor||'#e2b857'};flex-shrink:0;">${p.avatar||'?'}</div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+                <div style="width:38px;height:38px;border-radius:50%;background:${p?.avatarColor||'#e2b857'}18;border:1.5px solid ${p?.avatarColor||'#e2b857'};display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:0.95rem;color:${p?.avatarColor||'#e2b857'};flex-shrink:0;">
+                  ${p?.avatar||p?.name?.[0]||'?'}
+                </div>
                 <div>
-                  <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.95rem;color:#fff;">${p.name}</div>
-                  <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,0.35);">${p.handle||''}</div>
+                  <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:0.95rem;color:#fff;display:flex;align-items:center;gap:8px;">
+                    ${p?.name}
+                    <span style="font-family:'Space Grotesk',sans-serif;font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);font-weight:700;">
+                      TIER ${tierBadge}
+                    </span>
+                  </div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,0.4);">${p?.handle||''} &middot; ${p?.specialty||'Cognitive Athlete'}</div>
                 </div>
               </div>
-              <div style="height:3px;background:rgba(255,255,255,0.04);border-radius:99px;overflow:hidden;">
-                <div style="height:100%;width:${pct}%;background:${rankCol};border-radius:99px;transition:width 1s cubic-bezier(0.16,1,0.3,1);"></div>
+
+              <!-- Stat Breakdown Bars -->
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:8px;background:rgba(0,0,0,0.3);padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:2px;">
+                    <span>SPEED</span>
+                    <span style="color:#00f0ff;">${p?.reactionMs || 185}ms</span>
+                  </div>
+                  <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;">
+                    <div style="height:100%;width:${speedScore}%;background:#00f0ff;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:2px;">
+                    <span>MEMORY (K)</span>
+                    <span style="color:#a78bfa;">${(score / 30).toFixed(2)}</span>
+                  </div>
+                  <div style="height:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;">
+                    <div style="height:100%;width:${memoryScore}%;background:#a78bfa;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.5);margin-bottom:2px;">
+                    <span>SUPPRESSION</span>
+                    <span style="color:#34d399;">0.92</span>
+                  </div>
+                  <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;">
+                    <div style="height:100%;width:${suppressionScore}%;background:#34d399;"></div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1.35rem;color:${i<3?rankCol:'#fff'};">${entry.score}</div>
-              <div style="font-family:'JetBrains Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.3);text-transform:uppercase;">WMI SCORE</div>
+
+            <!-- Score Rating & Async Ghost Button -->
+            <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(255,255,255,0.35);text-transform:uppercase;">RATING</div>
+                <div style="font-family:'Outfit',sans-serif;font-weight:900;font-size:1.5rem;color:${i<3?rankCol:'#fff'};line-height:1;">${rating}</div>
+              </div>
+
+              <button class="btn-ghost-match-trigger" data-player-id="${p?.id || i}" style="
+                background: rgba(212,255,0,0.12); border: 1px solid rgba(212,255,0,0.35);
+                color: #d4ff00; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+                font-size: 10.5px; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+                white-space: nowrap; transition: all 0.2s;
+              " onclick="window.launchGhostMatch && window.launchGhostMatch('${p?.name || 'Pro Player'}', ${p?.reactionMs || 185}, ${score})">
+                ⚔ Ghost Match
+              </button>
             </div>
           </div>
         `;
@@ -2492,6 +2602,7 @@ function _roomCard(room, index = 0) {
   const locked = room.locked !== undefined ? room.locked : false;
   const isCreator = room.isCustom && auth.currentUser && (room.creatorUid === auth.currentUser.uid || room.creatorEmail === auth.currentUser.email);
   const roomNum = (index + 1).toString().padStart(2, '0');
+  const isVipRoom = index % 2 === 1 || locked;
 
   return `
     <div class="wld-room-card wld-reveal editorial-card-glass" data-cursor="ENTER ROOM" style="
@@ -2507,6 +2618,19 @@ function _roomCard(room, index = 0) {
 
       <!-- Accent Bar -->
       <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${room.colorHex};opacity:0.85;"></div>
+
+      <!-- VIP Access Badge -->
+      <div style="
+        position: absolute; top: 12px; right: 12px;
+        font-family: 'JetBrains Mono', monospace; font-size: 9px;
+        text-transform: uppercase; letter-spacing: 0.1em;
+        color: ${isVipRoom ? '#a78bfa' : '#34d399'};
+        background: ${isVipRoom ? 'rgba(124,58,237,0.15)' : 'rgba(52,211,153,0.15)'};
+        border: 1px solid ${isVipRoom ? 'rgba(167,139,250,0.3)' : 'rgba(52,211,153,0.3)'};
+        border-radius: 4px; padding: 3px 8px; z-index: 5;
+      ">
+        ${isVipRoom ? '🎟 VIP Ticket Room' : 'FREE ACCESS'}
+      </div>
 
       ${isCreator ? `
         <button class="delete-room-btn" data-room-id="${room.id}" style="position:absolute;top:16px;right:16px;background:transparent;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;z-index:10;transition:color 0.2s;" onmouseenter="this.style.color='#ef4444'" onmouseleave="this.style.color='rgba(255,255,255,0.3)'" title="Delete Channel">
@@ -2551,10 +2675,10 @@ function _roomCard(room, index = 0) {
         </div>
       </div>
 
-      <!-- Action Row with Arrow Circle Button -->
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <!-- Action Row with Enter Room & Async Ghost Match -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <button class="enter-room-btn magnetic-btn" data-cursor="ENTER" data-room-id="${room.id}" style="
-          flex:1;padding:12px 18px;border-radius:10px;
+          flex:1;padding:12px 14px;border-radius:10px;
           border:1px solid ${locked?'rgba(236,72,153,0.3)':`${room.colorHex}44`};
           background:${locked?'rgba(236,72,153,0.08)':`${room.colorHex}14`};
           color:${locked?'#ec4899':room.colorHex};font-family:'Montserrat',sans-serif;
@@ -2563,13 +2687,15 @@ function _roomCard(room, index = 0) {
           ${locked ? t('btn_locked') + room.lockRank : t('btn_enter_room')}
         </button>
 
-        <div class="arrow-link enter-room-btn" data-room-id="${room.id}" style="
-          width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.06);
-          border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;
-          justify-content:center;cursor:pointer;flex-shrink:0;transition:all 0.3s ease;
-        " onmouseenter="this.style.background='#ffffff';this.querySelector('svg').style.stroke='${room.colorHex}'" onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.querySelector('svg').style.stroke='#ffffff'">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+        <button class="ghost-room-btn magnetic-btn" onclick="window.launchGhostMatch && window.launchGhostMatch('Pro Ghost', 185, 135)" style="
+          padding:12px 14px;border-radius:10px;
+          border:1px solid rgba(212,255,0,0.35);
+          background:rgba(212,255,0,0.1);
+          color:#d4ff00;font-family:'Montserrat',sans-serif;
+          font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;white-space:nowrap;
+        ">
+          ⚔ Ghost
+        </button>
       </div>
     </div>
   `;
