@@ -112,9 +112,11 @@ export function openFullscreenMarketplace() {
 
   overlay = document.createElement('div');
   overlay.id = 'fullscreen-marketplace-overlay';
+  overlay.setAttribute('data-lenis-prevent', 'true');
   overlay.style.cssText = `
     position: fixed; inset: 0; z-index: 99999;
-    background: #050508; color: #fff; overflow-y: auto;
+    background: #050508; color: #fff; overflow-y: scroll;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     animation: fade-in 0.3s ease-out;
   `;
 

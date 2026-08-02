@@ -1882,8 +1882,8 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
       </section>
 
       <!-- ══════════ CHAPTER 06 — THE COLLECTIBLES STORE ══════════ -->
-      <section id="chapter-06" class="editorial-chapter" style="padding:60px 32px;background:rgba(4,4,8,0.95);border-top:1px solid rgba(255,255,255,0.05);">
-        <div id="collectibles-store-container"></div>
+      <section id="chapter-06" class="editorial-chapter" data-lenis-prevent="true" style="padding:60px 32px;background:rgba(4,4,8,0.95);border-top:1px solid rgba(255,255,255,0.05);">
+        <div id="collectibles-store-container" data-lenis-prevent="true"></div>
       </section>
 
       <!-- FOOTER -->
