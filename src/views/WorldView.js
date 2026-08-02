@@ -20,6 +20,7 @@ import { collection, addDoc, onSnapshot, query, where, orderBy, limit, serverTim
 import { AvatarEngine, DEFAULT_PALETTES, SKIN_PRESETS, HAIR_PRESETS, OUTFIT_PRESETS, HAIR_STYLE_PRESETS } from '../engine/avatarEngine.js';
 import { startGhostMatch } from '../utils/ghostEngine.js';
 import { toggleMobileLiteMode, isMobileLiteMode } from '../utils/perfMode.js';
+import { renderCollectiblesStore } from './StoreView.js';
 
 export function WorldView() {
   window.launchGhostMatch = (name, reactionMs, wmi) => {
@@ -1866,6 +1867,11 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
         </div>
       </section>
 
+      <!-- ══════════ CHAPTER 06 — THE COLLECTIBLES STORE ══════════ -->
+      <section id="chapter-06" class="editorial-chapter" style="padding:60px 32px;background:rgba(4,4,8,0.95);border-top:1px solid rgba(255,255,255,0.05);">
+        <div id="collectibles-store-container"></div>
+      </section>
+
       <!-- FOOTER -->
       <footer style="padding:60px 32px 30px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;border-top:1px solid rgba(255,255,255,0.05);">
         <div style="width:28px;height:28px;border-radius:6px;background:#000;border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:4px;opacity:0.6;">
@@ -2437,6 +2443,11 @@ function _renderDashboard({ players, stats, leaderboard, userProfile, customRoom
     }
   };
   window.addEventListener('hashchange', handleWorldUnmount);
+
+  const storeContainer = document.getElementById('collectibles-store-container');
+  if (storeContainer) {
+    renderCollectiblesStore(storeContainer);
+  }
 }
 
 
@@ -2675,26 +2686,16 @@ function _roomCard(room, index = 0) {
         </div>
       </div>
 
-      <!-- Action Row with Enter Room & Async Ghost Match -->
+      <!-- Action Row with Enter Room -->
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <button class="enter-room-btn magnetic-btn" data-cursor="ENTER" data-room-id="${room.id}" style="
-          flex:1;padding:12px 14px;border-radius:10px;
+          flex:1;padding:12px 18px;border-radius:10px;
           border:1px solid ${locked?'rgba(236,72,153,0.3)':`${room.colorHex}44`};
           background:${locked?'rgba(236,72,153,0.08)':`${room.colorHex}14`};
           color:${locked?'#ec4899':room.colorHex};font-family:'Montserrat',sans-serif;
           font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;
         ">
           ${locked ? t('btn_locked') + room.lockRank : t('btn_enter_room')}
-        </button>
-
-        <button class="ghost-room-btn magnetic-btn" onclick="window.launchGhostMatch && window.launchGhostMatch('Pro Ghost', 185, 135)" style="
-          padding:12px 14px;border-radius:10px;
-          border:1px solid rgba(212,255,0,0.35);
-          background:rgba(212,255,0,0.1);
-          color:#d4ff00;font-family:'Montserrat',sans-serif;
-          font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;white-space:nowrap;
-        ">
-          ⚔ Ghost
         </button>
       </div>
     </div>

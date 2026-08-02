@@ -4,6 +4,7 @@
    ============================================================ */
 
 import { generateTrial, renderStudy, renderProbe } from '../engine/StimulusGenerator.js';
+import { addBattleXp } from './battlePass.js';
 
 export function startGhostMatch(opponentPlayer, mode = 'Focus Chamber VWM') {
   let modal = document.getElementById('ghost-match-modal');
@@ -222,6 +223,10 @@ export function startGhostMatch(opponentPlayer, mode = 'Focus Chamber VWM') {
     const win = playerCorrectCount > ghostCorrectCount || (playerCorrectCount === ghostCorrectCount && avgRt < ghostRtMs);
     const finalK = (4 * (playerCorrectCount / totalTrials)).toFixed(2);
 
+    if (win) {
+      addBattleXp(250, `Ghost Match Victory vs ${opponentPlayer.name}`);
+    }
+
     const trialBox = document.getElementById('vwm-trial-box');
     trialBox.style.background = win ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)';
     trialBox.style.borderColor = win ? '#34d399' : '#f87171';
@@ -233,7 +238,9 @@ export function startGhostMatch(opponentPlayer, mode = 'Focus Chamber VWM') {
       <div style="font-size:13px; color:rgba(255,255,255,0.85); line-height:1.6;">
         Your Score: <strong>${playerCorrectCount}/${totalTrials}</strong> (Cowan's K: <strong>${finalK}</strong> &middot; ${avgRt}ms)<br/>
         Ghost Score: <strong>${ghostCorrectCount}/${totalTrials}</strong> (${ghostRtMs}ms)<br/>
-        <span style="color:#d4ff00; font-family:'JetBrains Mono', monospace; font-size:11px;">+250 Battle Pass XP &middot; VWM Capacity Point Unlocked</span>
+        <span style="color:${win ? '#d4ff00' : 'rgba(255,255,255,0.5)'}; font-family:'JetBrains Mono', monospace; font-size:11px;">
+          ${win ? '+250 Battle Pass XP &amp; +100 Store Credits Earned!' : 'No XP awarded.'}
+        </span>
       </div>
     `;
 
