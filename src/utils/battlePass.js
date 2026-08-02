@@ -35,33 +35,46 @@ export function buySeasonPass() {
   return true;
 }
 
-export function getCreatorChatMessages() {
-  const data = localStorage.getItem(CREATOR_CHAT_KEY);
+const GAMER_CHAT_KEY = 'xiberlinc_gamer_chat';
+
+export function getGamerChatMessages(gamerName = 'Kaito Mizushima') {
+  const data = localStorage.getItem(`${GAMER_CHAT_KEY}_${gamerName}`);
   if (data) return JSON.parse(data);
   const initial = [
-    { sender: 'Palash Shah (Lead Architect)', text: 'Welcome to Xiberlinc World Season 1 Pass! Thanks for supporting the vision. Feel free to ask me anything about the cognitive engine architecture or request custom card perks.', time: 'System Automated' }
+    { sender: gamerName, text: `Yo! Thanks for unlocking the VIP Pro Pass! My Cowan K capacity is currently 4.85. Ask me anything about VWM strategy or ghost match tactics!`, time: 'System Automated' }
   ];
-  localStorage.setItem(CREATOR_CHAT_KEY, JSON.stringify(initial));
+  localStorage.setItem(`${GAMER_CHAT_KEY}_${gamerName}`, JSON.stringify(initial));
   return initial;
 }
 
-export function sendCreatorMessage(text) {
-  const msgs = getCreatorChatMessages();
+export function sendGamerMessage(gamerName, text) {
+  const msgs = getGamerChatMessages(gamerName);
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   msgs.push({ sender: 'You', text, time });
   
-  localStorage.setItem(CREATOR_CHAT_KEY, JSON.stringify(msgs));
+  localStorage.setItem(`${GAMER_CHAT_KEY}_${gamerName}`, JSON.stringify(msgs));
+
+  // Dynamic replies based on athlete personality
+  const replies = {
+    'Kaito Mizushima': `GGs! "${text}". Key tip: Lock in the top-left color patch first during the 500ms study window!`,
+    'Yuna Sato': `Nice message! "${text}". Executive control is everything — ignore distractors and trust your retention interval!`,
+    'Marcus "Prism" Lee': `Awesome! "${text}". Keep running VWM drills in the Focus Chamber, your speed will drop below 180ms in no time!`,
+    'Aiko Tanaka': `Hey! "${text}". Pattern recognition improves with consistency. Good luck in the Ghost Matches!`,
+    'Yuki Sakai': `Super hyped to chat! "${text}". Let's team up for the next Proving Ground tournament!`
+  };
+
+  const replyText = replies[gamerName] || `GGs! Thanks for your message: "${text}". Keep pushing your VWM capacity!`;
 
   setTimeout(() => {
-    const updated = getCreatorChatMessages();
+    const updated = getGamerChatMessages(gamerName);
     updated.push({
-      sender: 'Palash Shah (Lead Architect)',
-      text: `Thanks for your message: "${text}". I have received your note directly in the Xiberlinc architectural feedback stream!`,
+      sender: gamerName,
+      text: replyText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
-    localStorage.setItem(CREATOR_CHAT_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('creator_chat_updated'));
-  }, 1200);
+    localStorage.setItem(`${GAMER_CHAT_KEY}_${gamerName}`, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('gamer_chat_updated'));
+  }, 1100);
 
   return msgs;
 }

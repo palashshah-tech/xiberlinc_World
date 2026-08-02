@@ -1,13 +1,13 @@
 /* ============================================================
    StoreView.js — Fullscreen 3D Hall of Fame & Marketplace World
-   Includes Full-Screen Overlay Mode, Season 1 Premium Pass,
-   and Direct 1-on-1 "Chat with Creator" Channel
+   Features 3D Pop-Out Athlete Cards, Season 1 VIP Pass &
+   Direct 1-on-1 Favorite Pro Gamer VIP Chat Channel
    ============================================================ */
 
 import {
   getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs,
   addStoreCredits, addBattleXp, getEquippedAbility, setEquippedAbility,
-  hasSeasonPass, buySeasonPass, getCreatorChatMessages, sendCreatorMessage
+  hasSeasonPass, buySeasonPass, getGamerChatMessages, sendGamerMessage
 } from '../utils/battlePass.js';
 import { auth } from '../utils/firebase.js';
 import { createTradeListing, fetchActiveTradeListings, acceptTradeListing } from '../utils/worldData.js';
@@ -102,6 +102,7 @@ export const COLLECTIBLE_CARDS = [
 
 let activeStoreTab = 'marketplace'; // 'marketplace' | 'deck' | 'trade_arena'
 let activeAnimationId = null;
+let selectedGamerChat = 'Kaito Mizushima';
 
 // ── FULL-SCREEN MARKETPLACE WORLD LAUNCHER ─────────────────────────
 
@@ -184,7 +185,7 @@ export async function renderCollectiblesStore(container) {
 
   const ownedCardObjects = COLLECTIBLE_CARDS.filter(c => owned.includes(c.id));
   const tradeListings = await fetchActiveTradeListings();
-  const chatMessages = getCreatorChatMessages();
+  const gamerChatMessages = getGamerChatMessages(selectedGamerChat);
 
   container.innerHTML = `
     <style>
@@ -242,7 +243,7 @@ export async function renderCollectiblesStore(container) {
     <div class="scroll-reveal hof-shrine-bg" style="max-width: 1380px; margin: 0 auto;">
       <div class="hof-grid-guidelines"></div>
 
-      <!-- Season 1 Premium Creator Pass Highlight Banner -->
+      <!-- Season 1 Premium Gamer VIP Pass Banner -->
       <div style="
         position: relative; z-index: 2; margin-bottom: 32px;
         background: linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(212, 255, 0, 0.15) 100%);
@@ -254,30 +255,30 @@ export async function renderCollectiblesStore(container) {
             width: 52px; height: 52px; border-radius: 14px; background: rgba(212,255,0,0.2);
             border: 2px solid #d4ff00; display: flex; align-items: center; justify-content: center;
             font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 1.5rem; color: #d4ff00;
-          ">⭐</div>
+          ">🎮</div>
           <div>
             <div style="display:flex; align-items:center; gap:10px;">
               <span style="font-family:'Outfit', sans-serif; font-size:1.2rem; font-weight:900; color:#fff;">
-                Season 1 Premium Creator Pass
+                Season 1 Premium VIP Gamer Pass
               </span>
               <span style="font-family:'JetBrains Mono', monospace; font-size:9.5px; background:rgba(212,255,0,0.18); color:#d4ff00; border:1px solid rgba(212,255,0,0.4); padding:2px 8px; border-radius:100px; text-transform:uppercase;">
                 ${seasonPassOwned ? '✓ OWNED PASS' : '$19.99 USD / 1,500 CR'}
               </span>
             </div>
             <div style="font-size:12.5px; color:rgba(255,255,255,0.7); margin-top:4px;">
-              Includes 💬 <strong>Direct 1-on-1 Creator Chat Link with @palash.shah</strong>, ⚡ 1x Free Legendary Ability Card Choice &amp; 🎟 VIP Room Pass.
+              Unlocks 💬 <strong>Direct 1-on-1 VIP Chat with Your Favorite Gamer</strong>, ⚡ 1x Free Legendary Ability Card Choice &amp; 🎟 VIP Neuro Room Pass.
             </div>
           </div>
         </div>
 
         <div style="display:flex; align-items:center; gap:12px;">
           ${seasonPassOwned ? `
-            <button id="btn-open-creator-chat" style="
+            <button id="btn-open-gamer-chat" style="
               background: #d4ff00; color: #000; font-family: 'Space Grotesk', sans-serif;
               font-weight: 900; font-size: 12.5px; border: none; padding: 12px 24px;
               border-radius: 10px; cursor: pointer; text-transform: uppercase;
             ">
-              💬 Chat with Creator
+              💬 Chat with Favorite Gamer
             </button>
           ` : `
             <button id="btn-buy-season-pass" style="
@@ -285,7 +286,7 @@ export async function renderCollectiblesStore(container) {
               font-weight: 900; font-size: 12.5px; border: none; padding: 12px 24px;
               border-radius: 10px; cursor: pointer; text-transform: uppercase;
             ">
-              Unlock Creator Pass (1,500 CR)
+              Unlock VIP Gamer Pass (1,500 CR)
             </button>
           `}
         </div>
@@ -646,36 +647,49 @@ export async function renderCollectiblesStore(container) {
       ` : ''}
     </div>
 
-    <!-- Direct 1-on-1 Creator Chat Modal -->
-    <div id="creator-chat-modal" style="
+    <!-- Direct 1-on-1 Favorite Gamer VIP Chat Modal -->
+    <div id="gamer-chat-modal" style="
       display: none; position: fixed; inset: 0; z-index: 100000;
       background: rgba(0,0,0,0.88); backdrop-filter: blur(20px);
       align-items: center; justify-content: center; padding: 24px;
     ">
       <div style="
         background: rgba(13, 13, 20, 0.98); border: 1.5px solid #d4ff00;
-        border-radius: 22px; max-width: 560px; width: 100%; padding: 28px;
+        border-radius: 22px; max-width: 580px; width: 100%; padding: 28px;
         position: relative; color: #fff; box-shadow: 0 24px 80px rgba(212,255,0,0.25);
       ">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:14px; margin-bottom:18px;">
           <div>
             <div style="font-family:'Space Grotesk', sans-serif; font-size:10px; color:#d4ff00; letter-spacing:0.12em; text-transform:uppercase;">
-              💬 DIRECT CREATOR CHANNEL &middot; SEASON PASS PERK
+              💬 DIRECT PRO GAMER VIP CHANNEL &middot; SEASON PASS PERK
             </div>
             <h2 style="font-family:'Outfit', sans-serif; font-size:20px; font-weight:800; margin:2px 0 0 0;">
-              Chat with Palash Shah (Lead Architect)
+              Chat with Your Favorite Pro Athlete
             </h2>
           </div>
-          <button id="creator-chat-close" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-size:24px; cursor:pointer;">&times;</button>
+          <button id="gamer-chat-close" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+
+        <!-- Gamer Selector Dropdown -->
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Select Pro Athlete to Message</label>
+          <select id="select-favorite-gamer" style="
+            width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18);
+            border-radius:10px; padding:10px 14px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:13px; outline:none;
+          ">
+            ${COLLECTIBLE_CARDS.map(c => `
+              <option value="${c.name}" ${selectedGamerChat === c.name ? 'selected' : ''}>${c.name} (${c.title} &middot; Cowan K: ${c.kCapacity})</option>
+            `).join('')}
+          </select>
         </div>
 
         <!-- Chat Stream Box -->
-        <div id="creator-chat-stream" style="
-          max-height: 280px; overflow-y: auto; display: flex; flex-direction: column;
+        <div id="gamer-chat-stream" style="
+          max-height: 260px; overflow-y: auto; display: flex; flex-direction: column;
           gap: 12px; margin-bottom: 20px; padding: 12px; background: rgba(0,0,0,0.4);
           border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
         ">
-          ${chatMessages.map(msg => `
+          ${gamerChatMessages.map(msg => `
             <div style="
               padding: 10px 14px; border-radius: 10px;
               background: ${msg.sender === 'You' ? 'rgba(212,255,0,0.12)' : 'rgba(124,58,237,0.2)'};
@@ -692,11 +706,11 @@ export async function renderCollectiblesStore(container) {
 
         <!-- Message Input Box -->
         <div style="display:flex; gap:10px;">
-          <input type="text" id="creator-chat-input" placeholder="Type a message to Palash Shah..." style="
+          <input type="text" id="gamer-chat-input" placeholder="Type a message to ${selectedGamerChat}..." style="
             flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18);
             border-radius:10px; padding:12px 16px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:13px; outline:none;
           " />
-          <button id="creator-chat-send" style="
+          <button id="gamer-chat-send" style="
             background:#d4ff00; color:#000; font-family:'Space Grotesk', sans-serif;
             font-weight:800; font-size:12px; border:none; padding:12px 20px; border-radius:10px; cursor:pointer; text-transform:uppercase;
           ">Send</button>
@@ -853,37 +867,45 @@ export async function renderCollectiblesStore(container) {
   // Attach Season Pass purchase handler
   container.querySelector('#btn-buy-season-pass')?.addEventListener('click', () => {
     if (buySeasonPass()) {
-      alert('🎉 CONGRATULATIONS! Season 1 Creator Pass Unlocked! +1,000 XP & Direct Creator Chat Enabled!');
+      alert('🎉 CONGRATULATIONS! Season 1 VIP Gamer Pass Unlocked! +1,000 XP & Direct VIP Gamer Chat Enabled!');
       renderCollectiblesStore(container);
     } else {
       if (topupModal) topupModal.style.display = 'flex';
     }
   });
 
-  // Attach Creator Chat modal handlers
-  const creatorChatModal = document.getElementById('creator-chat-modal');
-  container.querySelector('#btn-open-creator-chat')?.addEventListener('click', () => {
-    if (creatorChatModal) creatorChatModal.style.display = 'flex';
+  // Attach Gamer Chat modal handlers
+  const gamerChatModal = document.getElementById('gamer-chat-modal');
+  container.querySelector('#btn-open-gamer-chat')?.addEventListener('click', () => {
+    if (gamerChatModal) gamerChatModal.style.display = 'flex';
   });
-  container.querySelector('#creator-chat-close')?.addEventListener('click', () => {
-    if (creatorChatModal) creatorChatModal.style.display = 'none';
+  container.querySelector('#gamer-chat-close')?.addEventListener('click', () => {
+    if (gamerChatModal) gamerChatModal.style.display = 'none';
   });
 
-  // Send Creator Message Handler
-  const sendMsgBtn = container.querySelector('#creator-chat-send');
-  const chatInput = container.querySelector('#creator-chat-input');
+  // Gamer Dropdown Selector change handler
+  container.querySelector('#select-favorite-gamer')?.addEventListener('change', (e) => {
+    selectedGamerChat = e.target.value;
+    renderCollectiblesStore(container);
+    if (gamerChatModal) gamerChatModal.style.display = 'flex';
+  });
+
+  // Send Gamer Message Handler
+  const sendMsgBtn = container.querySelector('#gamer-chat-send');
+  const chatInput = container.querySelector('#gamer-chat-input');
   sendMsgBtn?.addEventListener('click', () => {
     if (chatInput && chatInput.value.trim()) {
-      sendCreatorMessage(chatInput.value.trim());
+      sendGamerMessage(selectedGamerChat, chatInput.value.trim());
       chatInput.value = '';
       renderCollectiblesStore(container);
+      if (gamerChatModal) gamerChatModal.style.display = 'flex';
     }
   });
 
-  window.addEventListener('creator_chat_updated', () => {
-    const stream = document.getElementById('creator-chat-stream');
+  window.addEventListener('gamer_chat_updated', () => {
+    const stream = document.getElementById('gamer-chat-stream');
     if (stream) {
-      const msgs = getCreatorChatMessages();
+      const msgs = getGamerChatMessages(selectedGamerChat);
       stream.innerHTML = msgs.map(msg => `
         <div style="
           padding: 10px 14px; border-radius: 10px;
