@@ -1,7 +1,6 @@
 /* ============================================================
-   StoreView.js — The Collectibles Store & Real-Time Trade Arena
+   StoreView.js — Universal Marketplace, Personal Deck & Trade Arena
    3D Tokenized Action Cards of Working Memory Athletes
-   With Real-Money Credit Top-Up Checkout & Network Trade Arena
    ============================================================ */
 
 import { getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs, addStoreCredits, addBattleXp } from '../utils/battlePass.js';
@@ -91,7 +90,8 @@ export const COLLECTIBLE_CARDS = [
   }
 ];
 
-let activeStoreTab = 'store'; // 'store' | 'trade_arena'
+let activeStoreTab = 'marketplace'; // 'marketplace' | 'deck' | 'trade_arena'
+let equippedAbility = null;
 
 export async function renderCollectiblesStore(container) {
   if (!container) return;
@@ -101,6 +101,9 @@ export async function renderCollectiblesStore(container) {
   const logs = getXpLogs();
   const currentUserEmail = (auth.currentUser?.email || localStorage.getItem('cogscreen_user_email') || '').toLowerCase().trim();
   const isAdminTest = currentUserEmail === 'palash.shah@xiberlinc.one';
+
+  // Owned cards array
+  const ownedCardObjects = COLLECTIBLE_CARDS.filter(c => owned.includes(c.id));
 
   // Fetch live network trade listings
   const tradeListings = await fetchActiveTradeListings();
@@ -117,13 +120,13 @@ export async function renderCollectiblesStore(container) {
       ">
         <div>
           <div style="font-family:'Space Grotesk', sans-serif; font-size:11px; color:#d4ff00; letter-spacing:0.18em; text-transform:uppercase;">
-            💎 THE COLLECTIBLES STORE &amp; TRADE ARENA
+            💎 THE COLLECTIBLES MARKETPLACE &amp; MY DECK
           </div>
           <h1 style="font-family:'Outfit', sans-serif; font-size:32px; font-weight:900; color:#fff; margin:6px 0;">
             Working Memory Athlete Cards
           </h1>
           <div style="font-size:13.5px; color:rgba(255,255,255,0.6); max-width:600px; line-height:1.5;">
-            Collect, trade, and showcase 3D tokenized cognitive cards featuring verified Cowan's K capacity &amp; reaction telemetry of top athletes.
+            Buy, collect, trade, and equip 3D tokenized cognitive cards featuring verified Cowan's K capacity &amp; reaction telemetry of top athletes.
           </div>
           ${isAdminTest ? `
             <div style="margin-top:10px; font-family:'JetBrains Mono', monospace; font-size:11px; color:#d4ff00; background:rgba(212,255,0,0.1); border:1px solid rgba(212,255,0,0.3); padding:4px 12px; border-radius:6px; display:inline-block;">
@@ -166,30 +169,40 @@ export async function renderCollectiblesStore(container) {
         </div>
       </div>
 
-      <!-- Navigation Tab Selector (Store vs Trade Arena) -->
+      <!-- Navigation Tab Selector (Marketplace vs My Deck vs Trade Arena) -->
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom: 28px;">
         <div style="
           display: flex; gap: 6px; background: rgba(255,255,255,0.04);
           border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 4px;
         ">
-          <button id="tab-store-main" style="
+          <button id="tab-marketplace" style="
             font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12.5px;
-            padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer;
-            background: ${activeStoreTab === 'store' ? '#d4ff00' : 'transparent'};
-            color: ${activeStoreTab === 'store' ? '#000' : 'rgba(255,255,255,0.7)'};
+            padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+            background: ${activeStoreTab === 'marketplace' ? '#d4ff00' : 'transparent'};
+            color: ${activeStoreTab === 'marketplace' ? '#000' : 'rgba(255,255,255,0.7)'};
             text-transform: uppercase; transition: all 0.2s;
           ">
-            💎 Collectibles Store
+            💎 Universal Marketplace
+          </button>
+
+          <button id="tab-my-deck" style="
+            font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12.5px;
+            padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
+            background: ${activeStoreTab === 'deck' ? '#d4ff00' : 'transparent'};
+            color: ${activeStoreTab === 'deck' ? '#000' : 'rgba(255,255,255,0.7)'};
+            text-transform: uppercase; transition: all 0.2s;
+          ">
+            🎴 My Deck (${ownedCardObjects.length})
           </button>
 
           <button id="tab-trade-arena" style="
             font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12.5px;
-            padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer;
+            padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;
             background: ${activeStoreTab === 'trade_arena' ? '#d4ff00' : 'transparent'};
             color: ${activeStoreTab === 'trade_arena' ? '#000' : 'rgba(255,255,255,0.7)'};
             text-transform: uppercase; transition: all 0.2s;
           ">
-            🤝 Real-Time Trade Arena (${tradeListings.length})
+            🤝 Trade Arena (${tradeListings.length})
           </button>
         </div>
 
@@ -204,9 +217,8 @@ export async function renderCollectiblesStore(container) {
         ` : ''}
       </div>
 
-      <!-- MAIN STORE CONTENT -->
-      ${activeStoreTab === 'store' ? `
-        <!-- 3D Collectible Cards Grid -->
+      <!-- TAB 1: UNIVERSAL MARKETPLACE -->
+      ${activeStoreTab === 'marketplace' ? `
         <div style="
           display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
           gap: 28px; margin-bottom: 48px;
@@ -305,7 +317,7 @@ export async function renderCollectiblesStore(container) {
                       font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 12px;
                       cursor: pointer; text-transform: uppercase;
                     ">
-                      ${isOwned ? '✓ IN MY DECK' : `BUY (${card.price} CR)`}
+                      ${isOwned ? '✓ IN MY DECK' : `BUY CARD (${card.price} CR)`}
                     </button>
                   </div>
                 </div>
@@ -313,8 +325,147 @@ export async function renderCollectiblesStore(container) {
             `;
           }).join('')}
         </div>
-      ` : `
-        <!-- REAL-TIME TRADE ARENA CONTENT -->
+      ` : ''}
+
+      <!-- TAB 2: MY PERSONAL INVENTORY DECK -->
+      ${activeStoreTab === 'deck' ? `
+        <div style="margin-bottom: 48px;">
+          ${ownedCardObjects.length === 0 ? `
+            <div style="
+              text-align: center; padding: 60px 24px; background: rgba(13,13,20,0.6);
+              border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+            ">
+              <div style="font-size: 40px; margin-bottom: 12px;">🎴</div>
+              <h3 style="font-family:'Outfit', sans-serif; font-size:22px; font-weight:800; color:#fff; margin:0 0 8px 0;">
+                Your Deck is Currently Empty
+              </h3>
+              <p style="font-size:14px; color:rgba(255,255,255,0.5); max-width:480px; margin:0 auto 20px;">
+                You haven't unlocked any 3D Tokenized Action Cards yet. Browse the Universal Marketplace to purchase cards or complete trade swaps!
+              </p>
+              <button id="btn-goto-marketplace" style="
+                background: #d4ff00; color: #000; font-family: 'Space Grotesk', sans-serif;
+                font-weight: 800; font-size: 13px; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer;
+              ">
+                💎 Explore Universal Marketplace &rarr;
+              </button>
+            </div>
+          ` : `
+            <div style="
+              display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+              gap: 28px;
+            ">
+              ${ownedCardObjects.map(card => {
+                const isEquipped = equippedAbility === card.ability;
+
+                return `
+                  <div class="card-3d-wrapper" style="perspective: 1000px;">
+                    <div class="card-3d-inner" style="
+                      background: ${card.bgGradient};
+                      border: 1.5px solid ${card.rarityColor};
+                      border-radius: 20px; padding: 24px; position: relative; overflow: hidden;
+                      box-shadow: 0 20px 48px rgba(0,0,0,0.6), 0 0 35px ${card.rarityColor}33;
+                      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                      transform-style: preserve-3d;
+                    ">
+                      
+                      <!-- Holographic Foil Overlay -->
+                      <div style="
+                        position: absolute; inset: 0;
+                        background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.08) 100%);
+                        pointer-events: none; border-radius: 20px;
+                      "></div>
+
+                      <!-- Deck Ownership Badge & Serial -->
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; position:relative; z-index:2;">
+                        <span style="
+                          font-family: 'Space Grotesk', sans-serif; font-size: 10px; font-weight: 800;
+                          color: #000; background: ${card.rarityColor};
+                          padding: 4px 10px; border-radius: 100px;
+                          text-transform: uppercase; letter-spacing: 0.1em;
+                        ">
+                          OWNED &middot; ${card.rarity}
+                        </span>
+                        <span style="font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.7);">
+                          ${card.tokenId}
+                        </span>
+                      </div>
+
+                      <!-- Athlete Image -->
+                      <div style="text-align:center; margin:16px 0 20px; position:relative; z-index:2;">
+                        <div style="
+                          width: 72px; height: 72px; border-radius: 50%;
+                          background: rgba(0,0,0,0.6); border: 3px solid ${card.rarityColor};
+                          display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+                          font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 1.8rem; color: ${card.rarityColor};
+                          box-shadow: 0 0 35px ${card.rarityColor}66;
+                        ">
+                          ${card.name[0]}
+                        </div>
+                        <h3 style="font-family:'Outfit', sans-serif; font-weight:800; font-size:20px; color:#fff; margin:0 0 2px 0;">
+                          ${card.name}
+                        </h3>
+                        <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:rgba(255,255,255,0.6);">
+                          ${card.handle} &middot; ${card.title}
+                        </div>
+                      </div>
+
+                      <!-- Telemetry Stats Panel -->
+                      <div style="
+                        background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12);
+                        border-radius: 12px; padding: 14px; margin-bottom: 20px; position:relative; z-index:2;
+                      ">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; text-align:center;">
+                          <div>
+                            <div style="font-family:'JetBrains Mono', monospace; font-size:8px; color:rgba(255,255,255,0.4);">COWAN K</div>
+                            <div style="font-family:'Outfit', sans-serif; font-weight:800; font-size:15px; color:#d4ff00;">${card.kCapacity}</div>
+                          </div>
+                          <div>
+                            <div style="font-family:'JetBrains Mono', monospace; font-size:8px; color:rgba(255,255,255,0.4);">RT SPEED</div>
+                            <div style="font-family:'Outfit', sans-serif; font-weight:800; font-size:15px; color:#00f0ff;">${card.speedMs}ms</div>
+                          </div>
+                          <div>
+                            <div style="font-family:'JetBrains Mono', monospace; font-size:8px; color:rgba(255,255,255,0.4);">SUPPRESSION</div>
+                            <div style="font-family:'Outfit', sans-serif; font-weight:800; font-size:15px; color:#34d399;">${card.alphaSuppression}</div>
+                          </div>
+                        </div>
+                        <div style="margin-top:10px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.15); font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.7); text-align:center;">
+                          ⚡ Ability: <strong style="color:#d4ff00;">${card.ability}</strong>
+                        </div>
+                      </div>
+
+                      <!-- Deck Management Controls -->
+                      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; position:relative; z-index:2;">
+                        <button class="btn-equip-ability" data-ability="${card.ability}" style="
+                          padding: 10px; border-radius: 8px; border: none;
+                          background: ${isEquipped ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.1)'};
+                          color: ${isEquipped ? '#34d399' : '#fff'};
+                          border: 1px solid ${isEquipped ? '#34d399' : 'rgba(255,255,255,0.2)'};
+                          font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 11px;
+                          cursor: pointer; text-transform: uppercase;
+                        ">
+                          ${isEquipped ? '⚡ EQUIPPED' : '⚔ EQUIP'}
+                        </button>
+
+                        <button class="btn-deck-trade" data-card-id="${card.id}" style="
+                          padding: 10px; border-radius: 8px;
+                          border: 1px solid rgba(212,255,0,0.4); background: rgba(212,255,0,0.15);
+                          color: #d4ff00; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+                          font-size: 11px; cursor: pointer; text-transform: uppercase;
+                        ">
+                          🤝 TRADE CARD
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      ` : ''}
+
+      <!-- TAB 3: REAL-TIME TRADE ARENA -->
+      ${activeStoreTab === 'trade_arena' ? `
         <div style="margin-bottom: 48px;">
           ${tradeListings.length === 0 ? `
             <div style="
@@ -381,7 +532,7 @@ export async function renderCollectiblesStore(container) {
             </div>
           `}
         </div>
-      `}
+      ` : ''}
     </div>
 
     <!-- Put Up Card for Trade Modal -->
@@ -404,12 +555,12 @@ export async function renderCollectiblesStore(container) {
 
         <div style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
           <div>
-            <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Select Card to Offer</label>
+            <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Select Card from Your Deck</label>
             <select id="trade-select-card" style="
               width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
               border-radius: 8px; padding: 12px; color: #fff; font-family: 'Space Grotesk', sans-serif; font-size: 13px; outline: none;
             ">
-              ${COLLECTIBLE_CARDS.map(c => `
+              ${ownedCardObjects.map(c => `
                 <option value="${c.id}">${c.name} (${c.rarity})</option>
               `).join('')}
             </select>
@@ -531,12 +682,22 @@ export async function renderCollectiblesStore(container) {
   `;
 
   // Attach Navigation Tab events
-  container.querySelector('#tab-store-main')?.addEventListener('click', () => {
-    activeStoreTab = 'store';
+  container.querySelector('#tab-marketplace')?.addEventListener('click', () => {
+    activeStoreTab = 'marketplace';
+    renderCollectiblesStore(container);
+  });
+  container.querySelector('#tab-my-deck')?.addEventListener('click', () => {
+    activeStoreTab = 'deck';
     renderCollectiblesStore(container);
   });
   container.querySelector('#tab-trade-arena')?.addEventListener('click', () => {
     activeStoreTab = 'trade_arena';
+    renderCollectiblesStore(container);
+  });
+
+  // Empty deck redirect button
+  container.querySelector('#btn-goto-marketplace')?.addEventListener('click', () => {
+    activeStoreTab = 'marketplace';
     renderCollectiblesStore(container);
   });
 
@@ -609,17 +770,36 @@ export async function renderCollectiblesStore(container) {
     });
   });
 
-  // Attach Buy Card click events
+  // Attach Buy Card click events in Universal Marketplace
   container.querySelectorAll('.btn-buy-card').forEach(btn => {
     btn.addEventListener('click', () => {
       const cardId = btn.dataset.cardId;
       const card = COLLECTIBLE_CARDS.find(c => c.id === cardId);
       if (card) {
-        buyCollectibleCard(card, (insufficientCard) => {
+        if (buyCollectibleCard(card, () => {
           if (topupModal) topupModal.style.display = 'flex';
-        });
-        renderCollectiblesStore(container);
+        })) {
+          activeStoreTab = 'deck'; // Switch to My Deck automatically after purchase!
+          renderCollectiblesStore(container);
+        }
       }
+    });
+  });
+
+  // Equip Ability handlers in My Deck
+  container.querySelectorAll('.btn-equip-ability').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ability = btn.dataset.ability;
+      equippedAbility = equippedAbility === ability ? null : ability;
+      alert(equippedAbility ? `⚡ Equipped Special Ability: "${ability}"!` : `Unequipped Ability.`);
+      renderCollectiblesStore(container);
+    });
+  });
+
+  // Quick Trade from My Deck
+  container.querySelectorAll('.btn-deck-trade').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (listModal) listModal.style.display = 'flex';
     });
   });
 
