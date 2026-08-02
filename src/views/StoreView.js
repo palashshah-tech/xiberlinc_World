@@ -1,9 +1,11 @@
 /* ============================================================
    StoreView.js — The Collectibles Store
    3D Tokenized Action Cards of Working Memory Athletes
+   With Real-Money Credit Top-Up Checkout & Admin Account Override
    ============================================================ */
 
-import { getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs } from '../utils/battlePass.js';
+import { getBattlePassState, getOwnedCards, buyCollectibleCard, getXpLogs, addStoreCredits } from '../utils/battlePass.js';
+import { auth } from '../utils/firebase.js';
 
 export const COLLECTIBLE_CARDS = [
   {
@@ -94,6 +96,8 @@ export function renderCollectiblesStore(container) {
   const bp = getBattlePassState();
   const owned = getOwnedCards();
   const logs = getXpLogs();
+  const currentUserEmail = (auth.currentUser?.email || localStorage.getItem('cogscreen_user_email') || '').toLowerCase().trim();
+  const isAdminTest = currentUserEmail === 'palash.shah@xiberlinc.one';
 
   container.innerHTML = `
     <div class="scroll-reveal" style="max-width: 1380px; margin: 0 auto; padding: 40px 24px;">
@@ -115,18 +119,34 @@ export function renderCollectiblesStore(container) {
           <div style="font-size:13.5px; color:rgba(255,255,255,0.6); max-width:600px; line-height:1.5;">
             Collect, trade, and showcase 3D tokenized cognitive cards featuring verified Cowan's K capacity &amp; reaction telemetry of top athletes.
           </div>
+          ${isAdminTest ? `
+            <div style="margin-top:10px; font-family:'JetBrains Mono', monospace; font-size:11px; color:#d4ff00; background:rgba(212,255,0,0.1); border:1px solid rgba(212,255,0,0.3); padding:4px 12px; border-radius:6px; display:inline-block;">
+              👑 Master Admin Test Account Active (palash.shah@xiberlinc.one) &middot; Unlimited Test Credits Enabled
+            </div>
+          ` : ''}
         </div>
 
-        <!-- Store User Wallet & XP Logs Modal Button -->
+        <!-- Store User Wallet & Credit Top-Up Buttons -->
         <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
           <div style="
             background: rgba(0,0,0,0.6); border: 1px solid rgba(212,255,0,0.4);
-            border-radius: 14px; padding: 12px 20px; text-align: right;
+            border-radius: 14px; padding: 10px 18px; text-align: right;
+            display: flex; align-items: center; gap: 14px;
           ">
-            <div style="font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase;">Store Credits</div>
-            <div id="store-user-credits" style="font-family:'Outfit', sans-serif; font-weight:900; font-size:22px; color:#d4ff00;">
-              ${bp.credits.toLocaleString()} CR
+            <div>
+              <div style="font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase;">Store Credits</div>
+              <div id="store-user-credits" style="font-family:'Outfit', sans-serif; font-weight:900; font-size:22px; color:#d4ff00;">
+                ${bp.credits.toLocaleString()} CR
+              </div>
             </div>
+
+            <button id="btn-topup-credits" style="
+              background: #d4ff00; color: #000; font-family: 'Space Grotesk', sans-serif;
+              font-weight: 800; font-size: 11.5px; border: none; padding: 8px 14px;
+              border-radius: 8px; cursor: pointer; text-transform: uppercase; white-space: nowrap;
+            ">
+              + Buy Credits ($)
+            </button>
           </div>
 
           <button id="btn-view-xp-logs" style="
@@ -258,9 +278,69 @@ export function renderCollectiblesStore(container) {
       </div>
     </div>
 
-    <!-- XP Activity Logs Modal Overlay -->
+    <!-- Real-Money Credit Top-Up Modal -->
+    <div id="credit-topup-modal" style="
+      display: none; position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(16px);
+      align-items: center; justify-content: center; padding: 24px;
+    ">
+      <div style="
+        background: rgba(13, 13, 20, 0.96); border: 1px solid rgba(212,255,0,0.35);
+        border-radius: 20px; max-width: 500px; width: 100%; padding: 28px;
+        position: relative; color: #fff; box-shadow: 0 24px 60px rgba(0,0,0,0.9);
+      ">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:14px; margin-bottom:18px;">
+          <div>
+            <div style="font-family:'Space Grotesk', sans-serif; font-size:10px; color:#d4ff00; letter-spacing:0.12em; text-transform:uppercase;">
+              💳 STORE CREDIT TOP-UP
+            </div>
+            <h2 style="font-family:'Outfit', sans-serif; font-size:20px; font-weight:800; margin:2px 0 0 0;">
+              Purchase Store Credits (USD)
+            </h2>
+          </div>
+          <button id="topup-modal-close" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+          <div class="credit-pack-option" data-credits="500" data-price="5.00" style="
+            display:flex; justify-content:space-between; align-items:center; padding:14px 18px;
+            background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:12px; cursor:pointer;
+          ">
+            <div>
+              <div style="font-family:'Outfit', sans-serif; font-weight:800; font-size:16px; color:#fff;">Starter Pack &middot; 500 CR</div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.5);">Unlocks 1 Action Card</div>
+            </div>
+            <button style="background:#d4ff00; color:#000; font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:12px; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">$5.00 USD</button>
+          </div>
+
+          <div class="credit-pack-option" data-credits="1200" data-price="10.00" style="
+            display:flex; justify-content:space-between; align-items:center; padding:14px 18px;
+            background:rgba(124,58,237,0.12); border:1px solid rgba(167,139,250,0.3); border-radius:12px; cursor:pointer;
+          ">
+            <div>
+              <div style="font-family:'Outfit', sans-serif; font-weight:800; font-size:16px; color:#fff;">Pro Pack &middot; 1,200 CR <span style="font-size:10px; color:#d4ff00;">(+20% BONUS)</span></div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.5);">Unlocks 3 Action Cards</div>
+            </div>
+            <button style="background:#d4ff00; color:#000; font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:12px; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">$10.00 USD</button>
+          </div>
+
+          <div class="credit-pack-option" data-credits="3200" data-price="25.00" style="
+            display:flex; justify-content:space-between; align-items:center; padding:14px 18px;
+            background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.3); border-radius:12px; cursor:pointer;
+          ">
+            <div>
+              <div style="font-family:'Outfit', sans-serif; font-weight:800; font-size:16px; color:#fff;">Elite Pack &middot; 3,200 CR <span style="font-size:10px; color:#00f0ff;">(+28% BONUS)</span></div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.5);">Unlocks All Mythic Cards</div>
+            </div>
+            <button style="background:#d4ff00; color:#000; font-family:'Space Grotesk', sans-serif; font-weight:800; font-size:12px; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">$25.00 USD</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- XP Activity Logs Modal -->
     <div id="xp-logs-modal" style="
-      display: none; fixed: true; position: fixed; inset: 0; z-index: 10000;
+      display: none; position: fixed; inset: 0; z-index: 10000;
       background: rgba(0,0,0,0.85); backdrop-filter: blur(16px);
       align-items: center; justify-content: center; padding: 24px;
     ">
@@ -286,7 +366,7 @@ export function renderCollectiblesStore(container) {
                 <div style="font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.4);">${log.date}</div>
               </div>
               <div style="font-family:'JetBrains Mono', monospace; font-weight:800; font-size:13px; color:#d4ff00;">
-                +${log.xp} XP
+                ${log.xp ? `+${log.xp} XP` : 'TRANSACTION'}
               </div>
             </div>
           `).join('')}
@@ -295,15 +375,37 @@ export function renderCollectiblesStore(container) {
     </div>
   `;
 
+  // Attach Top-up modal trigger
+  const topupModal = document.getElementById('credit-topup-modal');
+  container.querySelector('#btn-topup-credits')?.addEventListener('click', () => {
+    if (topupModal) topupModal.style.display = 'flex';
+  });
+  container.querySelector('#topup-modal-close')?.addEventListener('click', () => {
+    if (topupModal) topupModal.style.display = 'none';
+  });
+
+  // Credit Pack Purchase click handlers
+  container.querySelectorAll('.credit-pack-option').forEach(pack => {
+    pack.addEventListener('click', () => {
+      const credits = parseInt(pack.dataset.credits);
+      const price = pack.dataset.price;
+      addStoreCredits(credits, price);
+      topupModal.style.display = 'none';
+      alert(`💳 Checkout Success! +${credits} Store Credits added to your wallet for $${price} USD!`);
+      renderCollectiblesStore(container);
+    });
+  });
+
   // Attach Buy Card click events
   container.querySelectorAll('.btn-buy-card').forEach(btn => {
     btn.addEventListener('click', () => {
       const cardId = btn.dataset.cardId;
       const card = COLLECTIBLE_CARDS.find(c => c.id === cardId);
       if (card) {
-        if (buyCollectibleCard(card)) {
-          renderCollectiblesStore(container);
-        }
+        buyCollectibleCard(card, (insufficientCard) => {
+          if (topupModal) topupModal.style.display = 'flex';
+        });
+        renderCollectiblesStore(container);
       }
     });
   });

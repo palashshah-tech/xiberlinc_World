@@ -3,24 +3,37 @@
    Handles XP progression, victory logs, and 3D Tokenized Card transactions
    ============================================================ */
 
+import { auth } from './firebase.js';
+
 const BP_STORAGE_KEY = 'xiberlinc_battle_pass';
 const LOGS_STORAGE_KEY = 'xiberlinc_xp_logs';
 const CARDS_STORAGE_KEY = 'xiberlinc_owned_cards';
 
 export function getBattlePassState() {
+  const currentUserEmail = (auth.currentUser?.email || localStorage.getItem('cogscreen_user_email') || '').toLowerCase().trim();
+  const isAdminTest = currentUserEmail === 'palash.shah@xiberlinc.one';
+
   const data = localStorage.getItem(BP_STORAGE_KEY);
+  let state;
   if (data) {
-    return JSON.parse(data);
+    state = JSON.parse(data);
+  } else {
+    state = {
+      level: 1,
+      xp: 0,
+      maxXp: 5000,
+      vipTicketActive: true,
+      credits: 0, // DEFAULT 0 CR for everyone — credits are purchased with real money
+    };
   }
-  const defaultState = {
-    level: 14,
-    xp: 3450,
-    maxXp: 5000,
-    vipTicketActive: true,
-    credits: 1250, // Token credits for Collectibles Store
-  };
-  localStorage.setItem(BP_STORAGE_KEY, JSON.stringify(defaultState));
-  return defaultState;
+
+  // Admin Exception for palash.shah@xiberlinc.one
+  if (isAdminTest) {
+    state.credits = 99999;
+  }
+
+  localStorage.setItem(BP_STORAGE_KEY, JSON.stringify(state));
+  return state;
 }
 
 export function getXpLogs() {
@@ -30,8 +43,7 @@ export function getXpLogs() {
   }
   const initialLogs = [
     { id: 'l_1', title: 'Ghost Match Victory vs Marcus "Prism" Lee', xp: 250, date: 'Just now' },
-    { id: 'l_2', title: 'Daily Focus Chamber Drill Completed', xp: 150, date: '2 hours ago' },
-    { id: 'l_3', title: 'Season 1 Pass Challenge Unlocked', xp: 500, date: 'Yesterday' }
+    { id: 'l_2', title: 'Daily Focus Chamber Drill Completed', xp: 150, date: '2 hours ago' }
   ];
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(initialLogs));
   return initialLogs;
@@ -40,7 +52,7 @@ export function getXpLogs() {
 export function addBattleXp(amount, title = 'Ghost Match Victory') {
   const bp = getBattlePassState();
   bp.xp += amount;
-  bp.credits += Math.round(amount * 0.4);
+  // NOTE: Store credits are strictly purchased with real money, NOT earned for free!
 
   let leveledUp = false;
   while (bp.xp >= bp.maxXp) {
@@ -64,6 +76,24 @@ export function addBattleXp(amount, title = 'Ghost Match Victory') {
   // Live UI Updates across all open elements
   updateBattlePassUi(bp, leveledUp);
   return { bp, leveledUp };
+}
+
+export function addStoreCredits(amount, dollarPrice) {
+  const bp = getBattlePassState();
+  bp.credits += amount;
+  localStorage.setItem(BP_STORAGE_KEY, JSON.stringify(bp));
+
+  const logs = getXpLogs();
+  logs.unshift({
+    id: `l_${Date.now()}`,
+    title: `Purchased +${amount} Store Credits ($${dollarPrice} USD)`,
+    xp: 0,
+    date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  });
+  localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs.slice(0, 20)));
+
+  updateBattlePassUi(bp);
+  return bp.credits;
 }
 
 export function updateBattlePassUi(bp = getBattlePassState(), leveledUp = false) {
@@ -109,15 +139,19 @@ export function getOwnedCards() {
   if (cards) {
     return JSON.parse(cards);
   }
-  const initialOwned = ['card_kaito_mythic']; // User starts with 1 card
+  const initialOwned = []; // Empty inventory by default
   localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(initialOwned));
   return initialOwned;
 }
 
-export function buyCollectibleCard(card) {
+export function buyCollectibleCard(card, onInsufficientCredits) {
   const bp = getBattlePassState();
   if (bp.credits < card.price) {
-    alert(`Insufficient Credits! You need ${card.price} CR (You have ${bp.credits} CR). Win more Ghost Matches to earn credits!`);
+    if (onInsufficientCredits) {
+      onInsufficientCredits(card);
+    } else {
+      alert(`Insufficient Credits! You need ${card.price} CR (You have ${bp.credits} CR). Click "+ Buy Credits" to top up with real money!`);
+    }
     return false;
   }
 
