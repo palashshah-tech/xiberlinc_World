@@ -2,7 +2,7 @@
    avatarEngine.js — Three.js 3D Humanoid & GLB Model Engine
    Loads native high-res male.glb & female.glb models with
    PBR materials, ambient lighting, particles & orbit controls.
-   Guarantees positive canvas dimensions & prevents WebGL errors.
+   Guarantees positive canvas dimensions & complete API compatibility.
    ============================================================ */
 
 import * as THREE from 'three';
@@ -42,12 +42,14 @@ function buildHumanoid(gender, palette) {
   const headGeo = new THREE.SphereGeometry(0.28, 32, 32);
   const head = new THREE.Mesh(headGeo, skin);
   head.position.y = 1.72;
+  head.name = 'head';
   root.add(head);
 
   // Hair Cap
   const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.38);
   const hairBase = new THREE.Mesh(hairBaseGeo, hair);
   hairBase.position.set(0, 1.76, -0.04);
+  hairBase.name = 'hair';
   root.add(hairBase);
 
   // Torso
@@ -106,8 +108,8 @@ export class AvatarEngine {
     this.startTime = performance.now();
 
     // Guarantee positive non-zero canvas dimensions
-    const w = Math.max(container.clientWidth || 340, 100);
-    const h = Math.max(container.clientHeight || 380, 100);
+    const w = Math.max(container?.clientWidth || 340, 100);
+    const h = Math.max(container?.clientHeight || 380, 100);
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
@@ -118,8 +120,10 @@ export class AvatarEngine {
     this.renderer.setSize(w, h);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    container.innerHTML = '';
-    container.appendChild(this.renderer.domElement);
+    if (container) {
+      container.innerHTML = '';
+      container.appendChild(this.renderer.domElement);
+    }
 
     // Controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -153,11 +157,88 @@ export class AvatarEngine {
     }
 
     // Resize observer
-    this._resizeObs = new ResizeObserver(() => this._onResize());
-    this._resizeObs.observe(container);
+    if (container) {
+      this._resizeObs = new ResizeObserver(() => this._onResize());
+      this._resizeObs.observe(container);
+    }
 
     // Loop
     this._animate();
+  }
+
+  // ── API COMPATIBILITY METHODS ──
+
+  init() {
+    return this;
+  }
+
+  loadAvatar(model = 'man', palette = {}) {
+    this.gender = model;
+    this.pal = palette;
+    if (this.avatar) this.scene.remove(this.avatar);
+
+    if (this.useGlb) {
+      this._loadGlbModel(this.gender);
+    } else {
+      this.avatar = buildHumanoid(this.gender, this.pal);
+      this.scene.add(this.avatar);
+    }
+  }
+
+  setSkinColor(hex) {
+    if (this.avatar) {
+      this.avatar.traverse((child) => {
+        if (child.isMesh && child.name === 'head') child.material.color.set(hex);
+      });
+    }
+  }
+
+  setHairColor(hex) {
+    if (this.avatar) {
+      this.avatar.traverse((child) => {
+        if (child.isMesh && child.name === 'hair') child.material.color.set(hex);
+      });
+    }
+  }
+
+  setOutfitColor(hex) {
+    if (this.avatar) {
+      this.avatar.traverse((child) => {
+        if (child.isMesh && child.material && child.name !== 'head' && child.name !== 'hair') {
+          child.material.color.set(hex);
+        }
+      });
+    }
+  }
+
+  setShoeColor(hex) {
+    this.setOutfitColor(hex);
+  }
+
+  setSpotlightColor(hex) {
+    if (this.particles?.material) this.particles.material.color.set(hex);
+  }
+
+  resetCamera() {
+    this.camera.position.set(0, 0.5, 3.8);
+    this.controls.target.set(0, 0.4, 0);
+    this.controls.update();
+  }
+
+  dispose() {
+    this.destroy();
+  }
+
+  destroy() {
+    if (this.animId) cancelAnimationFrame(this.animId);
+    if (this._resizeObs) this._resizeObs.disconnect();
+    if (this.controls) this.controls.dispose();
+    if (this.renderer) {
+      this.renderer.dispose();
+      if (this.renderer.domElement && this.renderer.domElement.parentNode) {
+        this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+      }
+    }
   }
 
   _loadGlbModel(gender) {
@@ -199,19 +280,8 @@ export class AvatarEngine {
     );
   }
 
-  destroy() {
-    if (this.animId) cancelAnimationFrame(this.animId);
-    if (this._resizeObs) this._resizeObs.disconnect();
-    if (this.controls) this.controls.dispose();
-    if (this.renderer) {
-      this.renderer.dispose();
-      if (this.renderer.domElement.parentNode) {
-        this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
-      }
-    }
-  }
-
   _onResize() {
+    if (!this.container) return;
     const w = Math.max(this.container.clientWidth || 340, 100);
     const h = Math.max(this.container.clientHeight || 380, 100);
     this.camera.aspect = w / h;
