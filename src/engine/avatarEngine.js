@@ -1,7 +1,8 @@
 /* ============================================================
    avatarEngine.js — Three.js 3D Humanoid & GLB Model Engine
    Loads high-res GLB 3D models (nobleman.glb, girl.glb, male.glb, female.glb)
-   with PBR materials, ambient lighting, particles & orbit controls.
+   with luxury Porsche 3D showroom turntable 360° rotation, ambient lighting,
+   particles & orbit controls.
    ============================================================ */
 
 import * as THREE from 'three';
@@ -89,9 +90,13 @@ export class AvatarEngine {
       container.appendChild(this.renderer.domElement);
     }
 
+    // Porsche 3D Showroom Smooth Turntable OrbitControls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = 2.2; // Smooth Porsche showroom turntable 360° spin
+    this.controls.enableZoom = false;
     this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
     this.controls.target.set(0, 0.4, 0);
 
@@ -224,7 +229,8 @@ export class AvatarEngine {
     }
 
     if (this.avatar) {
-      this.avatar.rotation.y = Math.sin(t * 0.4) * 0.05;
+      // Continuous 360 degree turntable rotation (Porsche showroom mode)
+      this.avatar.rotation.y += 0.006;
     }
 
     this.controls.update();
