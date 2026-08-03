@@ -222,16 +222,29 @@ export function WorldView() {
         <!-- Floor Spotlight Pool -->
         <div class="spotlight-floor-pool" id="spotlight-floor"></div>
 
-        <!-- Floating Top Header Controls -->
-        <div style="position:absolute; top:28px; left:32px; right:32px; z-index:100; display:flex; align-items:center; justify-content:space-between; pointer-events:auto;">
+        <!-- Floating Extreme Top Header Controls -->
+        <div style="position:absolute; top:24px; left:32px; right:32px; z-index:200; display:flex; align-items:center; justify-content:space-between; pointer-events:auto;">
           <div style="display:flex; align-items:center; gap:12px;">
             <div style="width:32px; height:32px; border-radius:8px; background:#000; border:1px solid rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; padding:4px;">
               <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;" alt="Xiberlinc" />
             </div>
             <div>
-              <div style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; color:#d4ff00; letter-spacing:0.18em; text-transform:uppercase;">3D AVATAR SELECTION &middot; CHAMPION STAGE</div>
-              <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.1rem; color:#ffffff;">CHOOSE YOUR 3D AVATAR</div>
+              <div style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; color:#d4ff00; letter-spacing:0.18em; text-transform:uppercase;">3D AVATAR SELECTION</div>
+              <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:0.95rem; color:#ffffff;">CHOOSE YOUR CHAMPION</div>
             </div>
+          </div>
+
+          <!-- Extreme Top Center Avatar Champion Title -->
+          <div id="avatar-model-label" style="
+            position:absolute; left:50%; transform:translateX(-50%);
+            font-family:'Outfit', sans-serif; font-size:20px; font-weight:900;
+            color:#ffffff; text-transform:uppercase; letter-spacing:0.06em;
+            text-shadow:0 0 25px rgba(212,255,0,0.7), 0 4px 12px rgba(0,0,0,0.9);
+            background:rgba(0,0,0,0.65); padding:6px 26px; border-radius:100px;
+            border:1px solid rgba(255,255,255,0.18); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+            white-space:nowrap; box-shadow:0 10px 30px rgba(0,0,0,0.8);
+          ">
+            👑 NOBLEMAN &middot; THE QUANTUM ARCHITECT
           </div>
 
           <button id="avatar-skip-btn" class="magnetic-btn" data-cursor="SKIP" style="
@@ -243,20 +256,6 @@ export function WorldView() {
           ">
             Skip Stage &rarr;
           </button>
-        </div>
-
-        <!-- 3D Champion Avatar Title Floating Fixed at Top -->
-        <div id="avatar-model-label" style="
-          position:absolute; top:104px; left:50%; transform:translateX(-50%);
-          z-index:150; pointer-events:none; text-align:center;
-          font-family:'Outfit', sans-serif; font-size:24px; font-weight:900;
-          color:#ffffff; text-transform:uppercase; letter-spacing:0.08em;
-          text-shadow:0 0 30px rgba(212,255,0,0.7), 0 4px 12px rgba(0,0,0,0.9);
-          background:rgba(0,0,0,0.55); padding:8px 28px; border-radius:100px;
-          border:1px solid rgba(255,255,255,0.15); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-          white-space:nowrap; box-shadow:0 10px 30px rgba(0,0,0,0.7);
-        ">
-          👑 NOBLEMAN &middot; THE QUANTUM ARCHITECT
         </div>
 
         <!-- 3D Avatars Orbital Stage Container -->

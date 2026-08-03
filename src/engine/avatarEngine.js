@@ -180,12 +180,12 @@ export class AvatarEngine {
         const box = new THREE.Box3().setFromObject(this.avatar);
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 2.2 / Math.max(maxDim, 0.001);
+        const scale = 1.95 / Math.max(maxDim, 0.001);
         this.avatar.scale.set(scale, scale, scale);
 
         const center = box.getCenter(new THREE.Vector3());
         this.avatar.position.sub(center.multiplyScalar(scale));
-        this.avatar.position.y = -0.55;
+        this.avatar.position.y = -0.65;
 
         this.avatar.traverse((child) => {
           if (child.isMesh) {
