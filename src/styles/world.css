@@ -680,6 +680,7 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   justify-content: center;
   transform-style: preserve-3d;
   z-index: 15;
+  pointer-events: none;
 }
 
 .avatar-model-wrapper {

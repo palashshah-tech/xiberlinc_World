@@ -241,12 +241,12 @@ export function WorldView() {
             👑 NOBLEMAN &middot; THE QUANTUM ARCHITECT
           </div>
 
-          <button id="avatar-skip-btn" class="magnetic-btn" data-cursor="SKIP" style="
+          <button id="avatar-skip-btn" onclick="window.skipAvatarStage && window.skipAvatarStage()" class="magnetic-btn" data-cursor="SKIP" style="
             background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
             border-radius:100px; padding:8px 20px; color:#ffffff;
             font-family:'Space Grotesk',sans-serif; font-size:11.5px; font-weight:700;
             cursor:pointer; backdrop-filter:blur(16px); transition:all 0.25s ease;
-            text-transform:uppercase; letter-spacing:0.1em;
+            text-transform:uppercase; letter-spacing:0.1em; position:relative; z-index:999999; pointer-events:auto;
           ">
             Skip Stage &rarr;
           </button>
@@ -260,12 +260,13 @@ export function WorldView() {
         </div>
 
         <!-- Centered Main Confirm Button Fixed at Bottom -->
-        <div style="position:absolute; bottom:42px; left:50%; transform:translateX(-50%); z-index:150; pointer-events:auto;">
-          <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
+        <div style="position:absolute; bottom:42px; left:50%; transform:translateX(-50%); z-index:999999; pointer-events:auto;">
+          <button id="avatar-confirm-btn" onclick="window.confirmSelectedAvatar && window.confirmSelectedAvatar()" class="magnetic-btn" data-cursor="EQUIP" style="
+            position:relative; z-index:999999; pointer-events:auto;
             padding:16px 42px; border-radius:100px; border:none; white-space:nowrap;
             background:#d4ff00; color:#000000; font-family:'Space Grotesk',sans-serif;
             font-weight:900; font-size:13.5px; cursor:pointer; text-transform:uppercase;
-            letter-spacing:0.1em; box-shadow:0 10px 40px rgba(212,255,0,0.4), 0 0 20px rgba(0,0,0,0.8);
+            letter-spacing:0.1em; box-shadow:0 10px 40px rgba(212,255,0,0.5), 0 0 30px rgba(0,0,0,0.9);
             transition:all 0.25s ease;
           ">
             Confirm 3D Avatar &amp; Enter World &rarr;
@@ -793,23 +794,29 @@ function _initAvatarSpotlightStage(worldData) {
   }
 
   function exitStage() {
+    localStorage.setItem('xiberlinc_avatar_node', activeModel);
     stage.classList.remove('active');
     setTimeout(() => {
       stage.style.display = 'none';
       if (avatarEngine) {
-        avatarEngine.dispose();
+        try { avatarEngine.dispose(); } catch(e) {}
         avatarEngine = null;
       }
       window.xiberlinc_world_loaded = true;
       _renderDashboard(worldData);
-    }, 800);
+    }, 400);
   }
+
+  window.confirmSelectedAvatar = () => {
+    exitStage();
+  };
+
+  window.skipAvatarStage = () => {
+    exitStage();
+  };
 
   if (confirmBtn) {
     confirmBtn.addEventListener('click', () => {
-      // Save avatar configuration to localStorage
-      localStorage.setItem('xiberlinc_avatar_node', activeModel);
-      localStorage.setItem('xiberlinc_avatar_palette', JSON.stringify(currentPalette));
       exitStage();
     });
   }
