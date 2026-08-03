@@ -215,12 +215,6 @@ export function WorldView() {
 
       <!-- ── 3D AVATAR SPOTLIGHT CUSTOMIZER STAGE ── -->
       <div id="avatar-spotlight-stage" style="display:none;">
-        <!-- Top Left Corner Light Beam -->
-        <div class="spotlight-beam-left" id="spotlight-beam-l"></div>
-        <!-- Top Right Corner Light Beam -->
-        <div class="spotlight-beam-right" id="spotlight-beam-r"></div>
-        <!-- Floor Spotlight Pool -->
-        <div class="spotlight-floor-pool" id="spotlight-floor"></div>
 
         <!-- Floating Extreme Top Header Controls -->
         <div style="position:absolute; top:24px; left:32px; right:32px; z-index:200; display:flex; align-items:center; justify-content:space-between; pointer-events:auto;">

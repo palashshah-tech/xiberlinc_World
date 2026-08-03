@@ -666,29 +666,10 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
   filter: blur(8px);
 }
 
-#avatar-spotlight-stage.active .spotlight-beam-left {
-  opacity: 1;
-  transform: rotate(-35deg) scale(1);
-}
-
-#avatar-spotlight-stage.active .spotlight-beam-right {
-  opacity: 1;
-  transform: rotate(35deg) scale(1);
-}
-
+.spotlight-beam-left,
+.spotlight-beam-right,
 .spotlight-floor-pool {
-  position: absolute;
-  bottom: 14vh;
-  left: 50%;
-  transform: translateX(-50%) rotateX(75deg);
-  width: 440px;
-  height: 220px;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 45%, rgba(0,0,0,0) 75%);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 5;
-  box-shadow: 0 0 80px rgba(255,255,255,0.4);
-  transition: all 0.6s ease;
+  display: none !important;
 }
 
 .avatar-3d-stage {
