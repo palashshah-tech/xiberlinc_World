@@ -612,48 +612,72 @@ export async function renderCollectiblesStore(container) {
               </button>
             </div>
           ` : `
-            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap:24px;">
-              ${tradeListings.map(listing => `
-                <div style="
-                  background: rgba(13, 13, 20, 0.9); border: 1px solid rgba(212, 255, 0, 0.3);
-                  border-radius: 18px; padding: 24px; position: relative; overflow: hidden;
-                  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
-                ">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                    <span style="font-family:'JetBrains Mono', monospace; font-size:10px; color:#d4ff00; background:rgba(212,255,0,0.15); border:1px solid rgba(212,255,0,0.3); padding:3px 8px; border-radius:4px;">
-                      LISTED FOR TRADE
-                    </span>
-                    <span style="font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(255,255,255,0.4);">
-                      Seller: ${listing.sellerHandle}
-                    </span>
-                  </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap:40px;">
+              ${tradeListings.map(listing => {
+                const card = COLLECTIBLE_CARDS.find(c => c.id === listing.cardId || c.name === listing.cardName) || {
+                  id: listing.cardId || 'card_trade',
+                  name: listing.cardName || 'Trading Card',
+                  handle: listing.sellerHandle || '@seller.exe',
+                  title: 'Trade Arena Listing',
+                  rarity: listing.cardRarity || 'Cyber Volt',
+                  rarityColor: '#d4ff00',
+                  borderClass: 'border-left-behind',
+                  tokenId: '#TRADE / MINT',
+                  kCapacity: 4.60,
+                  speedMs: 180,
+                  alphaSuppression: 0.94,
+                  imageUrl: listing.cardImg || '/assets/kaito_portrait.jpg'
+                };
 
-                  <h3 style="font-family:'Outfit', sans-serif; font-weight:800; font-size:20px; color:#fff; margin:0 0 4px 0;">
-                    ${listing.cardName}
-                  </h3>
-                  <div style="font-size:12px; color:#a78bfa; margin-bottom:14px;">
-                    Rarity: ${listing.cardRarity}
-                  </div>
+                return `
+                  <div class="hof-card-3d ${card.borderClass}" style="--card-img: url('${card.imageUrl}'); --card-border-col: ${card.rarityColor};">
+                    <div class="shadow-layer"></div>
+                    <div class="image-layer background"></div>
+                    <div class="image-layer cutout"></div>
 
-                  <div style="
-                    background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);
-                    border-radius: 10px; padding: 12px; margin-bottom: 16px;
-                  ">
-                    <div style="font-family:'JetBrains Mono', monospace; font-size:8.5px; color:rgba(255,255,255,0.4); text-transform:uppercase;">Asking Offer</div>
-                    <div style="font-family:'Outfit', sans-serif; font-weight:700; font-size:13.5px; color:#fff; margin-top:2px;">
-                      "${listing.askingOffer}"
+                    <div class="content-layer">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: auto;">
+                        <span style="
+                          font-family: 'Space Grotesk', sans-serif; font-size: 9.5px; font-weight: 800;
+                          color: #000; background: ${card.rarityColor};
+                          padding: 3px 10px; border-radius: 100px; text-transform: uppercase;
+                        ">
+                          🤝 FOR TRADE &middot; ${card.rarity}
+                        </span>
+                        <span style="font-family:'JetBrains Mono', monospace; font-size:9px; color:rgba(255,255,255,0.7); background:rgba(0,0,0,0.6); padding:2px 8px; border-radius:4px;">
+                          Seller: ${listing.sellerHandle || '@seller'}
+                        </span>
+                      </div>
+
+                      <div style="margin-top: auto; padding-top: 14px;">
+                        <h2 style="font-family:'Outfit', sans-serif; font-weight:900; font-size:22px; color:#fff; margin:0 0 2px 0;">
+                          ${card.name}
+                        </h2>
+                        <div style="font-family:'JetBrains Mono', monospace; font-size:10.5px; color:${card.rarityColor}; margin-bottom:10px;">
+                          ${card.handle} &middot; ${card.title}
+                        </div>
+
+                        <!-- Asking Offer Badge -->
+                        <div style="
+                          font-family:'JetBrains Mono', monospace; font-size:9.5px; color:#d4ff00;
+                          background:rgba(0,0,0,0.75); border:1px solid rgba(212,255,0,0.4);
+                          padding:8px 12px; border-radius:8px; margin-bottom:14px; text-align:center;
+                        ">
+                          Asking: "${listing.askingOffer || 'Direct Trade Swap'}"
+                        </div>
+
+                        <button class="btn-accept-trade" data-listing-id="${listing.id}" data-seller="${listing.sellerHandle}" style="
+                          width: 100%; padding: 12px; border-radius: 8px; border: none;
+                          background: #d4ff00; color: #000; font-family: 'Space Grotesk', sans-serif;
+                          font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer; letter-spacing:0.08em;
+                        ">
+                          🤝 Accept Trade &amp; Swap Card
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <button class="btn-accept-trade" data-listing-id="${listing.id}" data-seller="${listing.sellerHandle}" style="
-                    width: 100%; padding: 12px; border-radius: 8px; border: none;
-                    background: #d4ff00; color: #000; font-family: 'Space Grotesk', sans-serif;
-                    font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;
-                  ">
-                    🤝 Accept Trade &amp; Swap Card
-                  </button>
-                </div>
-              `).join('')}
+                `;
+              }).join('')}
             </div>
           `}
         </div>
