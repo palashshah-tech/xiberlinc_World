@@ -246,9 +246,31 @@ export function WorldView() {
         </div>
 
         <!-- 3D Avatars Orbital Stage Container -->
-        <div class="avatar-3d-stage">
+        <div class="avatar-3d-stage" style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;">
+          <!-- 3D Champion Avatar Title Directly Above 3D Model -->
+          <div id="avatar-model-label" style="
+            font-family:'Outfit', sans-serif; font-size:24px; font-weight:900;
+            color:#fff; text-align:center; text-transform:uppercase; letter-spacing:0.06em;
+            text-shadow:0 0 25px rgba(212,255,0,0.6); margin-bottom:12px; position:relative; z-index:100;
+          ">
+            👑 NOBLEMAN &middot; THE QUANTUM ARCHITECT
+          </div>
+
           <div id="avatar-model-wrapper" class="avatar-model-wrapper active-spotlight">
-            <div id="avatar-spline-mount" style="position:relative;width:min(70vw,600px);height:min(70vh,600px);margin:0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:16px;"></div>
+            <div id="avatar-spline-mount" style="position:relative;width:min(70vw,600px);height:min(55vh,480px);margin:0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:16px;"></div>
+          </div>
+
+          <!-- Centered Main Confirm Button -->
+          <div style="margin-top:20px; z-index:100; pointer-events:auto;">
+            <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
+              padding:14px 36px; border-radius:12px; border:none; white-space:nowrap;
+              background:#d4ff00; color:#000000; font-family:'Space Grotesk',sans-serif;
+              font-weight:900; font-size:13px; cursor:pointer; text-transform:uppercase;
+              letter-spacing:0.1em; box-shadow:0 10px 40px rgba(212,255,0,0.3);
+              transition:all 0.25s ease;
+            ">
+              Confirm 3D Avatar &amp; Enter World &rarr;
+            </button>
           </div>
         </div>
 
@@ -276,118 +298,6 @@ export function WorldView() {
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
-
-        <!-- Left Side Sliding Customization Dock -->
-        <div class="avatar-sidebar-dock">
-          <!-- Left Column Tabs -->
-          <div class="avatar-sidebar-tabs">
-            <button class="avatar-tab-btn active" data-tab="skin">
-              <span>Skin</span>
-              <span class="tab-indicator"></span>
-            </button>
-            <button class="avatar-tab-btn" data-tab="hair-style">
-              <span>Style</span>
-              <span class="tab-indicator"></span>
-            </button>
-            <button class="avatar-tab-btn" data-tab="hair">
-              <span>Hair</span>
-              <span class="tab-indicator"></span>
-            </button>
-            <button class="avatar-tab-btn" data-tab="outfit">
-              <span>Outfit</span>
-              <span class="tab-indicator"></span>
-            </button>
-            <button class="avatar-tab-btn" data-tab="beam">
-              <span>Beam</span>
-              <span class="tab-indicator"></span>
-            </button>
-          </div>
-
-          <!-- Right Column content pane (slides open seamlessly to the right) -->
-          <div class="avatar-sidebar-content">
-            <!-- Skin Tone -->
-            <div class="avatar-panel-pane active" id="pane-skin">
-              <div class="panel-pane-title" style="margin-bottom: 8px;">Skin Tone</div>
-              <div class="swatches-grid">
-                ${SKIN_PRESETS.map(s => `
-                  <button class="avatar-skin-btn" data-color="${s.color}" title="${s.name}" style="background:${s.color};"></button>
-                `).join('')}
-              </div>
-            </div>
-
-            <!-- Hair Style -->
-            <div class="avatar-panel-pane" id="pane-hair-style">
-              <div class="panel-pane-title" style="margin-bottom: 8px;">Hair Style</div>
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                ${HAIR_STYLE_PRESETS.map(hs => `
-                  <button class="avatar-style-btn" data-style="${hs.id}" style="
-                    padding:8px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12);
-                    border-radius:8px; color:#fff; font-family:'Space Grotesk',sans-serif; font-size:11px;
-                    font-weight:600; cursor:pointer; text-align:left; transition:all 0.2s;
-                  " onmouseenter="this.style.background='rgba(124,58,237,0.15)';this.style.borderColor='#7c3aed';" onmouseleave="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.12)';">${hs.name}</button>
-                `).join('')}
-              </div>
-            </div>
-
-            <!-- Hair Color -->
-            <div class="avatar-panel-pane" id="pane-hair">
-              <div class="panel-pane-title" style="margin-bottom: 8px;">Hair Color</div>
-              <div class="swatches-grid">
-                ${HAIR_PRESETS.map(h => `
-                  <button class="avatar-hair-btn" data-color="${h.color}" title="${h.name}" style="background:${h.color};"></button>
-                `).join('')}
-              </div>
-            </div>
-
-            <!-- Outfit -->
-            <div class="avatar-panel-pane" id="pane-outfit">
-              <div class="panel-pane-title" style="margin-bottom: 8px;">Outfit Color</div>
-              <div class="swatches-grid">
-                ${OUTFIT_PRESETS.map(o => `
-                  <button class="avatar-outfit-btn" data-color="${o.color}" title="${o.name}" style="background:${o.color};"></button>
-                `).join('')}
-              </div>
-            </div>
-
-            <!-- Beam -->
-            <div class="avatar-panel-pane" id="pane-beam">
-              <div class="panel-pane-title" style="margin-bottom: 8px;">Spotlight</div>
-              <div class="swatches-grid">
-                ${[
-                  { color:'#ffffff', name:'White' },
-                  { color:'#7c3aed', name:'Purple' },
-                  { color:'#06b6d4', name:'Cyan' },
-                  { color:'#e2b857', name:'Gold' },
-                  { color:'#f43f5e', name:'Rose' },
-                  { color:'#22c55e', name:'Green' }
-                ].map(b => `
-                  <button class="avatar-beam-btn" data-color="${b.color}" title="${b.name}" style="background:${b.color};"></button>
-                `).join('')}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Elegant Bottom Right Action Controls -->
-        <div style="position:absolute; bottom:32px; right:32px; z-index:100; display:flex; align-items:center; gap:12px; pointer-events:auto;">
-          <button id="avatar-reset-btn" data-cursor="RESET" style="
-            padding:10px 20px; border-radius:10px; background:rgba(255,255,255,0.05);
-            border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6);
-            font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; cursor:pointer;
-            text-transform:uppercase; letter-spacing:0.08em; transition:all 0.25s ease;
-          " onmouseenter="this.style.background='rgba(124,58,237,0.15)';this.style.borderColor='#7c3aed';this.style.color='#fff'" onmouseleave="this.style.background='rgba(255,255,255,0.05)';this.style.borderColor='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.6)'">
-            Reset
-          </button>
-          <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
-            padding:10px 24px; border-radius:10px; border:none; white-space:nowrap;
-            background:#ffffff; color:#000000; font-family:'Space Grotesk',sans-serif;
-            font-weight:700; font-size:11.5px; cursor:pointer; text-transform:uppercase;
-            letter-spacing:0.08em; box-shadow:0 10px 30px rgba(255,255,255,0.15);
-            transition:all 0.25s ease;
-          " onmouseenter="this.style.transform='scale(1.03)';this.style.background='#7c3aed';this.style.color='#ffffff'" onmouseleave="this.style.transform='scale(1)';this.style.background='#ffffff';this.style.color='#000000'">
-            Equip &amp; Enter &rarr;
-          </button>
-        </div>
       </div>
 
       <!-- ── WORLD DASHBOARD (hidden until loader finishes) ── -->

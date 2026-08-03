@@ -773,13 +773,7 @@ a, button, input, select, textarea, [data-cursor], .wld-card, .sfx-btn {
 
 /* Sliding Side Customization Dock Styles */
 .avatar-sidebar-dock {
-  position: absolute;
-  left: 32px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 120;
-  display: flex;
-  pointer-events: auto;
+  display: none !important;
 }
 
 /* Category Selection Column */
