@@ -245,33 +245,38 @@ export function WorldView() {
           </button>
         </div>
 
+        <!-- 3D Champion Avatar Title Floating Fixed at Top -->
+        <div id="avatar-model-label" style="
+          position:absolute; top:104px; left:50%; transform:translateX(-50%);
+          z-index:150; pointer-events:none; text-align:center;
+          font-family:'Outfit', sans-serif; font-size:24px; font-weight:900;
+          color:#ffffff; text-transform:uppercase; letter-spacing:0.08em;
+          text-shadow:0 0 30px rgba(212,255,0,0.7), 0 4px 12px rgba(0,0,0,0.9);
+          background:rgba(0,0,0,0.55); padding:8px 28px; border-radius:100px;
+          border:1px solid rgba(255,255,255,0.15); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+          white-space:nowrap; box-shadow:0 10px 30px rgba(0,0,0,0.7);
+        ">
+          👑 NOBLEMAN &middot; THE QUANTUM ARCHITECT
+        </div>
+
         <!-- 3D Avatars Orbital Stage Container -->
-        <div class="avatar-3d-stage" style="display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;">
-          <!-- 3D Champion Avatar Title Directly Above 3D Model -->
-          <div id="avatar-model-label" style="
-            font-family:'Outfit', sans-serif; font-size:24px; font-weight:900;
-            color:#fff; text-align:center; text-transform:uppercase; letter-spacing:0.06em;
-            text-shadow:0 0 25px rgba(212,255,0,0.6); margin-bottom:12px; position:relative; z-index:100;
-          ">
-            👑 NOBLEMAN &middot; THE QUANTUM ARCHITECT
-          </div>
-
+        <div class="avatar-3d-stage">
           <div id="avatar-model-wrapper" class="avatar-model-wrapper active-spotlight">
-            <div id="avatar-spline-mount" style="position:relative;width:min(70vw,600px);height:min(55vh,480px);margin:0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:16px;"></div>
+            <div id="avatar-spline-mount" style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;"></div>
           </div>
+        </div>
 
-          <!-- Centered Main Confirm Button -->
-          <div style="margin-top:20px; z-index:100; pointer-events:auto;">
-            <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
-              padding:14px 36px; border-radius:12px; border:none; white-space:nowrap;
-              background:#d4ff00; color:#000000; font-family:'Space Grotesk',sans-serif;
-              font-weight:900; font-size:13px; cursor:pointer; text-transform:uppercase;
-              letter-spacing:0.1em; box-shadow:0 10px 40px rgba(212,255,0,0.3);
-              transition:all 0.25s ease;
-            ">
-              Confirm 3D Avatar &amp; Enter World &rarr;
-            </button>
-          </div>
+        <!-- Centered Main Confirm Button Fixed at Bottom -->
+        <div style="position:absolute; bottom:42px; left:50%; transform:translateX(-50%); z-index:150; pointer-events:auto;">
+          <button id="avatar-confirm-btn" class="magnetic-btn" data-cursor="EQUIP" style="
+            padding:16px 42px; border-radius:100px; border:none; white-space:nowrap;
+            background:#d4ff00; color:#000000; font-family:'Space Grotesk',sans-serif;
+            font-weight:900; font-size:13.5px; cursor:pointer; text-transform:uppercase;
+            letter-spacing:0.1em; box-shadow:0 10px 40px rgba(212,255,0,0.4), 0 0 20px rgba(0,0,0,0.8);
+            transition:all 0.25s ease;
+          ">
+            Confirm 3D Avatar &amp; Enter World &rarr;
+          </button>
         </div>
 
         <!-- 3D Orbital Left & Right Arrow Navigation Controls -->
