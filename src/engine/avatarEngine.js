@@ -9,10 +9,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export const AVATAR_MODELS = [
-  { id: 'nobleman', name: 'Nobleman Cyber Master', file: '/models/nobleman.glb', title: 'NODE 01 // NOBLEMAN' },
-  { id: 'girl', name: 'Cyber Valkyrie', file: '/models/girl.glb', title: 'NODE 02 // VALKYRIE' },
-  { id: 'man', name: 'Kaito Cyber Legend', file: '/models/male.glb', title: 'NODE 03 // KAITO' },
-  { id: 'woman', name: 'Yuna Executive Control', file: '/models/female.glb', title: 'NODE 04 // YUNA' },
+  { id: 'nobleman', name: 'Nobleman', file: '/models/nobleman.glb', title: '👑 NOBLEMAN · THE QUANTUM ARCHITECT' },
+  { id: 'girl', name: 'Valkyrie', file: '/models/girl.glb', title: '⚡ VALKYRIE · NEON SPEEDSTER' },
+  { id: 'man', name: 'Kaito Mizushima', file: '/models/male.glb', title: '⚔ KAITO · VISUAL MEMORY LEGEND' },
+  { id: 'woman', name: 'Yuna Sato', file: '/models/female.glb', title: '💎 YUNA · QUEEN OF EXECUTIVE CONTROL' },
 ];
 
 export const DEFAULT_PALETTES = {

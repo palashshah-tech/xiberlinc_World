@@ -229,8 +229,8 @@ export function WorldView() {
               <img src="/xiberlinc_logo.png" style="width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;" alt="Xiberlinc" />
             </div>
             <div>
-              <div style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; color:#7c3aed; letter-spacing:0.18em; text-transform:uppercase;">アバターカスタマイザ · AVATAR STAGE</div>
-              <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.1rem; color:#ffffff;">3D Identity Node</div>
+              <div style="font-family:'M PLUS 1p','Space Grotesk',sans-serif; font-size:9px; font-weight:700; color:#d4ff00; letter-spacing:0.18em; text-transform:uppercase;">3D AVATAR SELECTION &middot; CHAMPION STAGE</div>
+              <div style="font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.1rem; color:#ffffff;">CHOOSE YOUR 3D AVATAR</div>
             </div>
           </div>
 
@@ -720,12 +720,12 @@ function _initAvatarSpotlightStage(worldData) {
   function updateLabel() {
     if (labelEl) {
       const labels = {
-        nobleman: '👑 NOBLEMAN CYBER MASTER // NODE 01',
-        girl: '⚡ CYBER VALKYRIE // NODE 02',
-        man: '⚔ KAITO CYBER LEGEND // NODE 03',
-        woman: '💎 YUNA EXECUTIVE CONTROL // NODE 04'
+        nobleman: '👑 NOBLEMAN &middot; THE QUANTUM ARCHITECT',
+        girl: '⚡ VALKYRIE &middot; NEON SPEEDSTER',
+        man: '⚔ KAITO &middot; VISUAL MEMORY LEGEND',
+        woman: '💎 YUNA &middot; QUEEN OF EXECUTIVE CONTROL'
       };
-      labelEl.textContent = labels[activeModel] || '3D CYBER ATHLETE';
+      labelEl.innerHTML = labels[activeModel] || 'CHOOSE YOUR 3D AVATAR';
     }
   }
 
