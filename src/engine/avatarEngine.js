@@ -1,81 +1,49 @@
 /* ============================================================
    avatarEngine.js — Three.js 3D Humanoid & GLB Model Engine
-   Loads native high-res male.glb & female.glb models with
-   PBR materials, ambient lighting, particles & orbit controls.
-   Guarantees positive canvas dimensions & complete API compatibility.
+   Loads high-res GLB 3D models (nobleman.glb, girl.glb, male.glb, female.glb)
+   with PBR materials, ambient lighting, particles & orbit controls.
    ============================================================ */
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+export const AVATAR_MODELS = [
+  { id: 'nobleman', name: 'Nobleman Cyber Master', file: '/models/nobleman.glb', title: 'NODE 01 // NOBLEMAN' },
+  { id: 'girl', name: 'Cyber Valkyrie', file: '/models/girl.glb', title: 'NODE 02 // VALKYRIE' },
+  { id: 'man', name: 'Kaito Cyber Legend', file: '/models/male.glb', title: 'NODE 03 // KAITO' },
+  { id: 'woman', name: 'Yuna Executive Control', file: '/models/female.glb', title: 'NODE 04 // YUNA' },
+];
+
 export const DEFAULT_PALETTES = {
-  man: { skin: '#d1a384', hair: '#e2b857', outfit: '#12131e', shoes: '#e2b857', hairStyle: 'spiky' },
-  woman: { skin: '#e0ac69', hair: '#ec4899', outfit: '#1e102a', shoes: '#ec4899', hairStyle: 'long' }
+  nobleman: { skin: '#d1a384', hair: '#e2b857', outfit: '#12131e' },
+  girl: { skin: '#e0ac69', hair: '#ec4899', outfit: '#1e102a' },
+  man: { skin: '#d1a384', hair: '#e2b857', outfit: '#12131e' },
+  woman: { skin: '#e0ac69', hair: '#ec4899', outfit: '#1e102a' }
 };
 
-export const SKIN_PRESETS = ['#f5d0a9', '#d1a384', '#e0ac69', '#8d5524', '#3c2415', '#1a100a'];
-export const HAIR_PRESETS = ['#1a1a1a', '#e2b857', '#8b4513', '#e74c3c', '#ec4899', '#7c3aed', '#00f0ff', '#ffffff'];
-export const OUTFIT_PRESETS = ['#12131e', '#1e102a', '#0d2026', '#2b1518', '#d4ff00', '#7c3aed', '#00f0ff', '#e74c3c'];
-export const HAIR_STYLE_PRESETS = ['buzz', 'spiky', 'long', 'bob'];
+export const SKIN_PRESETS = ['#f5d0a9', '#d1a384', '#e0ac69', '#8d5524'];
+export const HAIR_PRESETS = ['#1a1a1a', '#e2b857', '#8b4513', '#ec4899'];
+export const OUTFIT_PRESETS = ['#12131e', '#1e102a', '#0d2026', '#d4ff00'];
+export const HAIR_STYLE_PRESETS = ['spiky', 'long'];
 
-// ── Shared materials cache ──
-function makeMat(color, opts = {}) {
-  return new THREE.MeshStandardMaterial({
-    color: new THREE.Color(color),
-    roughness: opts.roughness ?? 0.45,
-    metalness: opts.metalness ?? 0.1,
-    ...(opts.emissive ? { emissive: new THREE.Color(opts.emissive), emissiveIntensity: opts.emissiveIntensity ?? 0.15 } : {})
-  });
-}
-
-// ── Build procedural fallback humanoid body ──
-function buildHumanoid(gender, palette) {
+function buildHumanoid(gender) {
   const root = new THREE.Group();
-  const skin = makeMat(palette.skin || '#d1a384');
-  const outfit = makeMat(palette.outfit || '#12131e', { roughness: 0.55 });
-  const hair = makeMat(palette.hair || '#e2b857', { roughness: 0.7 });
-  const shoe = makeMat(palette.shoes || '#e2b857', { roughness: 0.6, metalness: 0.2 });
-  const isMale = gender === 'man';
-
-  // Head
+  const mat = new THREE.MeshStandardMaterial({ color: 0x7c3aed, roughness: 0.5 });
   const headGeo = new THREE.SphereGeometry(0.28, 32, 32);
-  const head = new THREE.Mesh(headGeo, skin);
+  const head = new THREE.Mesh(headGeo, mat);
   head.position.y = 1.72;
-  head.name = 'head';
   root.add(head);
 
-  // Hair Cap
-  const hairBaseGeo = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.38);
-  const hairBase = new THREE.Mesh(hairBaseGeo, hair);
-  hairBase.position.set(0, 1.76, -0.04);
-  hairBase.name = 'hair';
-  root.add(hairBase);
-
-  // Torso
-  const torsoGeo = new THREE.CylinderGeometry(isMale ? 0.32 : 0.26, isMale ? 0.26 : 0.22, 0.75, 16);
-  const torso = new THREE.Mesh(torsoGeo, outfit);
+  const torsoGeo = new THREE.CylinderGeometry(0.3, 0.25, 0.75, 16);
+  const torso = new THREE.Mesh(torsoGeo, mat);
   torso.position.y = 1.05;
   root.add(torso);
-
-  // Legs & Shoes
-  [-0.14, 0.14].forEach(x => {
-    const legGeo = new THREE.CylinderGeometry(0.09, 0.07, 0.7, 16);
-    const leg = new THREE.Mesh(legGeo, outfit);
-    leg.position.set(x, 0.4, 0);
-    root.add(leg);
-
-    const shoeGeo = new THREE.BoxGeometry(0.12, 0.1, 0.24);
-    const shoeMesh = new THREE.Mesh(shoeGeo, shoe);
-    shoeMesh.position.set(x, 0.05, 0.04);
-    root.add(shoeMesh);
-  });
 
   return root;
 }
 
-// ── Floating particles ──
-function buildParticles(count = 60, radius = 2.0, colorHex = 0xd4ff00) {
+function buildParticles(count = 60, radius = 2.5, colorHex = 0xd4ff00) {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(count * 3);
 
@@ -90,32 +58,28 @@ function buildParticles(count = 60, radius = 2.0, colorHex = 0xd4ff00) {
     color: colorHex,
     size: 0.04,
     transparent: true,
-    opacity: 0.6,
+    opacity: 0.65,
   });
 
   return new THREE.Points(geo, mat);
 }
 
-// ── Main Avatar Engine Class ──
 export class AvatarEngine {
-  constructor(container, gender = 'man', pal = {}, useGlb = true) {
+  constructor(container, modelId = 'nobleman', pal = {}, useGlb = true) {
     this.container = container;
-    this.gender = gender;
+    this.modelId = modelId;
     this.pal = pal;
     this.useGlb = useGlb;
 
     this.scene = new THREE.Scene();
     this.startTime = performance.now();
 
-    // Guarantee positive non-zero canvas dimensions
     const w = Math.max(container?.clientWidth || 340, 100);
     const h = Math.max(container?.clientHeight || 380, 100);
 
-    // Camera
     this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
     this.camera.position.set(0, 0.5, 3.8);
 
-    // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(w, h);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -125,96 +89,59 @@ export class AvatarEngine {
       container.appendChild(this.renderer.domElement);
     }
 
-    // Controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
     this.controls.maxPolarAngle = Math.PI / 2 + 0.1;
     this.controls.target.set(0, 0.4, 0);
 
-    // Lighting
-    const amb = new THREE.AmbientLight(0xffffff, 1.2);
+    const amb = new THREE.AmbientLight(0xffffff, 1.3);
     this.scene.add(amb);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
     dirLight.position.set(2, 4, 3);
     this.scene.add(dirLight);
 
-    const rimLight = new THREE.DirectionalLight(gender === 'man' ? 0x7c3aed : 0xd4ff00, 2.0);
+    const rimLight = new THREE.DirectionalLight(0xd4ff00, 2.0);
     rimLight.position.set(-2, 2, -2);
     this.scene.add(rimLight);
 
-    // Particles
-    this.particles = buildParticles(80, 2.5, gender === 'man' ? 0x7c3aed : 0xd4ff00);
+    this.particles = buildParticles(80, 2.5, 0xd4ff00);
     this.scene.add(this.particles);
 
-    // Load Model (GLB or Fallback Mesh)
-    if (this.useGlb) {
-      this._loadGlbModel(gender);
-    } else {
-      this.avatar = buildHumanoid(gender, pal);
-      this.scene.add(this.avatar);
-    }
+    this.loadAvatar(modelId);
 
-    // Resize observer
     if (container) {
       this._resizeObs = new ResizeObserver(() => this._onResize());
       this._resizeObs.observe(container);
     }
 
-    // Loop
     this._animate();
   }
-
-  // ── API COMPATIBILITY METHODS ──
 
   init() {
     return this;
   }
 
-  loadAvatar(model = 'man', palette = {}) {
-    this.gender = model;
+  loadAvatar(modelId = 'nobleman', palette = {}) {
+    this.modelId = modelId;
     this.pal = palette;
     if (this.avatar) this.scene.remove(this.avatar);
 
+    const modelObj = AVATAR_MODELS.find(m => m.id === modelId) || AVATAR_MODELS[0];
+
     if (this.useGlb) {
-      this._loadGlbModel(this.gender);
+      this._loadGlbModel(modelObj.file);
     } else {
-      this.avatar = buildHumanoid(this.gender, this.pal);
+      this.avatar = buildHumanoid(modelId);
       this.scene.add(this.avatar);
     }
   }
 
-  setSkinColor(hex) {
-    if (this.avatar) {
-      this.avatar.traverse((child) => {
-        if (child.isMesh && child.name === 'head') child.material.color.set(hex);
-      });
-    }
-  }
-
-  setHairColor(hex) {
-    if (this.avatar) {
-      this.avatar.traverse((child) => {
-        if (child.isMesh && child.name === 'hair') child.material.color.set(hex);
-      });
-    }
-  }
-
-  setOutfitColor(hex) {
-    if (this.avatar) {
-      this.avatar.traverse((child) => {
-        if (child.isMesh && child.material && child.name !== 'head' && child.name !== 'hair') {
-          child.material.color.set(hex);
-        }
-      });
-    }
-  }
-
-  setShoeColor(hex) {
-    this.setOutfitColor(hex);
-  }
-
+  setSkinColor() {}
+  setHairColor() {}
+  setOutfitColor() {}
+  setShoeColor() {}
   setSpotlightColor(hex) {
     if (this.particles?.material) this.particles.material.color.set(hex);
   }
@@ -241,17 +168,15 @@ export class AvatarEngine {
     }
   }
 
-  _loadGlbModel(gender) {
+  _loadGlbModel(fileUrl) {
     const loader = new GLTFLoader();
-    const url = gender === 'man' ? '/models/male.glb' : '/models/female.glb';
 
     loader.load(
-      url,
+      fileUrl,
       (gltf) => {
         if (this.avatar) this.scene.remove(this.avatar);
         this.avatar = gltf.scene;
 
-        // Auto center and scale model
         const box = new THREE.Box3().setFromObject(this.avatar);
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
@@ -274,7 +199,7 @@ export class AvatarEngine {
       undefined,
       (err) => {
         console.warn('GLB load fallback to procedural mesh', err);
-        this.avatar = buildHumanoid(gender, this.pal);
+        this.avatar = buildHumanoid(this.modelId);
         this.scene.add(this.avatar);
       }
     );

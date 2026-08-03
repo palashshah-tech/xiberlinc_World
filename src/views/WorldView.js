@@ -696,41 +696,36 @@ function _initAvatarSpotlightStage(worldData) {
   const beamR = document.getElementById('spotlight-beam-r');
   const floorPool = document.getElementById('spotlight-floor');
 
-  let activeModel = localStorage.getItem('xiberlinc_avatar_node') || 'man';
+  const MODEL_SEQUENCE = ['nobleman', 'girl', 'man', 'woman'];
+  let activeModel = localStorage.getItem('xiberlinc_avatar_node') || 'nobleman';
+  if (!MODEL_SEQUENCE.includes(activeModel)) activeModel = 'nobleman';
+
   let isTransitioning = false;
   let avatarEngine = null;
-  let currentPalette = null;
-  try {
-    currentPalette = JSON.parse(localStorage.getItem('xiberlinc_avatar_palette'));
-  } catch(e) {}
-  if (!currentPalette) {
-    currentPalette = { ...DEFAULT_PALETTES[activeModel] };
-  }
 
   function loadAvatar(model) {
     if (!mountEl) return;
-
-    const isFirstTime = !avatarEngine;
-    if (isFirstTime) {
+    if (!avatarEngine) {
       mountEl.innerHTML = '';
-      avatarEngine = new AvatarEngine(mountEl);
-      avatarEngine.init();
+      avatarEngine = new AvatarEngine(mountEl, model);
     } else {
-      currentPalette = { ...DEFAULT_PALETTES[model] };
+      avatarEngine.loadAvatar(model);
     }
-
-    avatarEngine.loadAvatar(model, currentPalette);
   }
 
-  // Load initial 3D avatar instantly — zero network, zero buffering
+  // Load initial 3D avatar instantly
   loadAvatar(activeModel);
   updateLabel();
 
   function updateLabel() {
     if (labelEl) {
-      labelEl.textContent = activeModel === 'man' 
-        ? (getLang() === 'ja' ? '男性アバター // ノード 01' : 'MALE AVATAR // NODE 01')
-        : (getLang() === 'ja' ? '女性アバター // ノード 02' : 'FEMALE AVATAR // NODE 02');
+      const labels = {
+        nobleman: '👑 NOBLEMAN CYBER MASTER // NODE 01',
+        girl: '⚡ CYBER VALKYRIE // NODE 02',
+        man: '⚔ KAITO CYBER LEGEND // NODE 03',
+        woman: '💎 YUNA EXECUTIVE CONTROL // NODE 04'
+      };
+      labelEl.textContent = labels[activeModel] || '3D CYBER ATHLETE';
     }
   }
 
@@ -738,7 +733,13 @@ function _initAvatarSpotlightStage(worldData) {
     if (isTransitioning || !wrapper) return;
     isTransitioning = true;
 
-    activeModel = activeModel === 'man' ? 'woman' : 'man';
+    let idx = MODEL_SEQUENCE.indexOf(activeModel);
+    if (direction === 'next') {
+      idx = (idx + 1) % MODEL_SEQUENCE.length;
+    } else {
+      idx = (idx - 1 + MODEL_SEQUENCE.length) % MODEL_SEQUENCE.length;
+    }
+    activeModel = MODEL_SEQUENCE[idx];
 
     // Step 1: Orbit arc out into dark shadow
     const exitClass = direction === 'next' ? 'arc-hidden-right' : 'arc-hidden-left';
@@ -761,9 +762,9 @@ function _initAvatarSpotlightStage(worldData) {
         wrapper.className = 'avatar-model-wrapper active-spotlight';
         setTimeout(() => {
           isTransitioning = false;
-        }, 1100);
+        }, 800);
       });
-    }, 500);
+    }, 400);
   }
 
   if (prevArrow) prevArrow.addEventListener('click', () => executeArcOrbit('prev'));

@@ -92,26 +92,17 @@ export function renderAvatarStudio(container) {
           </div>
 
           <!-- 3D Model Selection -->
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+          <div style="display:grid; grid-template-columns: 1fr; gap:16px;">
             <div>
               <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:#d4ff00; text-transform:uppercase; margin-bottom:6px;">Select 3D GLB Model</label>
               <select id="avatar-gender-select" style="
                 width:100%; background:rgba(212,255,0,0.12); border:1px solid rgba(212,255,0,0.4);
-                border-radius:8px; padding:10px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:13px; outline:none; font-weight:700;
+                border-radius:8px; padding:12px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:13px; outline:none; font-weight:700;
               ">
-                <option value="man">🤖 High-Res male.glb (9.0MB)</option>
-                <option value="woman">🤖 High-Res female.glb (1.8MB)</option>
-              </select>
-            </div>
-
-            <div>
-              <label style="display:block; font-family:'JetBrains Mono', monospace; font-size:9.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:6px;">Rendering Engine</label>
-              <select id="avatar-engine-mode" style="
-                width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
-                border-radius:8px; padding:10px; color:#fff; font-family:'Space Grotesk', sans-serif; font-size:12px; outline:none;
-              ">
-                <option value="glb">GLB Binary Loader (Recommended)</option>
-                <option value="procedural">Procedural Three.js Mesh</option>
+                <option value="nobleman">👑 Nobleman Cyber Master (nobleman.glb)</option>
+                <option value="girl">⚡ Cyber Valkyrie (girl.glb)</option>
+                <option value="man">⚔ Kaito Cyber Legend (male.glb)</option>
+                <option value="woman">💎 Yuna Executive Control (female.glb)</option>
               </select>
             </div>
           </div>
@@ -167,9 +158,7 @@ export function renderAvatarStudio(container) {
   let currentAvatarEngine = null;
 
   function refreshAvatar() {
-    if (currentAvatarEngine) {
-      currentAvatarEngine.destroy();
-    }
+    const gender = document.getElementById('avatar-gender-select').value;
     const palette = {
       skin: document.getElementById('avatar-skin-color').value,
       hair: '#e2b857',
@@ -179,7 +168,7 @@ export function renderAvatarStudio(container) {
     };
     setTimeout(() => {
       if (canvasBox && canvasBox.isConnected) {
-        currentAvatarEngine = new AvatarEngine(canvasBox, gender, palette, mode === 'glb');
+        currentAvatarEngine = new AvatarEngine(canvasBox, gender, palette, true);
       }
     }, 60);
   }
@@ -187,7 +176,7 @@ export function renderAvatarStudio(container) {
   refreshAvatar();
 
   // Attach Input Change Handlers
-  ['avatar-gender-select', 'avatar-engine-mode', 'avatar-skin-color', 'avatar-suit-color', 'avatar-visor-color'].forEach(id => {
+  ['avatar-gender-select', 'avatar-skin-color', 'avatar-suit-color', 'avatar-visor-color'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', refreshAvatar);
   });
 
