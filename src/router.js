@@ -40,7 +40,8 @@ function handleRouteChange() {
   const route = parseHash();
   const handler = routes[route];
 
-  // Route protection: redirect to World login if no active session
+  // Route protection bypassed for public access
+  /*
   const protectedRoutes = ['instructions', 'task/vwm-pure', 'task/vwm-distractor', 'task/ant', 'transition', 'complete'];
   if (protectedRoutes.includes(route)) {
     const session = Storage.getCurrentSession();
@@ -50,6 +51,7 @@ function handleRouteChange() {
       return;
     }
   }
+  */
 
   // Clear style tags dynamically added by previous view
   document.querySelectorAll('head style[data-view-style]').forEach(el => el.remove());

@@ -415,62 +415,16 @@ function _initAuth() {
 
   _updateAuthGateLanguage();
 
-  // Verify current auth user
-  const user = auth.currentUser;
-  const isGoogle = user && !user.isAnonymous;
-  const isAuthorizedEmail = user && user.email && user.email.toLowerCase().endsWith('@xiberlinc.one');
-
-  if (isGoogle && isAuthorizedEmail) {
-    // Already authenticated with Google, go straight to loader or dashboard if loaded
-    if (authGate) authGate.style.display = 'none';
-    if (window.xiberlinc_world_loaded) {
-      const loader = document.getElementById('world-loader');
-      if (loader) loader.style.display = 'none';
-      _fetchWorldData().then(worldData => {
-        _renderDashboard(worldData);
-      });
-    } else {
-      _startLoader();
-    }
+  // BYPASS AUTH GATE COMPLETELY FOR PUBLIC ACCESS
+  if (authGate) authGate.style.display = 'none';
+  if (window.xiberlinc_world_loaded) {
+    const loader = document.getElementById('world-loader');
+    if (loader) loader.style.display = 'none';
+    _fetchWorldData().then(worldData => {
+      _renderDashboard(worldData);
+    });
   } else {
-    // If user exists but has unauthorized email domain, terminate session automatically
-    if (user && !isAuthorizedEmail) {
-      signOut(auth).then(() => {
-        console.warn("Unauthorized domain session terminated on page load.");
-        if (errMsg) {
-          errMsg.textContent = "Access Denied: Only @xiberlinc.one email addresses are authorized to enter Xiberlinc World.";
-          errMsg.style.display = 'block';
-        }
-      });
-    }
-
-    // Show Google Auth Gate
-    if (loginBtn) {
-      // Clear any previous click listeners to prevent duplicates
-      const newLoginBtn = loginBtn.cloneNode(true);
-      loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
-      
-      newLoginBtn.addEventListener('click', async () => {
-        if (errMsg) errMsg.style.display = 'none';
-        const res = await signInWithGoogle();
-        if (res.ok) {
-          // Slide auth gate away
-          if (authGate) {
-            authGate.style.opacity = '0';
-            authGate.style.transform = 'scale(0.98)';
-            setTimeout(() => {
-              authGate.style.display = 'none';
-              _startLoader();
-            }, 800);
-          }
-        } else {
-          if (errMsg) {
-            errMsg.textContent = res.error?.message || "Sign-In failed. Please try again.";
-            errMsg.style.display = 'block';
-          }
-        }
-      });
-    }
+    _startLoader();
   }
 }
 
